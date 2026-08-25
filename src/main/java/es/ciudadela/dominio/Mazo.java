@@ -27,6 +27,15 @@ public class Mazo<T extends Carta> {
         return cartas.remove(0);
     }
 
+    public T robarAleatoria() {
+        if (cartas.isEmpty()) {
+            throw new IllegalStateException("El mazo está vacío");
+        }
+
+        int indice = java.util.concurrent.ThreadLocalRandom.current().nextInt(cartas.size());
+        return cartas.remove(indice);
+    }
+
     public void añadir(T carta) {
         cartas.add(carta);
     }

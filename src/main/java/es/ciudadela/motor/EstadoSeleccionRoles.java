@@ -12,6 +12,7 @@ public class EstadoSeleccionRoles implements EstadoJuego {
     @Override
     public void entrar(ContextoJuego contexto) {
         contexto.partida().faseActual(FaseDeTurno.SELECCION_ROLES);
+        contexto.partida().mazoRoles().robarAleatoria();
         contexto.publicarEvento("fase.seleccion_roles", java.util.Map.of(
                 "ronda", contexto.partida().ronda()
         ));

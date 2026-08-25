@@ -36,6 +36,13 @@ public class Mazo<T extends Carta> {
         return cartas.remove(indice);
     }
 
+    public T retirar(int indice) {
+        if (indice < 0 || indice >= cartas.size()) {
+            throw new IllegalArgumentException("Índice de carta no válido");
+        }
+        return cartas.remove(indice);
+    }
+
     public void añadir(T carta) {
         cartas.add(carta);
     }

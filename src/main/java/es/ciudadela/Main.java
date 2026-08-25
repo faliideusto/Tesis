@@ -1,7 +1,6 @@
 package es.ciudadela;
 
-import es.ciudadela.acciones.CobrarAccion;
-import es.ciudadela.acciones.PensarAccion;
+import es.ciudadela.acciones.SeleccionarPersonajeAccion;
 import es.ciudadela.dominio.IdeaCarta;
 import es.ciudadela.dominio.Jugador;
 import es.ciudadela.dominio.Mazo;
@@ -30,6 +29,7 @@ public final class Main {
     }
 
     public static void main(String[] args) {
+
         var jugadores = List.of(
                 new Jugador("Ana"),
                 new Jugador("Bruno")
@@ -60,7 +60,9 @@ public final class Main {
         ));
 
         var partida = new Partida(jugadores, mazoRoles, mazoIdeas);
+
         var busEventos = new BusEventosSimple();
+
         busEventos.registrar(new ObservadorJuego() {
             @Override
             public void alRecibir(EventoJuego evento) {
@@ -68,13 +70,61 @@ public final class Main {
             }
         });
 
-        MotorJuego motor = new MotorJuegoImpl(new ReglasAcademicas(), busEventos);
-        motor.iniciarPartida(partida);
-        motor.ejecutarAccion(new CobrarAccion());
-        motor.ejecutarAccion(new PensarAccion());
+        MotorJuego motor = new MotorJuegoImpl(
+                new ReglasAcademicas(),
+                busEventos
+        );
 
-        System.out.println("Partida inicializada correctamente.");
-        System.out.println("Jugador actual: " + motor.contexto().jugadorActual().nombre());
-        System.out.println("Fase: " + motor.partida().faseActual());
+        motor.iniciarPartida(partida);
+
+        System.out.println();
+        System.out.println("=== SELECCIÓN DE PERSONAJES ===");
+        System.out.println();
+
+        System.out.println("Jugador actual: "
+                + motor.contexto().jugadorActual().nombre());
+
+        System.out.println("Personajes disponibles:");
+
+        for (int i = 0; i < motor.partida().mazoRoles().cartas().size(); i++) {
+            System.out.println(
+                    (i + 1) + ". "
+                    + motor.partida().mazoRoles().cartas().get(i).nombre()
+            );
+        }
+
+        System.out.println();
+        System.out.println("Ana elige el personaje número 2.");
+
+        motor.ejecutarAccion(new SeleccionarPersonajeAccion(1));
+
+        System.out.println();
+        System.out.println("Ana tiene: "
+                + jugadores.get(0).personaje().nombre());
+
+        System.out.println("Ahora le toca a: "
+                + motor.contexto().jugadorActual().nombre());
+
+        System.out.println();
+        System.out.println("Personajes restantes:");
+
+        for (int i = 0; i < motor.partida().mazoRoles().cartas().size(); i++) {
+            System.out.println(
+                    (i + 1) + ". "
+                    + motor.partida().mazoRoles().cartas().get(i).nombre()
+            );
+        }
+
+        System.out.println();
+        System.out.println("Bruno elige el personaje número 1.");
+
+        motor.ejecutarAccion(new SeleccionarPersonajeAccion(0));
+
+        System.out.println();
+        System.out.println("Bruno tiene: "
+                + jugadores.get(1).personaje().nombre());
+
+        System.out.println("Ahora le toca a: "
+                + motor.contexto().jugadorActual().nombre());
     }
 }

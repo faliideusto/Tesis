@@ -4,7 +4,7 @@ Documento de trabajo para continuar el desarrollo de la adaptación académica d
 
 ## 1. Completar el flujo real de partida
 
-- Implementar la selección de roles completa por orden de turno.
+- Implementar la selección de roles completa por orden de turno.✅
 - Modelar el descarte automático de una carta de rol al inicio de la fase. ✅
 - Asignar y registrar el personaje elegido por cada jugador en cada ronda.✅
 - Hacer que el orden de turno dependa realmente del rol seleccionado. ✅

@@ -33,9 +33,16 @@ public class MotorJuegoImpl implements MotorJuego, ContextoJuego {
     public void iniciarPartida(Partida partida) {
         this.partida = partida;
         this.estado = new EstadoSeleccionRoles();
+
+        partida.establecerJugadorInicialAleatorio();
+
+        jugadorInicialSiguienteRonda = partida.jugadorActual().nombre();
+
         reglas.prepararPartida(this);
         estado.entrar(this);
-        publicarEvento("partida.iniciada", Map.of("ronda", partida.ronda()));
+
+        publicarEvento("partida.iniciada",
+                java.util.Map.of("ronda", partida.ronda()));
     }
 
     @Override
@@ -130,6 +137,19 @@ public class MotorJuegoImpl implements MotorJuego, ContextoJuego {
 
     public void pasarALaSiguienteRonda() {
         partida.siguienteRonda();
+
+        if (jugadorInicialSiguienteRonda != null) {
+
+            for (int i = 0; i < partida.jugadores().size(); i++) {
+
+                if (partida.jugadores().get(i).nombre()
+                        .equals(jugadorInicialSiguienteRonda)) {
+
+                    partida.establecerJugadorInicial(i);
+                    break;
+                }
+            }
+        }
 
         partida.mazoRoles().reiniciar();
 

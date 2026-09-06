@@ -83,9 +83,12 @@ public final class Main {
         System.out.println("=== SELECCIÓN DE PERSONAJES ===");
         System.out.println();
 
-        System.out.println("Jugador actual: "
-                + motor.contexto().jugadorActual().nombre());
+        Jugador primerSelector = motor.contexto().jugadorActual();
 
+        System.out.println("Jugador inicial aleatorio: "
+                + primerSelector.nombre());
+
+        System.out.println();
         System.out.println("Personajes disponibles:");
 
         for (int i = 0; i < motor.partida().mazoRoles().cartas().size(); i++) {
@@ -95,17 +98,42 @@ public final class Main {
             );
         }
 
+        // Buscamos Investigador Principal
+        int indiceInvestigador = -1;
+
+        for (int i = 0; i < motor.partida().mazoRoles().cartas().size(); i++) {
+            if (motor.partida().mazoRoles().cartas().get(i).nombre()
+                    .equals("Investigador Principal")) {
+
+                indiceInvestigador = i;
+                break;
+            }
+        }
+
+        // Si ha sido el personaje descartado, no podemos hacer esta prueba
+        if (indiceInvestigador == -1) {
+            System.out.println();
+            System.out.println("Investigador Principal ha sido descartado.");
+            System.out.println("Ejecuta el programa otra vez para repetir la prueba.");
+            return;
+        }
+
         System.out.println();
-        System.out.println("Ana elige el personaje número 2.");
+        System.out.println(primerSelector.nombre()
+                + " elige Investigador Principal.");
 
-        motor.ejecutarAccion(new SeleccionarPersonajeAccion(1));
+        motor.ejecutarAccion(
+                new SeleccionarPersonajeAccion(indiceInvestigador)
+        );
 
         System.out.println();
-        System.out.println("Ana tiene: "
-                + jugadores.get(0).personaje().nombre());
+        System.out.println(primerSelector.nombre() + " tiene: "
+                + primerSelector.personaje().nombre());
 
-        System.out.println("Ahora le toca a: "
-                + motor.contexto().jugadorActual().nombre());
+        Jugador segundoSelector = motor.contexto().jugadorActual();
+
+        System.out.println("Ahora le toca elegir a: "
+                + segundoSelector.nombre());
 
         System.out.println();
         System.out.println("Personajes restantes:");
@@ -118,40 +146,66 @@ public final class Main {
         }
 
         System.out.println();
-        System.out.println("Bruno elige el personaje número 1.");
+        System.out.println(segundoSelector.nombre()
+                + " elige el personaje número 1.");
 
-        motor.ejecutarAccion(new SeleccionarPersonajeAccion(0));
+        motor.ejecutarAccion(
+                new SeleccionarPersonajeAccion(0)
+        );
 
         System.out.println();
-        System.out.println("Bruno tiene: "
-                + jugadores.get(1).personaje().nombre());
+        System.out.println(segundoSelector.nombre() + " tiene: "
+                + segundoSelector.personaje().nombre());
 
-        System.out.println("Ahora le toca a: "
-                + motor.contexto().jugadorActual().nombre());
+        System.out.println();
+        System.out.println("=== PERSONAJES ASIGNADOS ===");
+
+        for (Jugador jugador : jugadores) {
+            System.out.println(
+                    jugador.nombre()
+                            + " -> "
+                            + jugador.personaje().nombre()
+                            + " (orden "
+                            + jugador.personaje().ordenTurno()
+                            + ")"
+            );
+        }
 
         System.out.println();
         System.out.println("=== ORDEN DE TURNOS ===");
         System.out.println();
 
-        System.out.println("Jugador actual: "
-                + motor.contexto().jugadorActual().nombre());
+        System.out.println("Primer turno: "
+                + motor.contexto().jugadorActual().nombre()
+                + " - "
+                + motor.contexto().jugadorActual().personaje().nombre());
 
         motor.avanzarFase();
 
-        System.out.println("Después de avanzar: "
-                + motor.contexto().jugadorActual().nombre());
+        System.out.println("Siguiente turno: "
+                + motor.contexto().jugadorActual().nombre()
+                + " - "
+                + motor.contexto().jugadorActual().personaje().nombre());
 
         motor.avanzarFase();
 
         System.out.println("Fase actual: "
                 + motor.partida().faseActual());
+
         System.out.println();
         System.out.println("=== NUEVA RONDA ===");
 
         motor.avanzarFase();
 
-        System.out.println("Ronda actual: " + motor.partida().ronda());
-        System.out.println("Fase actual: " + motor.partida().faseActual());
+        System.out.println("Ronda actual: "
+                + motor.partida().ronda());
+
+        System.out.println("Fase actual: "
+                + motor.partida().faseActual());
+
+        System.out.println("Jugador que empieza la selección: "
+                + motor.contexto().jugadorActual().nombre());
+
         System.out.println("Personajes disponibles: "
                 + motor.partida().mazoRoles().cartas().size());
 
@@ -160,5 +214,12 @@ public final class Main {
 
         System.out.println("Personaje de Bruno: "
                 + jugadores.get(1).personaje());
+
+        System.out.println();
+        System.out.println("El Investigador Principal era: "
+                + primerSelector.nombre());
+
+        System.out.println("El jugador que empieza la nueva ronda es: "
+                + motor.contexto().jugadorActual().nombre());
     }
 }

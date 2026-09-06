@@ -88,6 +88,10 @@ public class Partida {
     public void establecerJugadorInicial(int indiceJugadorActual) {
         this.indiceJugadorActual = indiceJugadorActual;
     }
+    public void establecerJugadorInicialAleatorio() {
+        indiceJugadorActual = java.util.concurrent.ThreadLocalRandom.current()
+                .nextInt(jugadores.size());
+    }
     public void establecerJugadorInicialPorPersonaje() {
         int indiceMejor = 0;
         int mejorOrden = Integer.MAX_VALUE;

@@ -13,6 +13,11 @@ public class EstadoTurno implements EstadoJuego {
     public void entrar(ContextoJuego contexto) {
         contexto.partida().faseActual(FaseDeTurno.TURNO_JUGADOR);
 
+        contexto.jugadorActual()
+                .personaje()
+                .habilidad()
+                .alInicioDeTurno(contexto, contexto.jugadorActual());
+
         contexto.publicarEvento("fase.turno", java.util.Map.of(
                 "jugador", contexto.jugadorActual().nombre()
         ));

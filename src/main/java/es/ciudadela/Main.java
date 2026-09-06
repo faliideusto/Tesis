@@ -145,5 +145,20 @@ public final class Main {
 
         System.out.println("Fase actual: "
                 + motor.partida().faseActual());
+        System.out.println();
+        System.out.println("=== NUEVA RONDA ===");
+
+        motor.avanzarFase();
+
+        System.out.println("Ronda actual: " + motor.partida().ronda());
+        System.out.println("Fase actual: " + motor.partida().faseActual());
+        System.out.println("Personajes disponibles: "
+                + motor.partida().mazoRoles().cartas().size());
+
+        System.out.println("Personaje de Ana: "
+                + jugadores.get(0).personaje());
+
+        System.out.println("Personaje de Bruno: "
+                + jugadores.get(1).personaje());
     }
 }

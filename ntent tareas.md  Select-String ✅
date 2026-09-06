@@ -1,0 +1,16 @@
+[1mdiff --git a/tareas.md b/tareas.md[m
+[1mindex a6aa87e..0d0c0aa 100644[m
+[1m--- a/tareas.md[m
+[1m+++ b/tareas.md[m
+[36m@@ -5,9 +5,9 @@[m [mDocumento de trabajo para continuar el desarrollo de la adaptación académica d[m
+ ## 1. Completar el flujo real de partida[m
+ [m
+ - Implementar la selección de roles completa por orden de turno.[m
+[31m-- Modelar el descarte automático de una carta de rol al inicio de la fase.[m
+[32m+[m[32m- Modelar el descarte automático de una carta de rol al inicio de la fase. ✅[m
+ - Asignar y registrar el personaje elegido por cada jugador en cada ronda.[m
+[31m-- Hacer que el orden de turno dependa realmente del rol seleccionado.[m
+[32m+[m[32m- Hacer que el orden de turno dependa realmente del rol seleccionado. ✅[m
+ - Cerrar la ronda completa cuando un jugador publique su tercer artículo.[m
+ [m
+ ## 2. Afinar las acciones base[m

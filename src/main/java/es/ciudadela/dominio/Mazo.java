@@ -7,9 +7,11 @@ import java.util.List;
 public class Mazo<T extends Carta> {
 
     private final List<T> cartas;
+    private final List<T> cartasIniciales;
 
     public Mazo(List<T> cartas) {
         this.cartas = new ArrayList<>(cartas);
+        this.cartasIniciales = new ArrayList<>(cartas);
     }
 
     public boolean estaVacio() {
@@ -32,7 +34,9 @@ public class Mazo<T extends Carta> {
             throw new IllegalStateException("El mazo está vacío");
         }
 
-        int indice = java.util.concurrent.ThreadLocalRandom.current().nextInt(cartas.size());
+        int indice = java.util.concurrent.ThreadLocalRandom.current()
+                .nextInt(cartas.size());
+
         return cartas.remove(indice);
     }
 
@@ -40,6 +44,7 @@ public class Mazo<T extends Carta> {
         if (indice < 0 || indice >= cartas.size()) {
             throw new IllegalArgumentException("Índice de carta no válido");
         }
+
         return cartas.remove(indice);
     }
 
@@ -49,5 +54,10 @@ public class Mazo<T extends Carta> {
 
     public void añadirTodas(List<T> nuevasCartas) {
         cartas.addAll(nuevasCartas);
+    }
+
+    public void reiniciar() {
+        cartas.clear();
+        cartas.addAll(cartasIniciales);
     }
 }

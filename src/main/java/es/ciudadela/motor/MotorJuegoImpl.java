@@ -130,7 +130,15 @@ public class MotorJuegoImpl implements MotorJuego, ContextoJuego {
 
     public void pasarALaSiguienteRonda() {
         partida.siguienteRonda();
+
+        partida.mazoRoles().reiniciar();
+
+        for (var jugador : partida.jugadores()) {
+            jugador.asignarPersonaje(null);
+        }
+
         partida.faseActual(FaseDeTurno.SELECCION_ROLES);
+
         vetados.clear();
         protegidos.clear();
     }

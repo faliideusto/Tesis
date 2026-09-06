@@ -63,6 +63,27 @@ public class Partida {
     public void siguienteJugador() {
         indiceJugadorActual = (indiceJugadorActual + 1) % jugadores.size();
     }
+    public void siguienteJugadorPorPersonaje() {
+        int ordenActual = jugadorActual().personaje().ordenTurno();
+
+        int mejorIndice = -1;
+        int mejorOrden = Integer.MAX_VALUE;
+
+        for (int i = 0; i < jugadores.size(); i++) {
+            int orden = jugadores.get(i).personaje().ordenTurno();
+
+            if (orden > ordenActual && orden < mejorOrden) {
+                mejorOrden = orden;
+                mejorIndice = i;
+            }
+        }
+
+        if (mejorIndice == -1) {
+            establecerJugadorInicialPorPersonaje();
+        } else {
+            indiceJugadorActual = mejorIndice;
+        }
+    }
 
     public void establecerJugadorInicial(int indiceJugadorActual) {
         this.indiceJugadorActual = indiceJugadorActual;

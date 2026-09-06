@@ -66,7 +66,9 @@ public final class Main {
         busEventos.registrar(new ObservadorJuego() {
             @Override
             public void alRecibir(EventoJuego evento) {
-                System.out.println("[EVENTO] " + evento.tipo() + " -> " + evento.datos());
+                System.out.println(
+                        "[EVENTO] " + evento.tipo() + " -> " + evento.datos()
+                );
             }
         });
 
@@ -89,7 +91,7 @@ public final class Main {
         for (int i = 0; i < motor.partida().mazoRoles().cartas().size(); i++) {
             System.out.println(
                     (i + 1) + ". "
-                    + motor.partida().mazoRoles().cartas().get(i).nombre()
+                            + motor.partida().mazoRoles().cartas().get(i).nombre()
             );
         }
 
@@ -111,7 +113,7 @@ public final class Main {
         for (int i = 0; i < motor.partida().mazoRoles().cartas().size(); i++) {
             System.out.println(
                     (i + 1) + ". "
-                    + motor.partida().mazoRoles().cartas().get(i).nombre()
+                            + motor.partida().mazoRoles().cartas().get(i).nombre()
             );
         }
 
@@ -126,5 +128,22 @@ public final class Main {
 
         System.out.println("Ahora le toca a: "
                 + motor.contexto().jugadorActual().nombre());
+
+        System.out.println();
+        System.out.println("=== ORDEN DE TURNOS ===");
+        System.out.println();
+
+        System.out.println("Jugador actual: "
+                + motor.contexto().jugadorActual().nombre());
+
+        motor.avanzarFase();
+
+        System.out.println("Después de avanzar: "
+                + motor.contexto().jugadorActual().nombre());
+
+        motor.avanzarFase();
+
+        System.out.println("Fase actual: "
+                + motor.partida().faseActual());
     }
 }

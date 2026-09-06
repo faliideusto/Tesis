@@ -58,11 +58,8 @@ public class MotorJuegoImpl implements MotorJuego, ContextoJuego {
         if (partida == null) {
             throw new IllegalStateException("La partida aún no ha iniciado");
         }
+
         accion.ejecutar(this);
-        if (reglas.debeFinalizarPartida(this)) {
-            partida.faseActual(FaseDeTurno.FIN_PARTIDA);
-            publicarEvento("partida.fin", Map.of("ronda", partida.ronda()));
-        }
     }
 
     @Override

@@ -1,6 +1,8 @@
 package es.ciudadela;
 
 import es.ciudadela.acciones.SeleccionarPersonajeAccion;
+import es.ciudadela.acciones.TrabajarAccion;
+import es.ciudadela.dominio.FaseDeTurno;
 import es.ciudadela.dominio.IdeaCarta;
 import es.ciudadela.dominio.Jugador;
 import es.ciudadela.dominio.Mazo;
@@ -77,85 +79,77 @@ public final class Main {
                 busEventos
         );
 
+        /*
+         * ============================================================
+         * INICIO DE LA PARTIDA
+         * ============================================================
+         */
+
         motor.iniciarPartida(partida);
 
         System.out.println();
-        System.out.println("=== SELECCIÓN DE PERSONAJES ===");
+        System.out.println("==========================================");
+        System.out.println(" PRUEBA PUNTO 1 - FLUJO REAL DE PARTIDA");
+        System.out.println("==========================================");
         System.out.println();
+
+        /*
+         * ============================================================
+         * 1 Y 2 - SELECCIÓN DE ROLES + DESCARTE AUTOMÁTICO
+         * ============================================================
+         */
+
+        System.out.println("=== SELECCIÓN DE ROLES ===");
 
         Jugador primerSelector = motor.contexto().jugadorActual();
 
-        System.out.println("Jugador inicial aleatorio: "
+        System.out.println("Jugador inicial: "
                 + primerSelector.nombre());
 
-        System.out.println();
-        System.out.println("Personajes disponibles:");
+        System.out.println("Roles disponibles después del descarte: "
+                + motor.partida().mazoRoles().cartas().size());
 
-        for (int i = 0; i < motor.partida().mazoRoles().cartas().size(); i++) {
-            System.out.println(
-                    (i + 1) + ". "
-                            + motor.partida().mazoRoles().cartas().get(i).nombre()
-            );
-        }
+        boolean descarteAutomatico =
+                motor.partida().mazoRoles().cartas().size() == 7;
 
-        // Buscamos Investigador Principal
-        int indiceInvestigador = -1;
-
-        for (int i = 0; i < motor.partida().mazoRoles().cartas().size(); i++) {
-            if (motor.partida().mazoRoles().cartas().get(i).nombre()
-                    .equals("Investigador Principal")) {
-
-                indiceInvestigador = i;
-                break;
-            }
-        }
-
-        // Si ha sido el personaje descartado, no podemos hacer esta prueba
-        if (indiceInvestigador == -1) {
-            System.out.println();
-            System.out.println("Investigador Principal ha sido descartado.");
-            System.out.println("Ejecuta el programa otra vez para repetir la prueba.");
-            return;
-        }
+        // El primer jugador elige el primer personaje disponible
+        Personaje personajePrimerJugador =
+                motor.partida().mazoRoles().cartas().get(0);
 
         System.out.println();
         System.out.println(primerSelector.nombre()
-                + " elige Investigador Principal.");
-
-        motor.ejecutarAccion(
-                new SeleccionarPersonajeAccion(indiceInvestigador)
-        );
-
-        System.out.println();
-        System.out.println(primerSelector.nombre() + " tiene: "
-                + primerSelector.personaje().nombre());
-
-        Jugador segundoSelector = motor.contexto().jugadorActual();
-
-        System.out.println("Ahora le toca elegir a: "
-                + segundoSelector.nombre());
-
-        System.out.println();
-        System.out.println("Personajes restantes:");
-
-        for (int i = 0; i < motor.partida().mazoRoles().cartas().size(); i++) {
-            System.out.println(
-                    (i + 1) + ". "
-                            + motor.partida().mazoRoles().cartas().get(i).nombre()
-            );
-        }
-
-        System.out.println();
-        System.out.println(segundoSelector.nombre()
-                + " elige el personaje número 1.");
+                + " elige: "
+                + personajePrimerJugador.nombre());
 
         motor.ejecutarAccion(
                 new SeleccionarPersonajeAccion(0)
         );
 
-        System.out.println();
-        System.out.println(segundoSelector.nombre() + " tiene: "
-                + segundoSelector.personaje().nombre());
+        // Ahora debe tocarle al siguiente jugador
+        Jugador segundoSelector = motor.contexto().jugadorActual();
+
+        boolean seleccionPorOrden =
+                segundoSelector != primerSelector;
+
+        System.out.println("Ahora elige: "
+                + segundoSelector.nombre());
+
+        Personaje personajeSegundoJugador =
+                motor.partida().mazoRoles().cartas().get(0);
+
+        System.out.println(segundoSelector.nombre()
+                + " elige: "
+                + personajeSegundoJugador.nombre());
+
+        motor.ejecutarAccion(
+                new SeleccionarPersonajeAccion(0)
+        );
+
+        /*
+         * ============================================================
+         * 3 - PERSONAJES ASIGNADOS
+         * ============================================================
+         */
 
         System.out.println();
         System.out.println("=== PERSONAJES ASIGNADOS ===");
@@ -171,55 +165,243 @@ public final class Main {
             );
         }
 
+        boolean personajesAsignados =
+                jugadores.stream()
+                        .allMatch(jugador -> jugador.personaje() != null);
+
+        boolean seleccionCompleta =
+                seleccionPorOrden
+                        && personajesAsignados
+                        && motor.partida().faseActual()
+                        == FaseDeTurno.TURNO_JUGADOR;
+
+        /*
+         * ============================================================
+         * 4 - ORDEN DE TURNO SEGÚN EL PERSONAJE
+         * ============================================================
+         */
+
         System.out.println();
-        System.out.println("=== ORDEN DE TURNOS ===");
+        System.out.println("=== ORDEN DE TURNO ===");
+
+        int menorOrden = jugadores.stream()
+                .mapToInt(jugador -> jugador.personaje().ordenTurno())
+                .min()
+                .orElseThrow();
+
+        Jugador primerJugadorTurno =
+                motor.contexto().jugadorActual();
+
+        System.out.println("Primer jugador del turno: "
+                + primerJugadorTurno.nombre());
+
+        System.out.println("Personaje: "
+                + primerJugadorTurno.personaje().nombre());
+
+        System.out.println("Orden del personaje: "
+                + primerJugadorTurno.personaje().ordenTurno());
+
+        boolean ordenTurnoCorrecto =
+                primerJugadorTurno.personaje().ordenTurno()
+                        == menorOrden;
+
+        /*
+         * ============================================================
+         * 5 - PUBLICAR TERCER ARTÍCULO
+         * ============================================================
+         */
+
         System.out.println();
+        System.out.println("=== PRUEBA DEL TERCER ARTÍCULO ===");
 
-        System.out.println("Primer turno: "
-                + motor.contexto().jugadorActual().nombre()
-                + " - "
-                + motor.contexto().jugadorActual().personaje().nombre());
+        Jugador jugadorPrueba =
+                motor.contexto().jugadorActual();
 
-        motor.avanzarFase();
+        System.out.println("Jugador de prueba: "
+                + jugadorPrueba.nombre());
 
-        System.out.println("Siguiente turno: "
-                + motor.contexto().jugadorActual().nombre()
-                + " - "
-                + motor.contexto().jugadorActual().personaje().nombre());
+        // Primer artículo ya publicado
+        jugadorPrueba.iniciarEstudio(
+                new IdeaCarta(
+                        "Artículo prueba 1",
+                        0,
+                        1,
+                        1
+                )
+        );
 
-        motor.avanzarFase();
+        int indicePrimerEstudio =
+                jugadorPrueba.estudios().size() - 1;
 
-        System.out.println("Fase actual: "
+        jugadorPrueba.estudios()
+                .get(indicePrimerEstudio)
+                .agregarTrabajo(1);
+
+        // Segundo artículo ya publicado
+        jugadorPrueba.iniciarEstudio(
+                new IdeaCarta(
+                        "Artículo prueba 2",
+                        0,
+                        1,
+                        1
+                )
+        );
+
+        int indiceSegundoEstudio =
+                jugadorPrueba.estudios().size() - 1;
+
+        jugadorPrueba.estudios()
+                .get(indiceSegundoEstudio)
+                .agregarTrabajo(1);
+
+        // Tercer artículo todavía en desarrollo
+        jugadorPrueba.iniciarEstudio(
+                new IdeaCarta(
+                        "Artículo prueba 3",
+                        0,
+                        1,
+                        1
+                )
+        );
+
+        int indiceTercerEstudio =
+                jugadorPrueba.estudios().size() - 1;
+
+        System.out.println("Artículos publicados antes: "
+                + jugadorPrueba.cantidadPublicados());
+
+        /*
+         * Trabajar una vez publica el tercer artículo.
+         */
+        motor.ejecutarAccion(
+                new TrabajarAccion(indiceTercerEstudio)
+        );
+
+        System.out.println("Artículos publicados después: "
+                + jugadorPrueba.cantidadPublicados());
+
+        System.out.println("Fase justo después de publicar el tercero: "
                 + motor.partida().faseActual());
 
-        System.out.println();
-        System.out.println("=== NUEVA RONDA ===");
+        /*
+         * La partida NO debe terminar todavía.
+         */
+        boolean noFinalizaInmediatamente =
+                jugadorPrueba.cantidadPublicados() >= 3
+                        && motor.partida().faseActual()
+                        == FaseDeTurno.TURNO_JUGADOR;
 
+        /*
+         * Avanzamos al jugador que todavía no ha jugado.
+         */
         motor.avanzarFase();
 
-        System.out.println("Ronda actual: "
-                + motor.partida().ronda());
+        System.out.println();
+        System.out.println("Después de publicar el tercero todavía juega: "
+                + motor.contexto().jugadorActual().nombre());
 
-        System.out.println("Fase actual: "
+        System.out.println("Fase: "
                 + motor.partida().faseActual());
 
-        System.out.println("Jugador que empieza la selección: "
-                + motor.contexto().jugadorActual().nombre());
+        boolean rondaContinua =
+                motor.partida().faseActual()
+                        == FaseDeTurno.TURNO_JUGADOR;
 
-        System.out.println("Personajes disponibles: "
-                + motor.partida().mazoRoles().cartas().size());
-
-        System.out.println("Personaje de Ana: "
-                + jugadores.get(0).personaje());
-
-        System.out.println("Personaje de Bruno: "
-                + jugadores.get(1).personaje());
+        /*
+         * Terminamos el último turno.
+         */
+        motor.avanzarFase();
 
         System.out.println();
-        System.out.println("El Investigador Principal era: "
-                + primerSelector.nombre());
+        System.out.println("Fase después de jugar todos: "
+                + motor.partida().faseActual());
 
-        System.out.println("El jugador que empieza la nueva ronda es: "
-                + motor.contexto().jugadorActual().nombre());
+        boolean rondaTerminada =
+                motor.partida().faseActual()
+                        == FaseDeTurno.FIN_RONDA;
+
+        /*
+         * Ahora sí se comprueba si alguien tiene 3 artículos.
+         */
+        motor.avanzarFase();
+
+        System.out.println("Fase final: "
+                + motor.partida().faseActual());
+
+        boolean partidaTerminadaCorrectamente =
+                motor.partida().faseActual()
+                        == FaseDeTurno.FIN_PARTIDA;
+
+        boolean cierreRondaCompleta =
+                noFinalizaInmediatamente
+                        && rondaContinua
+                        && rondaTerminada
+                        && partidaTerminadaCorrectamente;
+
+        /*
+         * ============================================================
+         * RESULTADO FINAL
+         * ============================================================
+         */
+
+        System.out.println();
+        System.out.println("==========================================");
+        System.out.println(" RESULTADO PUNTO 1");
+        System.out.println("==========================================");
+
+        comprobar(
+                "1. Selección de roles completa por orden",
+                seleccionCompleta
+        );
+
+        comprobar(
+                "2. Descarte automático de una carta de rol",
+                descarteAutomatico
+        );
+
+        comprobar(
+                "3. Personaje asignado a cada jugador",
+                personajesAsignados
+        );
+
+        comprobar(
+                "4. Orden de turno según personaje",
+                ordenTurnoCorrecto
+        );
+
+        comprobar(
+                "5. Completar ronda tras publicar tercer artículo",
+                cierreRondaCompleta
+        );
+
+        boolean punto1Completo =
+                seleccionCompleta
+                        && descarteAutomatico
+                        && personajesAsignados
+                        && ordenTurnoCorrecto
+                        && cierreRondaCompleta;
+
+        System.out.println();
+
+        if (punto1Completo) {
+            System.out.println(
+                    "PUNTO 1 COMPLETADO: 5/5"
+            );
+        } else {
+            System.out.println(
+                    "PUNTO 1 TODAVÍA NO ESTÁ COMPLETO"
+            );
+        }
+    }
+
+    private static void comprobar(
+            String descripcion,
+            boolean correcto
+    ) {
+        if (correcto) {
+            System.out.println("[OK] " + descripcion);
+        } else {
+            System.out.println("[ERROR] " + descripcion);
+        }
     }
 }

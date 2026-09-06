@@ -2,13 +2,13 @@
 
 Documento de trabajo para continuar el desarrollo de la adaptación académica de Ciudadelas.
 
-## 1. Completar el flujo real de partida
+## 1. Completar el flujo real de partida ✅
 
 - Implementar la selección de roles completa por orden de turno.✅
 - Modelar el descarte automático de una carta de rol al inicio de la fase. ✅
 - Asignar y registrar el personaje elegido por cada jugador en cada ronda.✅
 - Hacer que el orden de turno dependa realmente del rol seleccionado. ✅
-- Cerrar la ronda completa cuando un jugador publique su tercer artículo.
+- Cerrar la ronda completa cuando un jugador publique su tercer artículo. ✅
 
 ## 2. Afinar las acciones base
 

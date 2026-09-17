@@ -1,27 +1,21 @@
 package es.ciudadela.habilidades;
 
-import es.ciudadela.dominio.Estudio;
 import es.ciudadela.dominio.Jugador;
 import es.ciudadela.motor.ContextoJuego;
 
 public class Revisor2Habilidad implements HabilidadPersonaje {
-
     @Override
-    public void ejecutar(ContextoJuego contexto, Jugador actor, String objetivo) {
+    public void ejecutarSobreEstudio(ContextoJuego contexto, Jugador actor, String objetivo, int indiceEstudio) {
         Jugador otro = contexto.buscarJugador(objetivo);
-        if (otro == null) {
-            throw new IllegalArgumentException("No existe el jugador objetivo: " + objetivo);
+        if (otro == null) throw new IllegalArgumentException("No existe el jugador objetivo");
+        if (otro != actor && contexto.estaProtegido(otro.nombre())) {
+            throw new IllegalStateException("La Decana es inmune");
         }
-        Estudio estudio = otro.estudios().stream()
-                .filter(est -> est.estado().name().equals("EN_DESARROLLO"))
-                .findFirst()
-                .orElse(null);
-        if (estudio != null) {
-            estudio.agregarTrabajo(-1);
-            contexto.publicarEvento("habilidad.revisor_2", java.util.Map.of(
-                    "actor", actor.nombre(),
-                    "objetivo", otro.nombre()
-            ));
-        }
+        var estudio = otro.estudioEnDesarrollo(indiceEstudio);
+        if (estudio.trabajoAcumulado() == 0) throw new IllegalStateException("El estudio no tiene trabajo que retirar");
+        if (!actor.gastarMonedas(1)) throw new IllegalStateException("Se necesita una moneda para revisar");
+        estudio.retirarTrabajo();
+        contexto.publicarEvento("habilidad.revisor_2", java.util.Map.of(
+                "actor", actor.nombre(), "objetivo", otro.nombre(), "articulo", estudio.carta().nombre()));
     }
 }

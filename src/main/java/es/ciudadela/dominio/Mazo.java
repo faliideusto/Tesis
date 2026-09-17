@@ -18,8 +18,12 @@ public class Mazo<T extends Carta> {
         return cartas.isEmpty();
     }
 
+    public List<T> cartasIniciales() {
+        return Collections.unmodifiableList(new ArrayList<>(cartasIniciales));
+    }
+
     public List<T> cartas() {
-        return Collections.unmodifiableList(cartas);
+        return Collections.unmodifiableList(new ArrayList<>(cartas));
     }
 
     public T robar() {

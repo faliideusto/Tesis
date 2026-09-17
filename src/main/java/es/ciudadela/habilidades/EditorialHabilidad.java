@@ -6,6 +6,9 @@ import es.ciudadela.motor.ContextoJuego;
 public class EditorialHabilidad implements HabilidadPersonaje {
 
     @Override
+    public boolean repetible() { return true; }
+
+    @Override
     public void alInicioDeTurno(ContextoJuego contexto, Jugador actor) {
         var publicados = contexto.partida().tablero().cantidadEstudiosPublicados();
         actor.sumarMonedas(publicados);
@@ -16,7 +19,21 @@ public class EditorialHabilidad implements HabilidadPersonaje {
     }
 
     @Override
-    public int modificarPuntosTrabajo(ContextoJuego contexto, Jugador actor, int puntosBase) {
-        return puntosBase + 1;
+    public void ejecutar(ContextoJuego contexto, Jugador actor, String objetivo) {
+        throw new IllegalArgumentException("Editorial requiere el índice de un estudio propio");
+    }
+
+    @Override
+    public void ejecutarEnEstudio(ContextoJuego contexto, Jugador actor, int indiceEstudio) {
+        var estudio = actor.estudioEnDesarrollo(indiceEstudio);
+        if (!actor.gastarMonedas(3)) {
+            throw new IllegalStateException("Se necesitan tres monedas para el trabajo de Editorial");
+        }
+        actor.trabajarEstudio(indiceEstudio, 1);
+        contexto.publicarEvento("habilidad.editorial.trabajo", java.util.Map.of(
+                "actor", actor.nombre(),
+                "articulo", estudio.carta().nombre(),
+                "estado", estudio.estado().name()
+        ));
     }
 }

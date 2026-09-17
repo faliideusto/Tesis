@@ -36,11 +36,11 @@ public class Jugador {
     }
 
     public List<IdeaCarta> cartasIdea() {
-        return Collections.unmodifiableList(cartasIdea);
+        return Collections.unmodifiableList(new ArrayList<>(cartasIdea));
     }
 
     public List<Estudio> estudios() {
-        return Collections.unmodifiableList(estudios);
+        return Collections.unmodifiableList(new ArrayList<>(estudios));
     }
 
     public void asignarPersonaje(Personaje personaje) {
@@ -52,6 +52,7 @@ public class Jugador {
     }
 
     public boolean gastarMonedas(int cantidad) {
+        if (cantidad < 0) throw new IllegalArgumentException("El coste no puede ser negativo");
         if (monedas < cantidad) {
             return false;
         }
@@ -81,6 +82,28 @@ public class Jugador {
 
     public void iniciarEstudio(IdeaCarta carta) {
         estudios.add(new Estudio(carta));
+    }
+
+    public Estudio estudioEnDesarrollo(int indice) {
+        if (indice < 0 || indice >= estudios.size()) {
+            throw new IllegalArgumentException("Índice de estudio no válido");
+        }
+        Estudio estudio = estudios.get(indice);
+        if (estudio.estado() == EstadoEstudio.PUBLICADO) {
+            throw new IllegalStateException("El estudio ya fue publicado");
+        }
+        return estudio;
+    }
+
+    public void trabajarEstudio(int indice, int puntos) {
+        if (puntos <= 0) {
+            throw new IllegalArgumentException("Los puntos de trabajo deben ser positivos");
+        }
+        Estudio estudio = estudioEnDesarrollo(indice);
+        estudio.agregarTrabajo(puntos);
+        if (estudio.estado() == EstadoEstudio.PUBLICADO) {
+            sumarPrestigio(estudio.carta().prestigio());
+        }
     }
 
     public List<Estudio> estudiosPublicados() {

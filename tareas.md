@@ -4,35 +4,35 @@ Documento de trabajo para continuar el desarrollo de la adaptación académica d
 
 ## 1. Completar el flujo real de partida ✅
 
-- Implementar la selección de roles completa por orden de turno.✅
+- Implementar la selección de roles completa por orden de turno. ✅
 - Modelar el descarte automático de una carta de rol al inicio de la fase. ✅
-- Asignar y registrar el personaje elegido por cada jugador en cada ronda.✅
+- Asignar y registrar el personaje elegido por cada jugador en cada ronda. ✅
 - Hacer que el orden de turno dependa realmente del rol seleccionado. ✅
 - Cerrar la ronda completa cuando un jugador publique su tercer artículo. ✅
 
-## 2. Afinar las acciones base
+## 2. Afinar las acciones base ✅
 
-- Validar límites y errores al ejecutar `Cobrar`, `Pensar`, `IniciarEstudio` y `Trabajar`.
-- Hacer que `IniciarEstudio` use una carta real de la mano y descuente su coste.
-- Evitar que se puedan trabajar estudios publicados.
-- Aplicar correctamente las bonificaciones de personajes como `Pre-Doctoral` y `Editorial`.
-- Revisar que la acción de trabajo publique el artículo automáticamente al llegar al trabajo requerido.
+- Validar límites y errores al ejecutar `Cobrar`, `Pensar`, `IniciarEstudio` y `Trabajar`. ✅
+- Hacer que `IniciarEstudio` use una carta real de la mano y descuente su coste. ✅
+- Evitar que se puedan trabajar estudios publicados. ✅
+- Aplicar correctamente las bonificaciones de personajes como `Pre-Doctoral` y `Editorial`. ✅
+- Revisar que la acción de trabajo publique el artículo automáticamente al llegar al trabajo requerido. ✅
 
-## 3. Completar habilidades de personajes
+## 3. Completar habilidades de personajes ✅
 
-- Definir con precisión el efecto de cada personaje según el informe.
-- Implementar el veto temporal del `Comité de Ética`.
-- Revisar el efecto del `Revisor 2` para que retire trabajo sin romper el estado del estudio.
-- Confirmar si `Decana` bloquea habilidades durante toda la ronda o solo acciones concretas.
-- Añadir reglas de duración, objetivo y prioridad para todas las habilidades.
+- Definir con precisión el efecto de cada personaje según el informe. ✅
+- Implementar el veto temporal del `Comité de Ética`. ✅
+- Revisar el efecto del `Revisor 2` para que retire trabajo sin romper el estado del estudio. ✅
+- Confirmar si `Decana` bloquea habilidades durante toda la ronda o solo acciones concretas. ✅
+- Añadir reglas de duración, objetivo y prioridad para todas las habilidades. ✅
 
-## 4. Mejorar el motor y el diseño
+## 4. Mejorar el motor y el diseño ✅
 
-- Separar mejor el contexto de juego del motor para reducir acoplamiento.
-- Añadir una máquina de estados más explícita para las fases de ronda.
-- Introducir validaciones centralizadas en `ReglasJuego`.
-- Crear una fábrica para construir mazos de roles e ideas.
-- Sustituir listas mutables por colecciones controladas cuando sea necesario.
+- Separar mejor el contexto de juego del motor para reducir acoplamiento. ✅
+- Añadir una máquina de estados más explícita para las fases de ronda. ✅
+- Introducir validaciones centralizadas en `ReglasJuego`. ✅
+- Crear una fábrica para construir mazos de roles e ideas. ✅
+- Sustituir listas mutables por colecciones controladas cuando sea necesario. ✅
 
 ## 5. Añadir persistencia y trazabilidad
 

@@ -1,6 +1,5 @@
 package es.ciudadela.acciones;
 
-import es.ciudadela.dominio.Jugador;
 import es.ciudadela.dominio.Personaje;
 import es.ciudadela.motor.ContextoJuego;
 
@@ -19,6 +18,7 @@ public class SeleccionarPersonajeAccion implements AccionTurno {
 
     @Override
     public void ejecutar(ContextoJuego contexto) {
+        contexto.reglas().validarSeleccion(contexto);
         String nombreJugador = contexto.jugadorActual().nombre();
 
         Personaje personaje = contexto.partida().mazoRoles().retirar(indice);
@@ -29,17 +29,6 @@ public class SeleccionarPersonajeAccion implements AccionTurno {
                 "personaje", personaje.nombre()
         ));
 
-        boolean todosTienenPersonaje = contexto.partida().jugadores().stream()
-                .allMatch(jugador -> jugador.personaje() != null);
-
-        if (todosTienenPersonaje) {
-            contexto.partida().establecerJugadorInicialPorPersonaje();
-
-            if (contexto instanceof es.ciudadela.motor.MotorJuegoImpl motorJuego) {
-                motorJuego.establecerEstado(new es.ciudadela.motor.EstadoTurno());
-            }
-        } else {
-            contexto.partida().siguienteJugador();
-        }
-            }
+        contexto.partida().avanzarSelector();
+    }
 }

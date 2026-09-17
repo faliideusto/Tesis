@@ -16,7 +16,7 @@ public class BusEventosSimple {
     }
 
     public void publicar(EventoJuego evento) {
-        for (ObservadorJuego observador : observadores) {
+        for (ObservadorJuego observador : List.copyOf(observadores)) {
             observador.alRecibir(evento);
         }
     }

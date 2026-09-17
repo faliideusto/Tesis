@@ -4,7 +4,7 @@ import es.ciudadela.dominio.IdeaCarta;
 import es.ciudadela.dominio.Jugador;
 import es.ciudadela.motor.ContextoJuego;
 
-public class IniciarEstudioAccion implements AccionTurno {
+public class IniciarEstudioAccion extends AccionBase {
 
     private final int indiceCarta;
 
@@ -18,8 +18,11 @@ public class IniciarEstudioAccion implements AccionTurno {
     }
 
     @Override
-    public void ejecutar(ContextoJuego contexto) {
+    protected void realizar(ContextoJuego contexto) {
         Jugador jugador = contexto.jugadorActual();
+        if (indiceCarta < 0 || indiceCarta >= jugador.cartasIdea().size()) {
+            throw new IllegalArgumentException("Índice de carta de idea no válido");
+        }
         IdeaCarta carta = jugador.cartasIdea().get(indiceCarta);
         if (!jugador.gastarMonedas(carta.costeMonedas())) {
             throw new IllegalStateException("No hay monedas suficientes para iniciar el estudio");

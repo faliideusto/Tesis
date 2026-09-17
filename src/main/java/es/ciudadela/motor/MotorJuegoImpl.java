@@ -1,167 +1,62 @@
 package es.ciudadela.motor;
 
 import es.ciudadela.acciones.AccionTurno;
-import es.ciudadela.dominio.FaseDeTurno;
-import es.ciudadela.dominio.Jugador;
-import es.ciudadela.dominio.Partida;
+import es.ciudadela.dominio.*;
 import es.ciudadela.eventos.BusEventosSimple;
-import es.ciudadela.eventos.EventoJuego;
 import es.ciudadela.reglas.ReglasJuego;
-
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 
-public class MotorJuegoImpl implements MotorJuego, ContextoJuego {
-
+public final class MotorJuegoImpl implements MotorJuego {
     private final ReglasJuego reglas;
     private final BusEventosSimple busEventos;
-    private final Set<String> vetados;
-    private final Set<String> protegidos;
-    private Partida partida;
+    private ContextoJuegoImpl contexto;
     private EstadoJuego estado;
-    private String jugadorInicialSiguienteRonda;
 
     public MotorJuegoImpl(ReglasJuego reglas, BusEventosSimple busEventos) {
-        this.reglas = reglas;
-        this.busEventos = busEventos;
-        this.vetados = new HashSet<>();
-        this.protegidos = new HashSet<>();
+        this.reglas = Objects.requireNonNull(reglas);
+        this.busEventos = Objects.requireNonNull(busEventos);
     }
 
     @Override
     public void iniciarPartida(Partida partida) {
-        this.partida = partida;
-        this.estado = new EstadoSeleccionRoles();
-
+        if (contexto != null) throw new IllegalStateException("El motor ya tiene una partida iniciada");
+        reglas.validarPartida(partida);
         partida.establecerJugadorInicialAleatorio();
-
-        jugadorInicialSiguienteRonda = partida.jugadorActual().nombre();
-
-        reglas.prepararPartida(this);
-        estado.entrar(this);
-
-        publicarEvento("partida.iniciada",
-                java.util.Map.of("ronda", partida.ronda()));
+        contexto = new ContextoJuegoImpl(partida, reglas, busEventos);
+        reglas.prepararPartida(contexto);
+        entrarEn(new EstadoSeleccionRoles());
+        contexto.publicarEvento("partida.iniciada", Map.of("ronda", partida.ronda()));
     }
 
     @Override
     public void avanzarFase() {
-        if (estado == null) {
-            throw new IllegalStateException("La partida aún no ha iniciado");
-        }
-        estado.avanzar(this);
+        reglas.validarActiva(contexto);
+        entrarEn(estado.avanzar(contexto));
     }
 
     @Override
     public void ejecutarAccion(AccionTurno accion) {
-        if (partida == null) {
-            throw new IllegalStateException("La partida aún no ha iniciado");
-        }
-
-        accion.ejecutar(this);
-    }
-
-    @Override
-    public Partida partida() {
-        return partida;
-    }
-
-    @Override
-    public ContextoJuego contexto() {
-        return this;
-    }
-
-    @Override
-    public ReglasJuego reglas() {
-        return reglas;
-    }
-
-    @Override
-    public Jugador jugadorActual() {
-        return partida.jugadorActual();
-    }
-
-    @Override
-    public Jugador buscarJugador(String nombre) {
-        return partida.jugadores().stream()
-                .filter(jugador -> jugador.nombre().equalsIgnoreCase(nombre))
-                .findFirst()
-                .orElse(null);
-    }
-
-    @Override
-    public void publicarEvento(String tipo, Map<String, Object> datos) {
-        busEventos.publicar(new EventoJuego(tipo, datos));
-    }
-
-    @Override
-    public void publicarEvento(EventoJuego evento) {
-        busEventos.publicar(evento);
-    }
-
-    @Override
-    public void vetarJugador(String nombre) {
-        if (!protegidos.contains(nombre)) {
-            vetados.add(nombre);
+        reglas.validarActiva(contexto);
+        if (accion == null) throw new IllegalArgumentException("La acción no puede ser nula");
+        accion.ejecutar(contexto);
+        if (estado instanceof EstadoSeleccionRoles && partida().seleccionCompleta()) {
+            avanzarFase();
         }
     }
 
-    @Override
-    public boolean estaVetado(String nombre) {
-        return vetados.contains(nombre);
-    }
-
-    @Override
-    public void protegerJugador(String nombre) {
-        protegidos.add(nombre);
-    }
-
-    @Override
-    public boolean estaProtegido(String nombre) {
-        return protegidos.contains(nombre);
-    }
-
-    @Override
-    public void marcarJugadorInicialSiguienteRonda(String nombre) {
-        jugadorInicialSiguienteRonda = nombre;
-    }
-
-    @Override
-    public String jugadorInicialSiguienteRonda() {
-        return jugadorInicialSiguienteRonda;
-    }
-
-    public void pasarALaSiguienteRonda() {
-        partida.siguienteRonda();
-
-        if (jugadorInicialSiguienteRonda != null) {
-
-            for (int i = 0; i < partida.jugadores().size(); i++) {
-
-                if (partida.jugadores().get(i).nombre()
-                        .equals(jugadorInicialSiguienteRonda)) {
-
-                    partida.establecerJugadorInicial(i);
-                    break;
-                }
-            }
+    private void entrarEn(EstadoJuego nuevoEstado) {
+        estado = nuevoEstado;
+        if (estado instanceof EstadoSeleccionRoles) contexto.limpiarEfectosRonda();
+        estado.entrar(contexto);
+        // El motor coordina los saltos; los estados no conocen su implementación.
+        while (estado instanceof EstadoTurno && contexto.estaVetado(contexto.jugadorActual().nombre())) {
+            contexto.publicarEvento("turno.vetado", Map.of("jugador", contexto.jugadorActual().nombre()));
+            estado = estado.avanzar(contexto);
+            estado.entrar(contexto);
         }
-
-        partida.mazoRoles().reiniciar();
-
-        for (var jugador : partida.jugadores()) {
-            jugador.asignarPersonaje(null);
-        }
-
-        partida.faseActual(FaseDeTurno.SELECCION_ROLES);
-
-        vetados.clear();
-        protegidos.clear();
     }
 
-    public void establecerEstado(EstadoJuego nuevoEstado) {
-        this.estado = nuevoEstado;
-        nuevoEstado.entrar(this);
-    }
+    @Override public Partida partida() { return contexto == null ? null : contexto.partida(); }
+    @Override public ContextoJuego contexto() { return contexto; }
 }

@@ -11,6 +11,8 @@ public class PlagiadorHabilidad implements HabilidadPersonaje {
         if (otro == null) {
             throw new IllegalArgumentException("No existe el jugador objetivo: " + objetivo);
         }
+        if (otro == actor) throw new IllegalArgumentException("Elige otro jugador");
+        if (contexto.estaProtegido(otro.nombre())) throw new IllegalStateException("La Decana es inmune");
         actor.intercambiarManoCon(otro);
         contexto.publicarEvento("habilidad.plagiador", java.util.Map.of(
                 "actor", actor.nombre(),

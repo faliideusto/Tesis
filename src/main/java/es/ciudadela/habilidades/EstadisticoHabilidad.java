@@ -6,11 +6,16 @@ import es.ciudadela.motor.ContextoJuego;
 public class EstadisticoHabilidad implements HabilidadPersonaje {
 
     @Override
-    public void ejecutar(ContextoJuego contexto, Jugador actor, String objetivo) {
+    public void ejecutarEnEstudio(ContextoJuego contexto, Jugador actor, int indiceEstudio) {
+        if (indiceEstudio < 0 || indiceEstudio >= actor.estudios().size()) {
+            throw new IllegalArgumentException("Índice de estudio no válido");
+        }
+        var estudio = actor.estudios().get(indiceEstudio);
+        estudio.añadirPrestigioExtra();
         actor.sumarPrestigio(1);
         contexto.publicarEvento("habilidad.estadistico", java.util.Map.of(
                 "actor", actor.nombre(),
-                "objetivo", objetivo
+                "articulo", estudio.carta().nombre()
         ));
     }
 }

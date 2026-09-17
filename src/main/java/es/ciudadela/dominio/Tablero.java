@@ -13,7 +13,7 @@ public class Tablero {
     }
 
     public List<Estudio> estudiosEnMesa() {
-        return Collections.unmodifiableList(estudiosEnMesa);
+        return Collections.unmodifiableList(new ArrayList<>(estudiosEnMesa));
     }
 
     public void agregarEstudio(Estudio estudio) {

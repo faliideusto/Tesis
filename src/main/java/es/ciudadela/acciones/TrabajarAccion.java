@@ -1,11 +1,10 @@
 package es.ciudadela.acciones;
 
-import es.ciudadela.dominio.EstadoEstudio;
 import es.ciudadela.dominio.Estudio;
 import es.ciudadela.dominio.Jugador;
 import es.ciudadela.motor.ContextoJuego;
 
-public class TrabajarAccion implements AccionTurno {
+public class TrabajarAccion extends AccionBase {
 
     private final int indiceEstudio;
 
@@ -19,20 +18,14 @@ public class TrabajarAccion implements AccionTurno {
     }
 
     @Override
-    public void ejecutar(ContextoJuego contexto) {
+    protected void realizar(ContextoJuego contexto) {
         Jugador jugador = contexto.jugadorActual();
-        Estudio estudio = jugador.estudios().get(indiceEstudio);
-        if (estudio.estado() == EstadoEstudio.PUBLICADO) {
-            throw new IllegalStateException("El estudio ya fue publicado");
-        }
+        Estudio estudio = jugador.estudioEnDesarrollo(indiceEstudio);
         int puntosTrabajo = contexto.reglas().puntosTrabajoBase();
         if (jugador.personaje() != null) {
             puntosTrabajo = jugador.personaje().habilidad().modificarPuntosTrabajo(contexto, jugador, puntosTrabajo);
         }
-        estudio.agregarTrabajo(puntosTrabajo);
-        if (estudio.estado() == EstadoEstudio.PUBLICADO) {
-            jugador.sumarPrestigio(estudio.carta().prestigio());
-        }
+        jugador.trabajarEstudio(indiceEstudio, puntosTrabajo);
         contexto.publicarEvento("accion.trabajar", java.util.Map.of(
                 "jugador", jugador.nombre(),
                 "trabajo", puntosTrabajo,

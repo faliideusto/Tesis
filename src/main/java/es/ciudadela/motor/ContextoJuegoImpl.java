@@ -9,14 +9,16 @@ final class ContextoJuegoImpl implements ContextoJuego {
     private final Partida partida;
     private final ReglasJuego reglas;
     private final BusEventosSimple busEventos;
+    private final RegistroPartida registro;
     private final Set<String> vetados = new HashSet<>();
     private final Set<String> protegidos = new HashSet<>();
     private String jugadorInicialSiguienteRonda;
 
-    ContextoJuegoImpl(Partida partida, ReglasJuego reglas, BusEventosSimple busEventos) {
+    ContextoJuegoImpl(Partida partida, ReglasJuego reglas, BusEventosSimple busEventos, RegistroPartida registro) {
         this.partida = partida;
         this.reglas = reglas;
         this.busEventos = busEventos;
+        this.registro = registro;
         jugadorInicialSiguienteRonda = partida.jugadorActual().nombre();
     }
 
@@ -25,6 +27,15 @@ final class ContextoJuegoImpl implements ContextoJuego {
     void limpiarEfectosRonda() {
         vetados.clear();
         protegidos.clear();
+    }
+
+    Set<String> vetadosGuardados() { return Set.copyOf(vetados); }
+    Set<String> protegidosGuardados() { return Set.copyOf(protegidos); }
+
+    void recuperarEfectos(es.ciudadela.persistencia.PartidaGuardada guardada) {
+        vetados.addAll(guardada.vetados());
+        protegidos.addAll(guardada.protegidos());
+        jugadorInicialSiguienteRonda = guardada.siguienteJugadorInicial();
     }
 
     @Override
@@ -47,11 +58,12 @@ final class ContextoJuegoImpl implements ContextoJuego {
 
     @Override
     public void publicarEvento(String tipo, Map<String, Object> datos) {
-        busEventos.publicar(new EventoJuego(tipo, datos));
+        publicarEvento(new EventoJuego(tipo, datos));
     }
 
     @Override
     public void publicarEvento(EventoJuego evento) {
+        registro.alRecibir(evento);
         busEventos.publicar(evento);
     }
 

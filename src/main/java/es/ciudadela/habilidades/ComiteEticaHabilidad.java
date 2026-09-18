@@ -6,6 +6,9 @@ import es.ciudadela.motor.ContextoJuego;
 public class ComiteEticaHabilidad implements HabilidadPersonaje {
 
     @Override
+    public boolean requiereResolucionAlInicio() { return true; }
+
+    @Override
     public void ejecutar(ContextoJuego contexto, Jugador actor, String objetivo) {
         if (contexto.partida().accionesBaseRealizadas() != 0) {
             throw new IllegalStateException("El Comité debe nombrar un rol antes de su primera acción base");

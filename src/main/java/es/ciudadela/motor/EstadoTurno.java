@@ -8,6 +8,9 @@ public final class EstadoTurno implements EstadoJuego {
         contexto.publicarEvento("fase.turno", java.util.Map.of("jugador", contexto.jugadorActual().nombre()));
     }
     @Override public EstadoJuego avanzar(ContextoJuego contexto) {
+        if (!contexto.estaVetado(contexto.jugadorActual().nombre())) {
+            contexto.reglas().validarFinTurno(contexto);
+        }
         if (contexto.partida().avanzarTurno()) return new EstadoTurno();
         return new EstadoFinRonda();
     }

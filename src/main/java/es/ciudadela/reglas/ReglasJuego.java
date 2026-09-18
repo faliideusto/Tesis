@@ -9,6 +9,7 @@ public interface ReglasJuego {
     void validarSeleccion(ContextoJuego contexto);
     void validarInicioTurnos(ContextoJuego contexto);
     void validarAccionBase(ContextoJuego contexto);
+    void validarFinTurno(ContextoJuego contexto);
     void validarHabilidad(ContextoJuego contexto);
 
     void prepararPartida(ContextoJuego contexto);

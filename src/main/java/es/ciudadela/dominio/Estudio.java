@@ -25,6 +25,15 @@ public class Estudio {
         this.estado = EstadoEstudio.EN_DESARROLLO;
     }
 
+    static Estudio restaurar(InstantaneaPartida.EstudioDatos datos) {
+        Estudio estudio = new Estudio(datos.idea().crear());
+        estudio.trabajoAcumulado = datos.trabajo();
+        estudio.prestigioExtra = datos.prestigioExtra();
+        estudio.estado = datos.trabajo() >= estudio.carta.trabajoRequerido()
+                ? EstadoEstudio.PUBLICADO : EstadoEstudio.EN_DESARROLLO;
+        return estudio;
+    }
+
     public IdeaCarta carta() {
         return carta;
     }

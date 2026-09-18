@@ -33,6 +33,7 @@ public class EditorialHabilidad implements HabilidadPersonaje {
         contexto.publicarEvento("habilidad.editorial.trabajo", java.util.Map.of(
                 "actor", actor.nombre(),
                 "articulo", estudio.carta().nombre(),
+                "prestigio", estudio.carta().prestigio(),
                 "estado", estudio.estado().name()
         ));
     }

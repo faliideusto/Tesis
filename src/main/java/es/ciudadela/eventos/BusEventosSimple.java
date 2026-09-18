@@ -12,8 +12,11 @@ public class BusEventosSimple {
     }
 
     public void registrar(ObservadorJuego observador) {
-        observadores.add(observador);
+        java.util.Objects.requireNonNull(observador);
+        if (!observadores.contains(observador)) observadores.add(observador);
     }
+
+    public void retirar(ObservadorJuego observador) { observadores.remove(observador); }
 
     public void publicar(EventoJuego evento) {
         for (ObservadorJuego observador : List.copyOf(observadores)) {

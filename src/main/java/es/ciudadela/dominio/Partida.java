@@ -140,4 +140,94 @@ public class Partida {
     private void exigirFase(FaseDeTurno esperada) {
         if (faseActual != esperada) throw new IllegalStateException("Operación no permitida en la fase " + faseActual);
     }
+
+    public InstantaneaPartida guardar() {
+        if (!jugadorInicialElegido || rondaPreparada != ronda) {
+            throw new IllegalStateException("La partida debe estar iniciada para guardarla");
+        }
+        var datosJugadores = jugadores.stream().map(j -> new InstantaneaPartida.JugadorDatos(
+                j.nombre(), j.monedas(), j.prestigio(), j.personaje() == null ? null : j.personaje().ordenTurno(),
+                j.cartasIdea().stream().map(InstantaneaPartida.IdeaDatos::de).toList(),
+                j.estudios().stream().map(InstantaneaPartida.EstudioDatos::de).toList())).toList();
+        Map<Estudio, InstantaneaPartida.EstudioEnMesa> posiciones = new IdentityHashMap<>();
+        for (int j = 0; j < jugadores.size(); j++) {
+            var estudios = jugadores.get(j).estudios();
+            for (int e = 0; e < estudios.size(); e++) posiciones.put(estudios.get(e), new InstantaneaPartida.EstudioEnMesa(j, e));
+        }
+        var mesa = tablero.estudiosEnMesa().stream().map(e -> {
+            var posicion = posiciones.get(e);
+            if (posicion == null) throw new IllegalStateException("Hay un estudio en mesa sin propietario");
+            return posicion;
+        }).toList();
+        return new InstantaneaPartida(datosJugadores,
+                mazoRoles.cartasIniciales().stream().map(InstantaneaPartida.RolDatos::de).toList(),
+                mazoRoles.cartas().stream().map(Personaje::ordenTurno).toList(),
+                mazoIdeas.cartasIniciales().stream().map(InstantaneaPartida.IdeaDatos::de).toList(),
+                mazoIdeas.cartas().stream().map(InstantaneaPartida.IdeaDatos::de).toList(), mesa,
+                faseActual, ronda, indiceJugadorActual, accionesBaseRealizadas, habilidadUsada);
+    }
+
+    /** Reconstruye datos ya jugados sin ejecutar reparto, descarte ni efectos de turno. */
+    public static Partida restaurar(InstantaneaPartida datos) {
+        Objects.requireNonNull(datos);
+        Map<Integer, Personaje> roles = new LinkedHashMap<>();
+        Set<String> nombresRoles = new HashSet<>();
+        for (var rol : datos.rolesIniciales()) {
+            if (roles.putIfAbsent(rol.orden(), rol.crear()) != null
+                    || !nombresRoles.add(rol.nombre().toLowerCase(Locale.ROOT))) {
+                throw new IllegalArgumentException("Roles duplicados en el guardado");
+            }
+        }
+        if (roles.size() <= datos.jugadores().size()) throw new IllegalArgumentException("Faltan roles en el guardado");
+        Set<Integer> usados = new HashSet<>();
+        List<Personaje> disponibles = new ArrayList<>();
+        for (int orden : datos.rolesDisponibles()) {
+            if (!roles.containsKey(orden) || !usados.add(orden)) throw new IllegalArgumentException("Mazo de roles no válido");
+            disponibles.add(roles.get(orden));
+        }
+        Set<String> nombres = new HashSet<>();
+        List<Jugador> jugadores = new ArrayList<>();
+        for (var jugador : datos.jugadores()) {
+            if (!nombres.add(jugador.nombre().toLowerCase(Locale.ROOT))) throw new IllegalArgumentException("Jugadores duplicados");
+            Integer rol = jugador.rol();
+            if (rol != null && (!roles.containsKey(rol) || !usados.add(rol))) throw new IllegalArgumentException("Rol asignado no válido");
+            jugadores.add(Jugador.restaurar(jugador, rol == null ? null : roles.get(rol)));
+        }
+        if (usados.size() != roles.size() - 1) throw new IllegalArgumentException("El guardado debe conservar un rol descartado");
+        boolean completos = jugadores.stream().allMatch(j -> j.personaje() != null);
+        if (datos.fase() == FaseDeTurno.SELECCION_ROLES) {
+            if (completos || jugadores.get(datos.jugadorActual()).personaje() != null
+                    || datos.accionesRealizadas() != 0 || datos.habilidadUsada()) {
+                throw new IllegalArgumentException("Selección de roles incoherente");
+            }
+        } else if (!completos) {
+            throw new IllegalArgumentException("Faltan personajes para la fase guardada");
+        }
+        if (datos.fase() == FaseDeTurno.FIN_RONDA || datos.fase() == FaseDeTurno.FIN_PARTIDA) {
+            int maximo = jugadores.stream().mapToInt(j -> j.personaje().ordenTurno()).max().orElseThrow();
+            if (jugadores.get(datos.jugadorActual()).personaje().ordenTurno() != maximo) {
+                throw new IllegalArgumentException("La ronda guardada no ha terminado");
+            }
+        }
+        if (datos.fase() == FaseDeTurno.FIN_PARTIDA && jugadores.stream().noneMatch(j -> j.cantidadPublicados() >= 3)) {
+            throw new IllegalArgumentException("La partida guardada no cumple la condición de fin");
+        }
+        Partida partida = new Partida(jugadores, Mazo.restaurar(new ArrayList<>(roles.values()), disponibles),
+                Mazo.restaurar(datos.ideasIniciales().stream().map(InstantaneaPartida.IdeaDatos::crear).toList(),
+                        datos.ideasDisponibles().stream().map(InstantaneaPartida.IdeaDatos::crear).toList()));
+        Set<InstantaneaPartida.EstudioEnMesa> mesa = new HashSet<>();
+        for (var posicion : datos.mesa()) {
+            if (posicion.jugador() >= jugadores.size() || posicion.estudio() >= jugadores.get(posicion.jugador()).estudios().size()
+                    || !mesa.add(posicion)) throw new IllegalArgumentException("Referencia de estudio en mesa no válida");
+            partida.tablero.agregarEstudio(jugadores.get(posicion.jugador()).estudios().get(posicion.estudio()));
+        }
+        partida.faseActual = datos.fase();
+        partida.ronda = datos.ronda();
+        partida.rondaPreparada = datos.ronda();
+        partida.jugadorInicialElegido = true;
+        partida.indiceJugadorActual = datos.jugadorActual();
+        partida.accionesBaseRealizadas = datos.accionesRealizadas();
+        partida.habilidadUsada = datos.habilidadUsada();
+        return partida;
+    }
 }

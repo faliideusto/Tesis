@@ -10,6 +10,8 @@ public interface HabilidadPersonaje {
 
     default boolean esInmune() { return false; }
 
+    default boolean requiereResolucionAlInicio() { return false; }
+
     default void alInicioDeTurno(ContextoJuego contexto, Jugador actor) {
     }
 

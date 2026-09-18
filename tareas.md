@@ -34,17 +34,17 @@ Documento de trabajo para continuar el desarrollo de la adaptación académica d
 - Crear una fábrica para construir mazos de roles e ideas. ✅
 - Sustituir listas mutables por colecciones controladas cuando sea necesario. ✅
 
-## 5. Añadir persistencia y trazabilidad
+## 5. Añadir persistencia y trazabilidad ✅
 
-- Guardar el estado de la partida en memoria para continuar turnos.
-- Crear un registro de eventos de partida para depuración y seguimiento.
-- Preparar una posible serialización a JSON si la práctica la requiere.
+- Guardar el estado de la partida en memoria para continuar turnos. ✅
+- Crear un registro de eventos de partida para depuración y seguimiento. ✅
+- Preparar una posible serialización a JSON si la práctica la requiere. ✅
 
-## 6. Crear interfaz de usuario básica
+## 6. Crear interfaz de usuario básica ✅
 
-- Desarrollar una CLI para elegir acciones y objetivos por teclado.
-- Mostrar en pantalla el estado actual de jugadores, cartas y estudios.
-- Informar de eventos relevantes como publicaciones, robos y cambios de fase.
+- Desarrollar una CLI para elegir acciones y objetivos por teclado. ✅
+- Mostrar en pantalla el estado actual de jugadores, cartas y estudios. ✅
+- Informar de eventos relevantes como publicaciones, robos y cambios de fase. ✅
 
 ## 7. Añadir pruebas automáticas
 

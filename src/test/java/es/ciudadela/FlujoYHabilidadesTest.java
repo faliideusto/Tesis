@@ -144,13 +144,41 @@ class FlujoYHabilidadesTest {
         assertEquals(2, eventos.stream().filter(e -> e.tipo().equals("fase.seleccion_roles")).count());
     }
 
-    @Test void comiteNoActuaTardeYRechazaRolesInvalidos() {
+    @Test void comiteDebeResolverVetoAntesDeCualquierAccionOFinDeTurno() {
         var motor = comenzar(new ComiteEticaHabilidad(), new PreDoctoralHabilidad());
+        var actor = motor.contexto().jugadorActual();
+        var antes = motor.partida().guardar();
         assertThrows(IllegalArgumentException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion("Inexistente")));
         assertThrows(IllegalArgumentException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion("Rol 0")));
         assertFalse(motor.partida().habilidadUsada());
+        for (var accion : java.util.List.of(new CobrarAccion(), new PensarAccion(),
+                new IniciarEstudioAccion(0), new TrabajarAccion(0))) {
+            var error = assertThrows(IllegalStateException.class, () -> motor.ejecutarAccion(accion));
+            assertTrue(error.getMessage().contains("habilidad inicial"));
+        }
+        assertThrows(IllegalStateException.class, motor::avanzarFase);
+        assertEquals(antes, motor.partida().guardar());
+        motor.ejecutarAccion(new UsarHabilidadAccion("Rol 1"));
         motor.ejecutarAccion(new CobrarAccion());
         assertThrows(IllegalStateException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion("Rol 1")));
+        assertEquals(1, motor.partida().accionesBaseRealizadas());
+        assertEquals(4, actor.monedas());
+        motor.avanzarFase();
+        assertEquals(FaseDeTurno.FIN_RONDA, motor.partida().faseActual());
+    }
+
+    @Test void cargarPartidaConVetoPendienteConservaLaObligacion() {
+        var motor = comenzar(new ComiteEticaHabilidad(), new PreDoctoralHabilidad());
+        var guardada = motor.guardarPartida();
+        motor.ejecutarAccion(new UsarHabilidadAccion("Descartado"));
+        motor.recuperarPartida(guardada);
+        assertThrows(IllegalStateException.class, () -> motor.ejecutarAccion(new CobrarAccion()));
+        assertThrows(IllegalStateException.class, motor::avanzarFase);
+        motor.ejecutarAccion(new UsarHabilidadAccion("Descartado"));
+        motor.recuperarPartida(motor.guardarPartida());
+        motor.ejecutarAccion(new CobrarAccion());
+        motor.avanzarFase();
+        assertEquals(2, motor.contexto().jugadorActual().personaje().ordenTurno());
     }
 
     @Test void nombrarRolDescartadoConsumeHabilidadSinVetar() {
@@ -158,6 +186,28 @@ class FlujoYHabilidadesTest {
         motor.ejecutarAccion(new UsarHabilidadAccion("Descartado"));
         assertTrue(motor.partida().habilidadUsada());
         assertTrue(motor.partida().jugadores().stream().noneMatch(j -> motor.contexto().estaVetado(j.nombre())));
+    }
+
+    @Test void guardadoAntiguoConAccionesPreviasAlVetoSeRechazaSinCambiarPartida() {
+        var motor = comenzar(new ComiteEticaHabilidad(), new PreDoctoralHabilidad());
+        // Simular el estado que permitía la versión anterior.
+        motor.partida().registrarAccionBase();
+        var incompatible = motor.guardarPartida();
+        var destino = comenzar(new PreDoctoralHabilidad());
+        var antes = destino.partida().guardar();
+        assertThrows(IllegalArgumentException.class, () -> destino.recuperarPartida(incompatible));
+        assertEquals(antes, destino.partida().guardar());
+    }
+
+    @Test void otrosPersonajesPuedenActuarYTerminarSinHabilidadActiva() {
+        for (var habilidad : java.util.List.of(new EstadisticoHabilidad(), new PlagiadorHabilidad(),
+                new InvestigadorPrincipalHabilidad(), new DecanaHabilidad(), new EditorialHabilidad(),
+                new PreDoctoralHabilidad(), new Revisor2Habilidad())) {
+            var motor = comenzar(habilidad);
+            motor.ejecutarAccion(new CobrarAccion());
+            motor.avanzarFase();
+            assertEquals(FaseDeTurno.FIN_RONDA, motor.partida().faseActual());
+        }
     }
 
     @Test void decanaInmuneAlComiteAntesDeSuTurnoYLimpiaAlCambiarRonda() {

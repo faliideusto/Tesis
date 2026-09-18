@@ -6,152 +6,280 @@ import es.ciudadela.dominio.Jugador;
 import es.ciudadela.habilidades.*;
 import es.ciudadela.motor.MotorJuego;
 import java.util.Scanner;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.function.Predicate;
+import es.ciudadela.dominio.Estudio;
+import es.ciudadela.dominio.EstadoEstudio;
+import java.nio.file.Path;
+import java.util.Locale;
+import es.ciudadela.persistencia.AlmacenPartidasMemoria;
+import es.ciudadela.persistencia.SerializadorPartidaJson;
 
 /** Interfaz local para las reglas actualmente implementadas. */
 public final class ConsolaJuego {
     private final MotorJuego motor;
     private final Scanner entrada;
+    private final PrintStream salida;
+    private final VistaPartida vista;
+    private final AvisosConsola avisos;
+    private final AlmacenPartidasMemoria guardados = new AlmacenPartidasMemoria();
+    private final SerializadorPartidaJson json = new SerializadorPartidaJson();
 
     public ConsolaJuego(MotorJuego motor, Scanner entrada) {
+        this(motor, entrada, System.out);
+    }
+
+    public ConsolaJuego(MotorJuego motor, Scanner entrada, PrintStream salida) {
         this.motor = motor;
         this.entrada = entrada;
+        this.salida = salida;
+        this.vista = new VistaPartida(motor, salida);
+        this.avisos = new AvisosConsola(salida);
     }
 
     public void ejecutar() {
-        System.out.println("CIUDADELA ACADÉMICA - Partida local de Ana y Bruno");
-        System.out.println("Habilidades activas: una vez por turno, salvo Editorial. Comité: antes de actuar.");
-        System.out.println("Escribe salir para cerrar sin guardar.");
+        salida.println("CIUDADELA ACADÉMICA - Partida local");
+        salida.println("Jugadores: " + motor.partida().jugadores().stream().map(Jugador::nombre).toList());
+        salida.println("Elige opciones por número. Escribe ayuda para ver los comandos o cancelar para volver al menú.");
+        motor.registrarObservador(avisos);
         try {
-            while (motor.partida().faseActual() != FaseDeTurno.FIN_PARTIDA) {
+            while (true) {
                 try {
                     switch (motor.partida().faseActual()) {
                         case SELECCION_ROLES -> seleccionarRol();
                         case TURNO_JUGADOR -> jugarTurno();
                         case FIN_RONDA -> motor.avanzarFase();
-                        default -> throw new IllegalStateException("Fase no reconocida");
+                        case FIN_PARTIDA -> {
+                            vista.resultado();
+                            leer("Comando: ");
+                            salida.println("La partida ha terminado. Escribe ayuda para consultar los comandos.");
+                        }
                     }
+                } catch (ComandoAtendido comando) {
+                    // Volver al menú actual, sin continuar con objetivos de una partida anterior.
                 } catch (IllegalArgumentException | IllegalStateException error) {
-                    System.out.println("No se puede realizar la acción: " + error.getMessage());
+                    salida.println("No se puede realizar la acción: " + error.getMessage());
                 }
             }
-            System.out.println("\nPARTIDA FINALIZADA - Prestigio acumulado");
-            motor.partida().jugadores().forEach(this::mostrarResumen);
-            System.out.println("Ganador(es): " + motor.partida().ganadores().stream().map(Jugador::nombre).toList());
-        } catch (FinEntrada salida) {
-            System.out.println("Partida cerrada sin guardar.");
+        } catch (FinEntrada fin) {
+            salida.println("Partida cerrada. Los archivos exportados se conservan; los guardados en memoria no.");
+        } finally {
+            motor.retirarObservador(avisos);
         }
     }
 
     private void seleccionarRol() {
-        System.out.println("\nRonda " + motor.partida().ronda() + " - Elige personaje: "
+        salida.println("\nRonda " + motor.partida().ronda() + " - Elige personaje: "
                 + motor.contexto().jugadorActual().nombre());
         var roles = motor.partida().mazoRoles().cartas();
         for (int i = 0; i < roles.size(); i++) {
-            System.out.println((i + 1) + ". " + roles.get(i).nombre() + " (orden " + roles.get(i).ordenTurno() + ")");
+            salida.println((i + 1) + ". " + roles.get(i).nombre() + " (orden " + roles.get(i).ordenTurno() + ") - " + describirHabilidad(roles.get(i).habilidad()));
         }
-        motor.ejecutarAccion(new SeleccionarPersonajeAccion(leerIndice("Personaje: ")));
+        motor.ejecutarAccion(new SeleccionarPersonajeAccion(leerIndice("Personaje (0 para cancelar): ", roles.size())));
     }
 
     private void jugarTurno() {
         Jugador jugador = motor.contexto().jugadorActual();
-        System.out.println("\nRonda " + motor.partida().ronda() + " - Turno de " + jugador.nombre()
+        salida.println("\nRonda " + motor.partida().ronda() + " - Turno de " + jugador.nombre()
                 + " / " + jugador.personaje().nombre());
-        mostrarResumen(jugador);
-        System.out.println("Acciones base restantes: " + (2 - motor.partida().accionesBaseRealizadas()));
-        System.out.println("1. Cobrar  2. Pensar  3. Iniciar estudio  4. Trabajar");
-        System.out.println("5. Usar habilidad  6. Ver cartas y estudios  7. Terminar turno");
+        vista.resumen(jugador);
+        salida.println("Acciones base restantes: " + (2 - motor.partida().accionesBaseRealizadas()));
+        salida.println("Habilidad: " + describirHabilidad(jugador.personaje().habilidad()));
+        if (jugador.personaje().habilidad().requiereResolucionAlInicio() && !motor.partida().habilidadUsada()) {
+            salida.println("Primero debes nombrar un rol. Después podrás realizar tus acciones o terminar el turno.");
+            usarHabilidad(jugador);
+            return;
+        }
+        if (motor.partida().habilidadUsada() && !jugador.personaje().habilidad().repetible()) {
+            salida.println("Habilidad activa ya utilizada este turno.");
+        }
+        if (motor.partida().accionesBaseRealizadas() == 2) {
+            salida.println("Acciones base agotadas: puedes consultar el estado, usar una habilidad disponible o terminar el turno.");
+        }
+        salida.println("1. Cobrar  2. Pensar  3. Iniciar estudio  4. Trabajar");
+        salida.println("5. Usar habilidad  6. Ver estado y mano  7. Terminar turno");
         switch (leer("Opción: ")) {
             case "1" -> motor.ejecutarAccion(new CobrarAccion());
             case "2" -> motor.ejecutarAccion(new PensarAccion());
             case "3" -> {
-                mostrarCartas(jugador);
-                motor.ejecutarAccion(new IniciarEstudioAccion(leerIndice("Carta: ")));
+                motor.contexto().reglas().validarAccionBase(motor.contexto());
+                vista.mano(jugador);
+                if (!jugador.cartasIdea().isEmpty()) {
+                    motor.ejecutarAccion(new IniciarEstudioAccion(leerIndice("Carta (0 para cancelar): ", jugador.cartasIdea().size())));
+                }
             }
             case "4" -> {
-                mostrarEstudios(jugador);
-                motor.ejecutarAccion(new TrabajarAccion(leerIndice("Estudio: ")));
+                motor.contexto().reglas().validarAccionBase(motor.contexto());
+                int indice = elegirEstudio(jugador, e -> e.estado() == EstadoEstudio.EN_DESARROLLO, "Estudio para trabajar");
+                if (indice >= 0) motor.ejecutarAccion(new TrabajarAccion(indice));
             }
             case "5" -> usarHabilidad(jugador);
             case "6" -> {
-                mostrarCartas(jugador);
-                motor.partida().jugadores().forEach(this::mostrarEstudios);
+                vista.estado();
+                vista.mano(jugador);
             }
             case "7" -> motor.avanzarFase();
-            default -> System.out.println("Elige una opción entre 1 y 7.");
+            default -> salida.println("Elige una opción entre 1 y 7.");
         }
     }
 
     private void usarHabilidad(Jugador jugador) {
         var habilidad = jugador.personaje().habilidad();
+        if (habilidad instanceof PreDoctoralHabilidad || habilidad instanceof InvestigadorPrincipalHabilidad
+                || habilidad instanceof DecanaHabilidad) {
+            salida.println("Esta habilidad se aplica automáticamente: " + describirHabilidad(habilidad));
+            return;
+        }
+        motor.contexto().reglas().validarHabilidad(motor.contexto());
         if (habilidad instanceof EditorialHabilidad) {
-            mostrarEstudios(jugador);
-            motor.ejecutarAccion(new UsarHabilidadAccion(leerIndice("Estudio propio (3 monedas): ")));
-        } else if (habilidad instanceof PreDoctoralHabilidad
-                || habilidad instanceof InvestigadorPrincipalHabilidad || habilidad instanceof DecanaHabilidad) {
-            System.out.println("Esta habilidad se aplica automáticamente por el motor.");
+            int indice = elegirEstudio(jugador, e -> e.estado() == EstadoEstudio.EN_DESARROLLO, "Estudio propio (3 monedas)");
+            if (indice >= 0) motor.ejecutarAccion(new UsarHabilidadAccion(indice));
         } else if (habilidad instanceof EstadisticoHabilidad) {
-            mostrarEstudios(jugador);
-            motor.ejecutarAccion(new UsarHabilidadAccion(leerIndice("Artículo propio publicado: ")));
+            int indice = elegirEstudio(jugador, e -> e.estado() == EstadoEstudio.PUBLICADO, "Artículo propio publicado");
+            if (indice >= 0) motor.ejecutarAccion(new UsarHabilidadAccion(indice));
         } else if (habilidad instanceof ComiteEticaHabilidad) {
             var roles = motor.partida().mazoRoles().cartasIniciales();
-            for (int i = 0; i < roles.size(); i++) System.out.println((i + 1) + ". " + roles.get(i).nombre());
-            int indice = leerIndice("Rol que pierde el turno: ");
-            if (indice < 0 || indice >= roles.size()) throw new IllegalArgumentException("Rol no válido");
+            for (int i = 0; i < roles.size(); i++) salida.println((i + 1) + ". " + roles.get(i).nombre());
+            int indice = leerIndice("Rol que pierde el turno (0 para cancelar): ", roles.size());
             motor.ejecutarAccion(new UsarHabilidadAccion(roles.get(indice).nombre()));
         } else {
-            System.out.println("Jugadores: " + motor.partida().jugadores().stream().map(Jugador::nombre).toList());
-            Jugador objetivo = motor.contexto().buscarJugador(leer("Jugador objetivo: "));
-            if (objetivo == null) throw new IllegalArgumentException("No existe ese jugador");
+            var candidatos = motor.partida().jugadores().stream()
+                    .filter(j -> habilidad instanceof Revisor2Habilidad || j != jugador).toList();
+            if (candidatos.isEmpty()) { salida.println("No hay jugadores objetivo disponibles."); return; }
+            for (int i = 0; i < candidatos.size(); i++) {
+                salida.println((i + 1) + ". " + candidatos.get(i).nombre());
+            }
+            String elegido = leer("Jugador objetivo (número o nombre; 0 para cancelar): ");
+            Jugador objetivo = candidatos.stream().filter(j -> j.nombre().equalsIgnoreCase(elegido)).findFirst().orElse(null);
+            if (objetivo == null) {
+                try {
+                    int indice = Integer.parseInt(elegido) - 1;
+                    if (indice >= 0 && indice < candidatos.size()) objetivo = candidatos.get(indice);
+                } catch (NumberFormatException ignorado) { }
+            }
+            if (objetivo == null) throw new IllegalArgumentException("Elige un jugador de la lista");
             if (habilidad instanceof Revisor2Habilidad) {
-                mostrarEstudios(objetivo);
-                motor.ejecutarAccion(new UsarHabilidadAccion(objetivo.nombre(), leerIndice("Estudio (1 moneda): ")));
+                int indice = elegirEstudio(objetivo, e -> e.estado() == EstadoEstudio.EN_DESARROLLO
+                        && e.trabajoAcumulado() > 0, "Estudio para revisar (1 moneda)");
+                if (indice >= 0) motor.ejecutarAccion(new UsarHabilidadAccion(objetivo.nombre(), indice));
             } else {
                 motor.ejecutarAccion(new UsarHabilidadAccion(objetivo.nombre()));
             }
         }
     }
 
-    private void mostrarResumen(Jugador jugador) {
-        System.out.println(jugador.nombre() + ": " + jugador.monedas() + " monedas, "
-                + jugador.cartasIdea().size() + " cartas, " + jugador.cantidadPublicados()
-                + " publicaciones, " + jugador.prestigio() + " prestigio");
-    }
-
-    private void mostrarCartas(Jugador jugador) {
-        System.out.println("Cartas de " + jugador.nombre() + ":");
-        if (jugador.cartasIdea().isEmpty()) System.out.println("Sin cartas.");
-        for (int i = 0; i < jugador.cartasIdea().size(); i++) {
-            var carta = jugador.cartasIdea().get(i);
-            System.out.println((i + 1) + ". " + carta.nombre() + " | coste: " + carta.costeMonedas()
-                    + " | trabajo: " + carta.trabajoRequerido() + " | prestigio: " + carta.prestigio());
-        }
-    }
-
-    private void mostrarEstudios(Jugador jugador) {
-        System.out.println("Estudios de " + jugador.nombre() + ":");
-        if (jugador.estudios().isEmpty()) System.out.println("Sin estudios.");
+    private int elegirEstudio(Jugador jugador, Predicate<Estudio> valido, String mensaje) {
+        salida.println(mensaje + " - " + jugador.nombre() + ":");
+        var indices = new ArrayList<Integer>();
         for (int i = 0; i < jugador.estudios().size(); i++) {
-            var estudio = jugador.estudios().get(i);
-            System.out.println((i + 1) + ". " + estudio.carta().nombre() + " | trabajo: "
-                    + estudio.trabajoAcumulado() + "/" + estudio.carta().trabajoRequerido() + " | " + estudio.estado());
+            if (valido.test(jugador.estudios().get(i))) {
+                indices.add(i);
+                salida.println(vista.describirEstudio(jugador, i));
+            }
+        }
+        if (indices.isEmpty()) {
+            salida.println("No hay estudios válidos para esta acción.");
+            return -1;
+        }
+        while (true) {
+            int indice = leerIndice("Estudio (0 para cancelar): ", jugador.estudios().size());
+            if (indices.contains(indice)) return indice;
+            salida.println("Elige uno de los estudios que aparecen en la lista.");
         }
     }
 
-    private int leerIndice(String mensaje) {
-        try {
-            return Math.subtractExact(Integer.parseInt(leer(mensaje)), 1);
-        } catch (NumberFormatException | ArithmeticException error) {
-            throw new IllegalArgumentException("Introduce un número válido");
+    private int leerIndice(String mensaje, int cantidad) {
+        while (true) {
+            try {
+                int numero = Integer.parseInt(leer(mensaje));
+                if (numero >= 1 && numero <= cantidad) return numero - 1;
+            } catch (NumberFormatException ignorado) { }
+            salida.println("Introduce un número entre 1 y " + cantidad + ", o 0 para cancelar.");
         }
+    }
+
+    private String describirHabilidad(HabilidadPersonaje habilidad) {
+        if (habilidad instanceof ComiteEticaHabilidad) return "Debes nombrar un rol al inicio para vetarlo; una vez por turno.";
+        if (habilidad instanceof EstadisticoHabilidad) return "Añade 1 de prestigio a una publicación propia; una vez por turno.";
+        if (habilidad instanceof PlagiadorHabilidad) return "Intercambia tu mano con otro jugador; una vez por turno.";
+        if (habilidad instanceof InvestigadorPrincipalHabilidad) return "Roba una idea extra al inicio y elige primero la próxima ronda; automática.";
+        if (habilidad instanceof DecanaHabilidad) return "Inmunidad a habilidades rivales durante toda la ronda; automática.";
+        if (habilidad instanceof EditorialHabilidad) return "Cobra por publicaciones al inicio y compra trabajo por 3 monedas; compras repetibles.";
+        if (habilidad instanceof PreDoctoralHabilidad) return "La acción Trabajar aporta 2 puntos; automática.";
+        if (habilidad instanceof Revisor2Habilidad) return "Paga 1 moneda para retirar 1 de trabajo de un estudio; una vez por turno.";
+        return "Consulta las reglas de este personaje.";
+    }
+
+    private void mostrarAyuda() {
+        salida.println("\n=== AYUDA ===");
+        salida.println("En cada ronda, elige personaje por número. Sus números de orden determinan los turnos.");
+        salida.println("Cada turno admite hasta dos acciones base: cobrar, pensar, iniciar estudio o trabajar.");
+        salida.println("La habilidad no consume esas acciones. Usa 7 para terminar tu turno cuando lo decidas.");
+        salida.println("El Comité debe nombrar un rol antes de acceder al menú; cancelar deja esa decisión pendiente.");
+        salida.println("Se publica automáticamente al completar el trabajo. El tercer artículo cierra la partida al final de la ronda.");
+        salida.println("Gana quien tenga más prestigio; los empates comparten victoria.");
+        salida.println("Comandos disponibles en cualquier pregunta:");
+        salida.println("  ayuda | estado | mano | estudios | historial");
+        salida.println("  cancelar / volver / 0: volver al menú sin ejecutar la acción pendiente");
+        salida.println("  guardar [nombre] | cargar [nombre] | guardados: copias en memoria de esta sesión");
+        salida.println("  exportar [archivo] | importar [archivo]: archivos JSON para continuar otro día");
+        salida.println("  salir: cerrar; se pierden los guardados en memoria, pero se conservan los archivos");
+        salida.println("Sin nombre se usa principal. Sin archivo se usa partida.json en la carpeta del proyecto.");
+        salida.println("Esta consola comparte pantalla: pasa el teclado al jugador indicado y evita mostrar su mano a los demás.");
     }
 
     private String leer(String mensaje) {
-        System.out.print(mensaje);
+        salida.print(mensaje);
         if (!entrada.hasNextLine()) throw new FinEntrada();
         String texto = entrada.nextLine().trim();
         if (texto.equalsIgnoreCase("salir")) throw new FinEntrada();
+        procesarComando(texto);
         return texto;
     }
 
+    private void procesarComando(String texto) {
+        String[] partes = texto.split("\\s+", 2);
+        String comando = partes[0].toLowerCase(Locale.ROOT);
+        String argumento = partes.length == 2 ? partes[1].trim() : "";
+        try {
+            switch (comando) {
+                case "ayuda" -> mostrarAyuda();
+                case "estado" -> vista.estado();
+                case "mano" -> vista.mano(motor.contexto().jugadorActual());
+                case "estudios" -> motor.partida().jugadores().forEach(vista::estudios);
+                case "cancelar", "volver", "0" -> salida.println("Selección cancelada. No se ha realizado ninguna acción.");
+                case "guardar" -> {
+                    String nombre = argumento.isEmpty() ? "principal" : argumento;
+                    guardados.guardar(nombre, motor.guardarPartida());
+                    salida.println("Guardado en memoria: " + nombre);
+                }
+                case "cargar" -> {
+                    motor.recuperarPartida(guardados.cargar(argumento.isEmpty() ? "principal" : argumento));
+                    salida.println("Partida recuperada.");
+                }
+                case "guardados" -> salida.println("Guardados en memoria: " + guardados.nombres());
+                case "historial" -> motor.historial().forEach(e -> salida.println(
+                        e.numero() + " | " + e.fecha() + " | " + e.tipo() + " | " + e.datos()));
+                case "exportar" -> {
+                    Path archivo = Path.of(argumento.isEmpty() ? "partida.json" : argumento);
+                    json.escribir(archivo, motor.guardarPartida());
+                    salida.println("Partida exportada a " + archivo.toAbsolutePath());
+                }
+                case "importar" -> {
+                    Path archivo = Path.of(argumento.isEmpty() ? "partida.json" : argumento);
+                    motor.recuperarPartida(json.leer(archivo));
+                    salida.println("Partida importada.");
+                }
+                default -> { return; }
+            }
+        } catch (IOException error) {
+            salida.println("No se pudo acceder al archivo: " + error.getMessage());
+        }
+        throw new ComandoAtendido();
+    }
+
     private static final class FinEntrada extends RuntimeException {}
+    private static final class ComandoAtendido extends RuntimeException {}
 }

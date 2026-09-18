@@ -19,6 +19,16 @@ public class Jugador {
         this.estudios = new ArrayList<>();
     }
 
+    static Jugador restaurar(InstantaneaPartida.JugadorDatos datos, Personaje personaje) {
+        Jugador jugador = new Jugador(datos.nombre());
+        jugador.monedas = datos.monedas();
+        jugador.prestigio = datos.prestigio();
+        jugador.personaje = personaje;
+        datos.mano().forEach(c -> jugador.cartasIdea.add(c.crear()));
+        datos.estudios().forEach(e -> jugador.estudios.add(Estudio.restaurar(e)));
+        return jugador;
+    }
+
     public String nombre() {
         return nombre;
     }

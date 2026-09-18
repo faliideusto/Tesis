@@ -28,6 +28,8 @@ public class TrabajarAccion extends AccionBase {
         jugador.trabajarEstudio(indiceEstudio, puntosTrabajo);
         contexto.publicarEvento("accion.trabajar", java.util.Map.of(
                 "jugador", jugador.nombre(),
+                "articulo", estudio.carta().nombre(),
+                "prestigio", estudio.carta().prestigio(),
                 "trabajo", puntosTrabajo,
                 "estado", estudio.estado().name()
         ));

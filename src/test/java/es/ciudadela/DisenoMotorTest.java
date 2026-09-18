@@ -19,8 +19,12 @@ class DisenoMotorTest {
     }
 
     private void seleccionar(MotorJuego motor) {
-        motor.ejecutarAccion(new SeleccionarPersonajeAccion(0));
-        motor.ejecutarAccion(new SeleccionarPersonajeAccion(0));
+        for (int i = 0; i < 2; i++) {
+            var roles = motor.partida().mazoRoles().cartas();
+            int indice = 0;
+            while (roles.get(indice).habilidad().requiereResolucionAlInicio()) indice++;
+            motor.ejecutarAccion(new SeleccionarPersonajeAccion(indice));
+        }
     }
 
     @Test void contextoIndependienteYAccionSinDependenciaDelMotorConcreto() {

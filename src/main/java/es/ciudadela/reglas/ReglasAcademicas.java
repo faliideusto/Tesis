@@ -109,8 +109,22 @@ public class ReglasAcademicas implements ReglasJuego {
     @Override
     public void validarAccionBase(ContextoJuego contexto) {
         validarTurno(contexto);
+        validarHabilidadInicialResuelta(contexto);
         if (contexto.partida().accionesBaseRealizadas() >= 2) {
             throw new IllegalStateException("Ya se han realizado las dos acciones del turno");
+        }
+    }
+
+    @Override
+    public void validarFinTurno(ContextoJuego contexto) {
+        validarTurno(contexto);
+        validarHabilidadInicialResuelta(contexto);
+    }
+
+    private void validarHabilidadInicialResuelta(ContextoJuego contexto) {
+        if (contexto.jugadorActual().personaje().habilidad().requiereResolucionAlInicio()
+                && !contexto.partida().habilidadUsada()) {
+            throw new IllegalStateException("Debes resolver la habilidad inicial antes de actuar o terminar el turno");
         }
     }
 

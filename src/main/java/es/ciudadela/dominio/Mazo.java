@@ -14,6 +14,13 @@ public class Mazo<T extends Carta> {
         this.cartasIniciales = new ArrayList<>(cartas);
     }
 
+    static <T extends Carta> Mazo<T> restaurar(List<T> iniciales, List<T> disponibles) {
+        Mazo<T> mazo = new Mazo<>(iniciales);
+        mazo.cartas.clear();
+        mazo.cartas.addAll(disponibles);
+        return mazo;
+    }
+
     public boolean estaVacio() {
         return cartas.isEmpty();
     }

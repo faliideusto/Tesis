@@ -15,6 +15,7 @@ export function board(state) {
     </section>`;
   const me = state.jugadores.find(p => p.nombre === state.actual);
   const others = state.jugadores.filter(p => p !== me);
+  document.getElementById('board').dataset.players = state.jugadores.length;
   document.getElementById('board').classList.toggle('privacy', state.bloqueada);
   update('turn-panel', `<span>RONDA ${state.ronda}${state.ultimaRonda ? ' · ÚLTIMA' : ''}</span><strong>${state.fase === 'SELECCION_ROLES' ? 'ELIGE ' : state.fase === 'FIN_PARTIDA' ? 'PARTIDA FINALIZADA' : state.fase === 'FIN_RONDA' ? 'CIERRE DE RONDA' : 'TURNO DE '}${['SELECCION_ROLES','TURNO_JUGADOR'].includes(state.fase) ? esc(state.actual) : ''}</strong>`);
   document.getElementById('rivals').dataset.count = others.length;
@@ -23,10 +24,12 @@ export function board(state) {
     <div class="table-seal"><span>CIUDADELA</span><b>El conocimiento<br>deja huella.</b><span>ACADÉMICA</span></div>
     <div class="deck idea-deck ${state.ideas === 0 ? 'exhausted' : ''}">${img('ui/marco_mazo.png','deck-base')}${img('cartas/reverso_idea.png','deck-back')}<b class="deck-count">${state.ideas}</b><span>IDEAS${state.ideas === 0 ? ' · AGOTADO' : ''}</span></div>`);
   update('local', localPlayer(me, state)); update('studies', studies(me));
+  document.getElementById('studies').classList.toggle('no-studies', !me.estudios.length);
+  document.getElementById('hand').style.setProperty('--hand-count', Math.max(1,state.mano.length));
   update('hand-count', `${state.mano.length} cartas`);
   update('hand', state.mano.map(c => ideaCard(c)).join('') || '<p class="empty-hand">Sin ideas en la mano<br><small>Consulta las acciones disponibles.</small></p>');
   update('phase-message', state.aviso ? `<div class="table-notice">${esc(state.aviso)}</div>` : state.habilidadPendiente ? '<div class="table-notice">Comité de Ética: debes nombrar un rol antes de actuar.</div>' : '');
   update('action-hint', state.fase === 'TURNO_JUGADOR' ? state.habilidadPendiente ? 'RESUELVE TU HABILIDAD INICIAL' : state.accionesRestantes ? 'ELIGE TU PRÓXIMO PASO' : 'ACCIONES AGOTADAS · PUEDES USAR TU HABILIDAD O TERMINAR' : 'INVESTIGA · PUBLICA · TRASCIENDE');
   update('actions', state.acciones.map(a => `<button class="action-button ${a.id === 'FIN_TURNO' ? 'end-turn' : ''} ${a.id === 'HABILIDAD' ? 'ability-action' : ''}" data-command="action" data-action="${a.id}" ${!a.disponible ? 'disabled' : ''} data-tip="${esc(a.disponible ? a.descripcion : a.motivo)}">
-    ${img(icons[a.id] ? `acciones/${icons[a.id]}.png` : a.id === 'HABILIDAD' ? 'recursos/prestigio.png' : 'acciones/finalizar_turno.png')}<span>${esc(a.nombre)}</span></button>`).join(''));
+    <span class="action-content">${img(icons[a.id] ? `acciones/${icons[a.id]}.png` : a.id === 'HABILIDAD' ? 'recursos/prestigio.png' : 'acciones/finalizar_turno.png')}<span class="action-label">${esc(a.nombre)}</span></span></button>`).join(''));
 }

@@ -85,16 +85,8 @@ mvn package
 mvn compile exec:java
 ```
 
-Resultado: `mvn clean test` completó **93 pruebas sin fallos ni errores** (75 originales + 18 nuevas). Después, `mvn -DskipTests package` generó el JAR correctamente. Se verificaron además la sintaxis y los enlaces entre todos los módulos ES con `vm.SourceTextModule`. La API en `localhost:8080` respondió durante el arranque real. No se completó la revisión visual interactiva: el controlador de Windows se detuvo porque no pudo verificar la URL actual del navegador con suficiente certeza, incluso después de reintentar con la pestaña abierta manualmente. Por ello no se afirma que el acabado visual haya superado una inspección de pantalla.
-
-Comprobaciones visuales pendientes, a 1920×1080 y 1366×768:
-
-1. Crear una mesa de dos personas y otra de cinco, incluyendo nombres de 24 caracteres.
-2. Verificar la pantalla de relevo, escoger personajes y confirmar que no se muestra la mano siguiente antes de continuar.
-3. Cobrar, pensar, abrir una idea y pagar un estudio, trabajar hasta publicar, seleccionar objetivos de habilidades y terminar la ronda.
-4. Comprobar cartas comunes/raras/épicas, modales con siete roles, manos grandes, estudios con scroll, tooltips y controles con teclado.
-5. Comprobar que no hay solapamientos, imágenes rotas, errores de consola ni desbordamiento horizontal; repetir con movimiento reducido y ventana estrecha.
+Resultado de la segunda pasada: **93 pruebas sin fallos ni errores**, compilación y empaquetado correctos. La revisión visual sí se completó con Chrome real en modo headless, incluyendo tres resoluciones, partidas reales y capturas. Véase [UI-REVISION.md](UI-REVISION.md) para componentes, pruebas y límites.
 
 ## Archivos originales modificados
 
-`pom.xml`: entrada web por defecto, entrada CLI seleccionable y Surefire explícito. `README.md`: arranque, arquitectura y límites web; se conserva la documentación del CLI corrigiendo sus comandos. `tareas.md`: estado del trabajo web y revisión visual pendiente. No se tocan los PNG ni las referencias aportadas por el usuario.
+`pom.xml`: entrada web por defecto, entrada CLI seleccionable y Surefire explícito. `README.md`: arranque, arquitectura y límites web; se conserva la documentación del CLI corrigiendo sus comandos. `tareas.md`: estado del trabajo web y revisión visual completada. No se tocan los PNG ni las referencias aportadas por el usuario.

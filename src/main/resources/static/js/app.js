@@ -2,7 +2,7 @@ import {api} from './api.js';
 import {img, esc} from './dom.js';
 import {board} from './board.js';
 import {ideaCard, roleCard} from './cards.js';
-import {studies} from './players.js';
+import {studies, studyRow} from './players.js';
 import {dialog, closeDialog, phaseDialog} from './dialogs.js';
 import {notify, feedback} from './feedback.js';
 
@@ -57,7 +57,11 @@ function chooseAction(id) {
   pendingAction = action;
   let content;
   if (id === 'INICIAR') content = `<div class="idea-selection">${state.mano.map(c => ideaCard(c,{command:'start-choice',disabled:!action.opciones.some(o => o.indice === c.indice)})).join('')}</div>`;
-  else content = `<div class="target-list">${action.opciones.map((o,i) => `<button class="target-button" data-command="target" data-index="${i}">${esc(o.etiqueta)}<span>Seleccionar</span></button>`).join('')}</div>`;
+  else if (id === 'TRABAJAR') {
+    const player = state.jugadores.find(p => p.nombre === state.actual);
+    const allowed = new Set(action.opciones.map(o => o.indice));
+    content = `<div class="study-selector">${player.estudios.filter(e => allowed.has(e.indice)).map(e => studyRow(e, player.nombre, {selection:true})).join('')}</div>`;
+  } else content = `<div class="target-list">${action.opciones.map((o,i) => `<button class="target-button" data-command="target" data-index="${i}">${esc(o.etiqueta)}<span>Seleccionar</span></button>`).join('')}</div>`;
   dialog(action.nombre, `<p class="decision-copy">${esc(action.descripcion)}</p>${content}`, {wide:id === 'INICIAR'});
 }
 function inspect(c, study = null, player = null) {

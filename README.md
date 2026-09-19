@@ -58,7 +58,7 @@ mvn clean test
 
 Resultado verificado: **93 pruebas, 0 fallos, 0 errores** con `mvn clean test`. Se conservan las 75 pruebas originales y se añaden 18 casos de sesiones, DTOs privados, tamaños válidos, turnos, selección, validación, habilidades, publicación, final de partida y HTTP real en puerto efímero. Se comprueban también recursos estáticos, UTF-8, aislamiento de sesiones, versiones obsoletas y peticiones inválidas. `mvn -DskipTests package` también genera el JAR correctamente tras pasar los tests.
 
-La sintaxis de los ocho módulos JavaScript se ha comprobado. **La revisión visual interactiva no pudo completarse:** el controlador de Windows se detuvo al no poder identificar con suficiente certeza la URL del navegador. No debe confundirse esta limitación con las pruebas automatizadas de Java/HTTP, que sí se ejecutan. Hay una lista de comprobación manual en [docs/WEB.md](docs/WEB.md).
+La segunda pasada de UI/UX se verificó visualmente con Chrome a 1920×1080, 1600×900 y 1366×768, con partidas reales y capturas. Consulta los cambios, evidencia y límites en [docs/UI-REVISION.md](docs/UI-REVISION.md).
 
 ## Modo terminal conservado
 

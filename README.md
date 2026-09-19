@@ -21,11 +21,11 @@ mvn compile exec:java "-Dexec.args=8090"
 
 La mesa se configura con nombres y cantidad de participantes. Es un juego local de pantalla compartida: entrega el control a la persona indicada antes de pulsar «continuar». No hay IA ni multijugador online.
 
-- El catálogo existente admite **1–5 personas**: ocho roles, un descarte y diez ideas con reparto de dos por persona. Una persona permite practicar el mismo motor. La distribución visual está preparada para siete, pero seis y siete se deshabilitan por falta de ideas.
+- El catálogo admite **1–7 personas**: ocho roles, un descarte y siete tipos de idea. Cada persona recibe dos cartas aleatorias. Los siete tipos permanecen en el mazo tras cada robo, por lo que pueden repetirse y nunca se agotan.
 - Elige personaje, realiza hasta dos acciones, utiliza su habilidad cuando corresponda y termina el turno. El trabajo publica automáticamente. Al alcanzar tres publicaciones se termina la ronda y se calcula la victoria por prestigio.
 - Las manos ajenas no se envían al navegador. En cada relevo se retira la información privada hasta que el siguiente participante continúa. Esto es privacidad de presentación en una mesa compartida, no autenticación individual.
 - Recargar recupera la mesa de la sesión y vuelve a ocultar la mano. Las mesas viven en memoria; se pierden al detener el servidor y caducan tras 24 horas sin actividad. La web todavía no importa ni exporta guardados; el CLI conserva ambas funciones.
-- **Limitación del motor conservada:** las ideas no se reciclan. Una distribución sin posibilidad de alcanzar tres publicaciones puede bloquear el final, especialmente con cinco personas. La web avisa cuando se agotan todas las ideas y estudios sin cumplir el umbral; no inventa un cierre alternativo.
+- El mazo contiene únicamente los siete artículos del informe: Ecológico, Transversal, Casos y Controles, Cohortes, Ensayo Clínico Aleatorizado, Ensayo Comunitario y Revisión Sistemática.
 
 ## Arquitectura web
 
@@ -56,7 +56,7 @@ Los POST usan JSON y cabecera `X-Ciudadela: 1`. Las mutaciones de una partida re
 mvn clean test
 ```
 
-Resultado verificado: **93 pruebas, 0 fallos, 0 errores** con `mvn clean test`. Se conservan las 75 pruebas originales y se añaden 18 casos de sesiones, DTOs privados, tamaños válidos, turnos, selección, validación, habilidades, publicación, final de partida y HTTP real en puerto efímero. Se comprueban también recursos estáticos, UTF-8, aislamiento de sesiones, versiones obsoletas y peticiones inválidas. `mvn -DskipTests package` también genera el JAR correctamente tras pasar los tests.
+Resultado verificado tras corregir el mazo: **99 pruebas, 0 fallos, 0 errores** con `mvn test`. Incluye el catálogo de siete artículos y sus valores, mil robos sin agotamiento, reparto para uno a siete jugadores, guardado y recuperación, habilidades, final de partida y HTTP real en puerto efímero.
 
 La segunda pasada de UI/UX se verificó visualmente con Chrome a 1920×1080, 1600×900 y 1366×768, con partidas reales y capturas. Consulta los cambios, evidencia y límites en [docs/UI-REVISION.md](docs/UI-REVISION.md).
 
@@ -137,7 +137,7 @@ Durante el turno se muestran los recursos del jugador, su personaje, las accione
 | Número | Acción | Uso |
 | --- | --- | --- |
 | 1 | Cobrar | Recibe dos monedas. |
-| 2 | Pensar | Roba una carta de idea, si quedan cartas. |
+| 2 | Pensar | Roba una carta de idea aleatoria sin reducir el mazo. |
 | 3 | Iniciar estudio | Elige una carta de tu mano por número y paga su coste. |
 | 4 | Trabajar | Elige un estudio propio en desarrollo. |
 | 5 | Usar habilidad | Sigue las preguntas de tu personaje para elegir el objetivo. |
@@ -157,7 +157,7 @@ Escribe `0`, `cancelar` o `volver` para abandonar una selección sin ejecutar la
 | Comité de Ética | La consola pide obligatoriamente un rol al inicio, antes del menú de acciones. El jugador que lo tenga pierde su turno si no es inmune. Nombrar un rol no elegido consume la habilidad sin efecto. Cancelar deja la decisión pendiente: no puedes actuar ni terminar el turno hasta resolverla. |
 | Estadístico | Opción 5: selecciona uno de tus artículos publicados para añadir un punto de prestigio. |
 | Plagiador | Opción 5: elige otro jugador por número o nombre para intercambiar las manos. |
-| Investigador Principal | Automática: roba una idea extra al inicio, si queda alguna, y elige primero la siguiente ronda. |
+| Investigador Principal | Automática: roba una idea aleatoria extra al inicio, y elige primero la siguiente ronda. |
 | Decana | Automática: inmunidad a habilidades rivales durante toda la ronda. |
 | Editorial | Cobra automáticamente por las publicaciones al iniciar el turno. Con la opción 5 compra un punto de trabajo en un estudio propio por tres monedas. Puede repetir la compra. |
 | Pre-Doctoral | Automática: la opción 4 aporta dos puntos de trabajo. |

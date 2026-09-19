@@ -18,10 +18,9 @@ public final class SesionJuego {
     private final List<Vistas.Evento> eventos = new ArrayList<>();
 
     public static Vistas.Configuracion configuracion() {
-        int maximo = Math.min(FabricaMazos.crearRoles().cartas().size() - 1,
-                FabricaMazos.crearIdeas().cartas().size() / new ReglasAcademicas().cartasIdeaIniciales());
+        int maximo = FabricaMazos.crearRoles().cartas().size() - 1;
         return new Vistas.Configuracion(1, Math.min(7, maximo), 7,
-                "El mazo actual tiene 10 ideas y reparte 2 por persona: admite hasta 5 jugadores. No hay IA. Con 5 jugadores, la distribución de cartas puede impedir que alguien publique 3 artículos.");
+                "El mazo mantiene siempre los 7 tipos de idea. Se reparten 2 cartas aleatorias por persona y cada robo puede repetir un tipo. Admite hasta 7 jugadores. No hay IA.");
     }
 
     public synchronized Vistas.Estado crear(List<String> nombres) {

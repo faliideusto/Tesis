@@ -15,7 +15,7 @@ class SesionJuegoTest {
             var juego = new SesionJuego();
             var s = juego.crear(List.of("Ana")); s = juego.revelar(s.revision());
             var elegido = s.seleccion().stream().filter(r -> r.orden()==orden).findFirst();
-            if(elegido.isPresent()) {
+            if(elegido.isPresent() && s.mano().get(0).nombre().equals(orden == 8 ? "Casos y Controles" : "Artículo Ecológico")) {
                 s=action(juego,s,"SELECCIONAR",elegido.get().indice(),null);
                 return new Mesa(juego,juego.revelar(s.revision()));
             }
@@ -34,13 +34,13 @@ class SesionJuegoTest {
         return s.bloqueada() ? juego.revelar(s.revision()) : s;
     }
 
-    @ParameterizedTest @ValueSource(ints={1,2,3,4,5})
+    @ParameterizedTest @ValueSource(ints={1,2,3,4,5,6,7})
     void creaTodosLosTamanyosValidosSinAlterarElMazo(int cantidad) {
         var juego = new SesionJuego();
         var nombres = java.util.stream.IntStream.range(0,cantidad).mapToObj(i -> "Persona " + i).toList();
         var s = juego.crear(nombres);
         assertEquals(cantidad,s.jugadores().size());
-        assertEquals(10-2*cantidad,s.ideas());
+        assertEquals(7,s.ideas());
         assertEquals(7,s.roles());
         assertTrue(s.bloqueada()); assertTrue(s.mano().isEmpty()); assertTrue(s.seleccion().isEmpty());
         assertTrue(s.jugadores().stream().allMatch(j -> j.monedas()==2 && j.cartas()==2 && j.rol()==null));
@@ -48,7 +48,7 @@ class SesionJuegoTest {
 
     @Test void rechazaConfiguracionesInvalidasSinSustituirLaMesa() {
         var juego = new SesionJuego(); var original = juego.crear(List.of("Ana","Bruno"));
-        for (var nombres : List.of(List.<String>of(),List.of("Ana","ANA"),List.of(" ","B"),List.of("A","B","C","D","E","F")))
+        for (var nombres : List.of(List.<String>of(),List.of("Ana","ANA"),List.of(" ","B"),List.of("A","B","C","D","E","F","G","H")))
             assertThrows(IllegalArgumentException.class,() -> juego.crear(nombres));
         assertEquals(original,juego.estado());
     }
@@ -127,7 +127,7 @@ class SesionJuegoTest {
             if (s.fase().equals("FIN_RONDA")) { finRonda=true; s=action(juego,s,"SIGUIENTE_RONDA",null,null); continue; }
             var acciones = s.acciones();
             Vistas.Accion elegida = null;
-            for(String id:List.of("TRABAJAR","INICIAR","PENSAR","COBRAR","FIN_TURNO")) {
+            for(String id:s.mano().isEmpty() ? List.of("TRABAJAR","PENSAR","COBRAR","FIN_TURNO") : List.of("TRABAJAR","INICIAR","COBRAR","FIN_TURNO")) {
                 elegida=acciones.stream().filter(a -> a.id().equals(id) && a.disponible()).findFirst().orElse(null);
                 if(elegida!=null) break;
             }
@@ -181,8 +181,8 @@ class SesionJuegoTest {
 
     @Test void revisorMantieneObjetivoEIndiceYRechazaTrabajoInexistente() {
         var mesa=conRol(8); var juego=mesa.juego(); var s=mesa.estado();
-        s=action(juego,s,"PENSAR",null,null); // Casos y Controles requiere dos puntos.
-        s=action(juego,s,"INICIAR",2,null);
+        s=action(juego,s,"PENSAR",null,null);
+        s=action(juego,s,"INICIAR",0,null);
         s=action(juego,s,"FIN_TURNO",null,null); s=action(juego,s,"SIGUIENTE_RONDA",null,null);
         // Esperar una ronda en la que el Revisor no se descarte, sin alterar el mazo.
         for(int ronda=0;ronda<100;ronda++) {

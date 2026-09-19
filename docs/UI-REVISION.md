@@ -40,4 +40,4 @@ Las pruebas de componentes usaron exclusivamente DOM temporal en el navegador de
 
 ## Límites
 
-La validación visual se realizó en Chrome de escritorio; no es una certificación de otros navegadores ni de móvil. En ventanas de poca altura, los modales con varias filas de personajes requieren scroll. No se completó una partida hasta victoria desde el navegador en esta pasada; esa ruta está cubierta por las pruebas Java existentes. El máximo real continúa siendo cinco jugadores y se conserva la limitación del mazo finito.
+La validación visual se realizó en Chrome de escritorio; no es una certificación de otros navegadores ni de móvil. En ventanas de poca altura, los modales con varias filas de personajes requieren scroll. No se completó una partida hasta victoria desde el navegador en esta pasada; esa ruta está cubierta por las pruebas Java existentes. Esta revisión visual se realizó antes del cambio al mazo inagotable de siete tipos de idea, que ahora permite hasta siete jugadores.

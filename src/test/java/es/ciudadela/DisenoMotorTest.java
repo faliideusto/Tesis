@@ -91,10 +91,10 @@ class DisenoMotorTest {
         assertEquals(8, roles.cartas().size());
         var ideas = FabricaMazos.crearIdeas();
         var otrasIdeas = FabricaMazos.crearIdeas();
-        assertEquals(10, ideas.cartas().size());
+        assertEquals(7, ideas.cartas().size());
         assertNotSame(ideas.cartas().get(0), otrasIdeas.cartas().get(0));
         ideas.robar();
-        assertEquals(10, otrasIdeas.cartas().size());
+        assertEquals(7, otrasIdeas.cartas().size());
     }
 
     @Test void coleccionesDevueltasNoPermitenEscrituraNiCambianConElOriginal() {
@@ -103,7 +103,7 @@ class DisenoMotorTest {
         var cartas = partida.mazoIdeas().cartas();
         assertThrows(UnsupportedOperationException.class, cartas::clear);
         partida.mazoIdeas().robar();
-        assertEquals(10, cartas.size());
+        assertEquals(7, cartas.size());
         var jugador = partida.jugadores().get(0);
         var mano = jugador.cartasIdea();
         jugador.añadirCartaIdea(cartas.get(0));

@@ -49,23 +49,15 @@ Se utilizan logo, reversos, marcos de personajes y artículos, marco de mazo, pa
 
 Rarezas: prestigio 1–3 común, 4–6 raro, 7–9 épico. El catálogo actual solo utiliza valores dentro de esos rangos. Como degradación visual para futuras cartas, 0 usaría común y >9 épico, sin asignar nombres nuevos de rareza ni cambiar reglas.
 
-Tres cartas reales no tienen ilustración específica. Correspondencias artísticas reutilizadas:
-
-| Carta | Ilustración reutilizada |
-| --- | --- |
-| Serie de Casos | Casos y Controles |
-| Metaanálisis | Revisión Sistemática |
-| Estudio Piloto | Artículo Ecológico |
-
-Sus nombres, costes, trabajo y prestigio siguen siendo los del motor. En particular, Ensayo Comunitario cuesta **8**, requiere **4** de trabajo y otorga **9** de prestigio; se ignoran las cifras del mockup. No se inventa una pila de descarte de ideas porque el motor no la tiene. La cantidad del mazo de personajes es la de roles aún disponibles, excluyendo el descartado y los elegidos.
+Cada uno de los siete tipos de artículo del informe tiene su ilustración específica. En particular, Ensayo Comunitario cuesta **8**, requiere **4** de trabajo y otorga **9** de prestigio; se ignoran las cifras del mockup. No se inventa una pila de descarte de ideas porque el motor no la tiene. La cantidad del mazo de personajes es la de roles aún disponibles, excluyendo el descartado y los elegidos.
 
 No hay assets de audio y no se han descargado ni generado sonidos.
 
 ## Límites del catálogo y del motor
 
-- Ocho personajes y diez ideas, una sola copia de cada idea. Reparto fijo de dos por persona. El máximo efectivo es cinco. La API obtiene el máximo de los mazos y las reglas, no del mockup.
-- No se barajan las ideas: se conserva el orden de la fábrica. El motor sí aleatoriza el selector inicial y el descarte de rol.
-- Las ideas no se reciclan. Con cinco jugadores puede producirse un bloqueo sin tres publicaciones, aunque el Plagiador permite redistribuir manos mientras todavía hay cartas. El aviso web detecta el caso definitivo en el que ya no quedan ideas ni estudios en desarrollo y nadie cumple el umbral. No se añade final por agotamiento ni por número de rondas.
+- Ocho personajes y siete tipos de idea. Se reparten dos cartas aleatorias por persona y se admiten hasta siete jugadores.
+- Cada robo de idea elige al azar entre los siete tipos, con reposición: el catálogo permanece completo y no se agota. Esto también se aplica al Investigador Principal. Los guardados nuevos conservan este comportamiento; los antiguos mantienen su estado previo.
+- El selector inicial y el descarte de rol también son aleatorios. Los personajes se retiran al elegirlos, como antes.
 - No hay límite de estudios en curso: la supuesta habilidad «dos estudios adicionales» del mockup no corresponde al Investigador Principal real.
 - El trabajo es progreso de cada estudio, no una reserva gastable del jugador. No se muestra un saldo inventado.
 - La web conserva la sesión en memoria al recargar, pero no exporta/importa archivos. Estas funciones siguen disponibles en el CLI. No hay IA, cuentas ni juego entre dispositivos.

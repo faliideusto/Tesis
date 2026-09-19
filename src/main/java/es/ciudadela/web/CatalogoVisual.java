@@ -12,9 +12,7 @@ final class CatalogoVisual {
         Map.entry("Casos y Controles", "03_casos_controles"), Map.entry("Cohortes", "04_cohortes"),
         Map.entry("Revisión Sistemática", "05_revision_sistematica"),
         Map.entry("Ensayo Clínico Aleatorizado", "06_ensayo_clinico_aleatorizado"),
-        Map.entry("Ensayo Comunitario", "07_ensayo_comunitario"),
-        Map.entry("Serie de Casos", "03_casos_controles"), Map.entry("Metaanálisis", "05_revision_sistematica"),
-        Map.entry("Estudio Piloto", "01_ecologico"));
+        Map.entry("Ensayo Comunitario", "07_ensayo_comunitario"));
 
     static Vistas.Carta carta(IdeaCarta c, int indice) {
         String marco = c.prestigio() <= 3 ? "comun" : c.prestigio() <= 6 ? "raro" : "epico";

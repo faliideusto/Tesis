@@ -164,7 +164,7 @@ public class Partida {
                 mazoRoles.cartas().stream().map(Personaje::ordenTurno).toList(),
                 mazoIdeas.cartasIniciales().stream().map(InstantaneaPartida.IdeaDatos::de).toList(),
                 mazoIdeas.cartas().stream().map(InstantaneaPartida.IdeaDatos::de).toList(), mesa,
-                faseActual, ronda, indiceJugadorActual, accionesBaseRealizadas, habilidadUsada);
+                faseActual, ronda, indiceJugadorActual, accionesBaseRealizadas, habilidadUsada, mazoIdeas.esInagotable());
     }
 
     /** Reconstruye datos ya jugados sin ejecutar reparto, descarte ni efectos de turno. */
@@ -213,7 +213,7 @@ public class Partida {
             throw new IllegalArgumentException("La partida guardada no cumple la condición de fin");
         }
         Partida partida = new Partida(jugadores, Mazo.restaurar(new ArrayList<>(roles.values()), disponibles),
-                Mazo.restaurar(datos.ideasIniciales().stream().map(InstantaneaPartida.IdeaDatos::crear).toList(),
+                datos.ideasInagotables() ? FabricaMazos.crearIdeas() : Mazo.restaurar(datos.ideasIniciales().stream().map(InstantaneaPartida.IdeaDatos::crear).toList(),
                         datos.ideasDisponibles().stream().map(InstantaneaPartida.IdeaDatos::crear).toList()));
         Set<InstantaneaPartida.EstudioEnMesa> mesa = new HashSet<>();
         for (var posicion : datos.mesa()) {

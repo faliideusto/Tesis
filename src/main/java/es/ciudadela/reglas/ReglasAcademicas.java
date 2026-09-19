@@ -67,7 +67,8 @@ public class ReglasAcademicas implements ReglasJuego {
             }
         }
         if (candidata.mazoIdeas() == null
-                || candidata.mazoIdeas().cartas().size() < candidata.jugadores().size() * cartasIdeaIniciales()) {
+                || (!candidata.mazoIdeas().esInagotable()
+                    && candidata.mazoIdeas().cartas().size() < candidata.jugadores().size() * cartasIdeaIniciales())) {
             throw new IllegalArgumentException("No hay ideas suficientes para el reparto inicial");
         }
     }

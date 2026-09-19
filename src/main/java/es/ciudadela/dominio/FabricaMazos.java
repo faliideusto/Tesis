@@ -14,11 +14,8 @@ public final class FabricaMazos {
                 new IdeaCarta("Cohortes", 3, 3, 5),
                 new IdeaCarta("Ensayo Clínico Aleatorizado", 4, 4, 7),
                 new IdeaCarta("Ensayo Comunitario", 8, 4, 9),
-                new IdeaCarta("Revisión Sistemática", 2, 5, 6),
-                new IdeaCarta("Serie de Casos", 1, 2, 2),
-                new IdeaCarta("Metaanálisis", 4, 4, 8),
-                new IdeaCarta("Estudio Piloto", 1, 1, 1)
-        ));
+                new IdeaCarta("Revisión Sistemática", 2, 5, 6)
+        ), true);
 
     }
     public static Mazo<Personaje> crearRoles() {

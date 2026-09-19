@@ -7,7 +7,7 @@ import java.util.*;
 public record InstantaneaPartida(List<JugadorDatos> jugadores, List<RolDatos> rolesIniciales,
         List<Integer> rolesDisponibles, List<IdeaDatos> ideasIniciales, List<IdeaDatos> ideasDisponibles,
         List<EstudioEnMesa> mesa, FaseDeTurno fase, int ronda, int jugadorActual,
-        int accionesRealizadas, boolean habilidadUsada) {
+        int accionesRealizadas, boolean habilidadUsada, boolean ideasInagotables) {
     public InstantaneaPartida {
         jugadores = List.copyOf(jugadores);
         rolesIniciales = List.copyOf(rolesIniciales);

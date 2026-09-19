@@ -14,7 +14,7 @@ function home() {
   app.innerHTML = `<section class="home-screen"><nav class="home-nav"><span>UNA MESA. MUCHAS IDEAS.</span><button class="text-button" data-command="help">Cómo jugar</button></nav>
     <div class="home-copy">${img('Logo/logo_ciudadela_academica.png','home-logo','Ciudadela Académica')}<span class="eyebrow">EL CONOCIMIENTO DEJA HUELLA</span>
     <h1>Construye tu<br><em>legado académico.</em></h1><p>Reúne ideas, asume un personaje y convierte tus estudios en publicaciones. La academia recordará a quien alcance el mayor prestigio.</p>
-    <div class="home-features"><span>8 personajes</span><span>10 ideas</span><span>Una mesa compartida</span></div></div>
+    <div class="home-features"><span>8 personajes</span><span>7 tipos de idea</span><span>Una mesa compartida</span></div></div>
     <section class="setup-panel"><span class="eyebrow">LAS PUERTAS ESTÁN ABIERTAS</span><h2>Reúne a tu academia</h2><p>Partida local · pasa el control en cada turno</p>
       <form id="setup"><label for="player-count">Personas en la mesa</label><select id="player-count" name="count">${Array.from({length:config.capacidadTablero},(_,i) => `<option value="${i+1}" ${i+1 === 2 ? 'selected' : ''} ${i+1 > config.maximo ? 'disabled' : ''}>${i+1 === 1 ? '1 · práctica individual' : `${i+1} jugadores`}${i+1 > config.maximo ? ' · mazo insuficiente' : ''}</option>`).join('')}</select>
       <div id="player-names"></div><p class="setup-note">${esc(config.limitacion)}</p><button type="submit" class="gold-button">Abrir la mesa</button></form>
@@ -48,7 +48,7 @@ function help() {
     <p><strong>3. Aprovecha tu habilidad.</strong> No consume acciones base. Las habilidades activas se usan una vez por turno, salvo Editorial, que puede comprar trabajo varias veces. El Comité debe nombrar un rol antes de actuar.</p>
     <p><strong>4. Publica y deja tu huella.</strong> Al completar el trabajo, publicas automáticamente y ganas el prestigio de la carta. Cuando alguien publica su tercer artículo, se termina la ronda. Gana quien tenga más prestigio; los empates comparten victoria.</p>
     <p><strong>Mesa compartida.</strong> Al cambiar de jugador, entrega el control antes de mostrar su mano. Las partidas se conservan al recargar en este navegador mientras el servidor siga abierto, hasta 24 horas sin actividad.</p>
-    <p><strong>Mazo finito.</strong> Las diez ideas no se reciclan. Especialmente con cinco personas, puede agotarse sin que nadie alcance tres publicaciones. No existe una regla de desempate o cierre para ese bloqueo.</p></div>`, {wide:false});
+    <p><strong>Mazo inagotable.</strong> Los siete tipos de idea permanecen siempre disponibles. Cada reparto y robo elige una carta al azar, con posibilidad de repetir un tipo. Las cartas no se acaban.</p></div>`, {wide:false});
 }
 function chooseAction(id) {
   const action = state.acciones.find(a => a.id === id);

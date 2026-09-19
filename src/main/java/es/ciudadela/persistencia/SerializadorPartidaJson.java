@@ -18,6 +18,13 @@ public final class SerializadorPartidaJson {
     public PartidaGuardada deserializar(String json) {
         try {
             JsonElement original = gson.fromJson(json, JsonElement.class);
+            // Los guardados anteriores al mazo inagotable conservan su modalidad finita.
+            if (original != null && original.isJsonObject()
+                    && original.getAsJsonObject().has("partida")
+                    && original.getAsJsonObject().get("partida").isJsonObject()) {
+                JsonObject datos = original.getAsJsonObject().getAsJsonObject("partida");
+                if (!datos.has("ideasInagotables")) datos.addProperty("ideasInagotables", false);
+            }
             PartidaGuardada guardada = gson.fromJson(original, PartidaGuardada.class);
             if (guardada == null) throw new IllegalArgumentException("El JSON no contiene una partida");
             validarEstructura(original, gson.toJsonTree(guardada));

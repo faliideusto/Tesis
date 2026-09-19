@@ -3,7 +3,10 @@ import {roleCard} from './cards.js';
 
 const modal = document.getElementById('modal');
 let previousFocus;
-export function closeDialog() { modal.close(); previousFocus?.focus?.(); }
+export function closeDialog() {
+  if (!modal.open) return;
+  modal.close(); previousFocus?.focus?.({preventScroll:true});
+}
 export function dialog(title, content, {wide = false, locked = false, subtitle = ''} = {}) {
   if (!modal.open) previousFocus = document.activeElement;
   modal.className = `${wide ? 'wide' : ''} ${locked ? 'locked' : ''}`;
@@ -16,7 +19,7 @@ modal.addEventListener('cancel', e => { if (modal.dataset.locked === 'true') e.p
 
 export function phaseDialog(state) {
   if (state.fase === 'SELECCION_ROLES' && state.seleccion.length) {
-    dialog('Elige tu personaje', `<div class="role-selection">${state.seleccion.map(r => roleCard(r)).join('')}</div><p class="selection-caption">Selecciona una carta para leer su habilidad y confirmar tu elección.</p>`, {wide:true, locked:true, subtitle:`${state.actual} · el orden del personaje determina cuándo jugarás.`});
+    dialog('Elige tu personaje', `<div class="role-selection">${state.seleccion.map(r => roleCard(r)).join('')}</div><p class="selection-caption">Selecciona una carta para leer su habilidad y confirmar tu elección. Puedes cerrar esta ventana para mirar la mesa.</p>`, {wide:true, subtitle:`${state.actual} · el orden del personaje determina cuándo jugarás.`});
   } else if (state.fase === 'FIN_RONDA') {
     dialog(`La ronda ${state.ronda} ha terminado`, `<div class="round-summary">${ranking(state)}<p>${state.ultimaRonda ? 'Se ha alcanzado la tercera publicación. Es hora de reconocer el legado de cada academia.' : 'Los personajes regresan al mazo. Una nueva ronda trae nuevas posibilidades.'}</p>${state.acciones.some(a=>a.id==='SIGUIENTE_RONDA') ? `<button class="gold-button" data-command="next-round">${state.ultimaRonda ? 'Descubrir el resultado' : 'Comenzar siguiente ronda'}</button>` : `<p>Esperando a ${esc(state.actual)} para continuar.</p>`}</div>`, {locked:true});
   } else if (state.fase === 'FIN_PARTIDA') {

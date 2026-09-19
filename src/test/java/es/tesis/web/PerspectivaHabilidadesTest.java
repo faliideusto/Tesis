@@ -65,10 +65,14 @@ class PerspectivaHabilidadesTest {
         assertEquals(b,m.a.cartasIdea()); assertEquals(a,m.b.cartasIdea());
         assertEquals(b.stream().map(IdeaCarta::nombre).toList(),m.ver(m.a).mano().stream().map(Vistas.Carta::nombre).toList());
         assertEquals(a.stream().map(IdeaCarta::nombre).toList(),m.ver(m.b).mano().stream().map(Vistas.Carta::nombre).toList());
+        var evento=m.ver(m.b).eventos().stream().filter(e->e.tipo().equals("habilidad.plagiador")).findFirst().orElseThrow();
+        assertEquals(m.a.nombre(),evento.actor()); assertEquals(m.b.nombre(),evento.objetivo());
     }
     @Test void investigadorRobaUnaVezAunqueSeConsulteMucho() {
         var m=preparar(4,8); for(int i=0;i<20;i++){assertEquals(3,m.ver(m.a).mano().size()); assertEquals(2,m.ver(m.b).mano().size());}
         assertEquals(7,m.ver(m.a).ideas());
+        var evento=m.ver(m.b).eventos().stream().filter(e->e.tipo().equals("habilidad.investigador_principal")).findFirst().orElseThrow();
+        assertEquals(m.a.nombre(),evento.actor()); assertNull(evento.objetivo());
     }
     @Test void decanaProtegeAntesDeSuTurnoSinEnviarSuRol() {
         var m=preparar(3,5); assertNull(m.ver(m.a).jugadores().get(1).rol());

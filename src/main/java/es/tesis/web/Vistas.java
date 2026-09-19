@@ -17,7 +17,7 @@ public final class Vistas {
     public record Opcion(String etiqueta, Integer indice, String objetivo) {}
     public record Accion(String id, String nombre, String descripcion, boolean disponible,
                          String motivo, List<Opcion> opciones) {}
-    public record Evento(long numero, String texto, boolean publicacion) {}
+    public record Evento(long numero, String texto, boolean publicacion, String tipo, String actor, String objetivo) {}
     public record Estado(long revision, String fase, int ronda, String actual, boolean bloqueada,
                          int ideas, int roles, int accionesRestantes, boolean habilidadPendiente,
                          List<Jugador> jugadores, List<Carta> mano, List<Rol> seleccion,

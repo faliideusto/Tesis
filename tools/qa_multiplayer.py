@@ -63,9 +63,13 @@ with sync_playwright() as p:
         page=pages[state['actual']]; own=view(page); state=own['partida']
         expect(page.locator('#board')).to_be_visible()
         if state['fase']=='SELECCION_ROLES':
+            expect(page.locator('#modal')).not_to_be_visible()
+            page.locator('[data-command=phase]').click()
             expect(page.locator('#modal-title')).to_have_text('Elige tu personaje')
             if not did_selection:
                 reload(page,'seleccion'); did_selection=True
+                expect(page.locator('#modal')).not_to_be_visible()
+                page.locator('[data-command=phase]').click()
                 page.screenshot(path=str(out/'personajes.png'),full_page=True)
             # Comité ejercita la decisión inicial; Pre-Doctoral agiliza después la partida.
             pref=[1,7,4,6,2,5,8,3] if state['ronda']==1 else [7,4,6,2,5,8,3,1]
@@ -76,9 +80,10 @@ with sync_playwright() as p:
                 page.wait_for_timeout(2100)
                 expect(page.locator('#modal-title')).to_have_text('Representa a tu academia')
                 stable=True; report['modal_stable_over_polls']=True
-            mutation(page,lambda:page.get_by_role('button',name='Elegir personaje',exact=True).click())
+            mutation(page,lambda:page.locator('[data-command=confirm-role]').click())
             used.add('SELECCIONAR')
         elif state['fase']=='FIN_RONDA':
+            expect(page.locator('#modal')).not_to_be_visible()
             mutation(page,lambda:page.locator('[data-command=next-round]').click())
             used.add('SIGUIENTE_RONDA')
         else:
@@ -117,11 +122,15 @@ with sync_playwright() as p:
             for name,page in pages.items():
                 expect(page.locator('#local h2')).to_have_text(name)
                 page.screenshot(path=str(out/('mesa-'+name.lower()+'.png')),full_page=True)
+                (out/('estado-'+name.lower()+'.json')).write_text(json.dumps(view(page)['partida'],ensure_ascii=False),encoding='utf-8')
     else: raise AssertionError('La partida no terminó')
     final=view(a); assert final['fase']=='FINALIZADA'
     assert final['partida']['ronda']>1
     assert used.issuperset({'SELECCIONAR','COBRAR','PENSAR','INICIAR','TRABAJAR','FIN_TURNO','SIGUIENTE_RONDA'})
     for name,page in pages.items():
+        # Only the person who explicitly asked to see results opens them immediately.
+        if not page.locator('#modal').is_visible():
+            page.locator('[data-command=phase]').click()
         expect(page.locator('.final-result')).to_be_visible()
         assert view(page)['partida']['ganadores']==final['partida']['ganadores']
         page.screenshot(path=str(out/('final-'+name.lower()+'.png')),full_page=True)

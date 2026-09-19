@@ -4,7 +4,7 @@ import {board} from './board.js';
 import {ideaCard, roleCard} from './cards.js';
 import {studies, studyRow} from './players.js';
 import {dialog, closeDialog, phaseDialog} from './dialogs.js';
-import {notify, feedback} from './feedback.js';
+import {notify, feedback, resetFeedback, captureTable} from './feedback.js';
 
 let state = null, room = null, busy = false, selectedRole = null, pendingAction = null;
 let timer, screen = 'home', generation = 0;
@@ -27,7 +27,7 @@ function schedulePoll() {
   },900);
 }
 function home() {
-  stopPolling(); screen='home'; closeDialog(); connectionStatus();
+  stopPolling(); screen='home'; closeDialog(); resetFeedback(); connectionStatus();
   app.innerHTML = `<section class="home-screen"><nav class="home-nav"><span>UNA MESA. MUCHAS IDEAS.</span><button class="text-button" data-command="help">Cómo jugar</button></nav>
     <div class="home-copy">${img('Logo/logo_tesis.png','home-logo','Tesis')}<span class="eyebrow">EL CONOCIMIENTO DEJA HUELLA</span>
     <h1>Construye tu<br><em>legado académico.</em></h1><p>Reúne a tu academia. Cada persona juega desde su dispositivo, con su mano privada y una mesa compartida.</p>
@@ -48,11 +48,15 @@ function lobby() {
 function renderRoom(next, force=false) {
   if (!force && room?.codigo===next.codigo && room.revision===next.revision) return;
   const before=state;
+  const positions=captureTable();
+  const sameRoom=room?.codigo===next.codigo;
+  if (!sameRoom) resetFeedback();
   room=next; screen=room.fase==='LOBBY'?'lobby':'game';
   if (screen==='lobby') { state=null; lobby(); return; }
   state={...room.partida, yo:room.yo};
   selectedRole=null; pendingAction=null;
-  board(state); feedback(before,state); phaseDialog(state);
+  closeDialog();
+  board(state); feedback(sameRoom ? before : null,state,positions);
 }
 function handleError(error) {
   if (error.status) connectionStatus();
@@ -126,11 +130,18 @@ document.addEventListener('click', e => {
     case 'start-game': run(() => api.start(room.revision)); break;
     case 'help': help(); break;
     case 'close': closeDialog(); break;
-    case 'next-round': act('SIGUIENTE_RONDA'); break;
+    case 'phase': phaseDialog(state); break;
+    case 'next-round': {
+      const showResults = state.ultimaRonda;
+      act('SIGUIENTE_RONDA').then(() => {
+        if (showResults && screen === 'game' && state.fase === 'FIN_PARTIDA') phaseDialog(state);
+      });
+      break;
+    }
     case 'action': chooseAction(button.dataset.action); break;
     case 'role': {
       selectedRole = state.seleccion.find(r => r.indice === index);
-      dialog('Representa a tu academia', `<div class="role-confirm">${roleCard(selectedRole,{command:'noop',selected:true})}<div><span class="eyebrow">ORDEN DE TURNO ${selectedRole.orden}</span><h2>${esc(selectedRole.nombre)}</h2><p>${esc(selectedRole.habilidad)}</p><div class="dialog-buttons"><button class="gold-button" data-command="confirm-role">Elegir personaje</button><button class="plain-button" data-command="back-roles">Volver a los personajes</button></div></div></div>`, {locked:true});
+      dialog('Representa a tu academia', `<div class="role-confirm">${roleCard(selectedRole,{command:'noop',selected:true})}<div><span class="eyebrow">ORDEN DE TURNO ${selectedRole.orden}</span><h2>${esc(selectedRole.nombre)}</h2><p>${esc(selectedRole.habilidad)}</p><div class="dialog-buttons"><button class="gold-button" data-command="confirm-role">Elegir personaje</button><button class="plain-button" data-command="back-roles">Volver a los personajes</button></div></div></div>`);
       break;
     }
     case 'back-roles': phaseDialog(state); break;

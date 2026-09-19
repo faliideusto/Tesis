@@ -1,3 +1,9 @@
+import {img, esc} from './dom.js';
+
+const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+let queue = [], playbackTimer, playing = false;
+const flights = new Set();
+
 export function notify(message, kind = '') {
   const item = document.createElement('div'); item.className = `toast ${kind}`; item.textContent = message;
   const notifications = document.getElementById('notifications');
@@ -5,17 +11,144 @@ export function notify(message, kind = '') {
   while (notifications.children.length > 3) notifications.firstElementChild.remove();
   setTimeout(() => item.remove(), 5500);
 }
-export function feedback(before, after) {
-  if (!before) return;
-  const last = before.eventos.at(-1)?.numero || 0;
-  after.eventos.filter(e => e.numero > last).slice(-3).forEach(e => notify(e.texto, e.publicacion ? 'publication' : ''));
-  const old = before.jugadores.find(p => p.nombre === after.yo), current = after.jugadores.find(p => p.nombre === after.yo);
-  if (old && current && !matchMedia('(prefers-reduced-motion: reduce)').matches && (old.monedas !== current.monedas || old.prestigio !== current.prestigio)) {
-    document.getElementById('local')?.animate([{filter:'brightness(1.8)'},{filter:'brightness(1)'}], {duration:500});
+// Only compare the public view and our own hand. Rival cards remain face down.
+export function tableChanges(before, after) {
+  if (!before) return [];
+  const changes = [];
+  const events = after.eventos.filter(e => e.numero > (before.eventos.at(-1)?.numero || 0));
+  for (const player of after.jugadores) {
+    const old = before.jugadores.find(p => p.nombre === player.nombre);
+    if (!old) continue;
+    const exchange = events.find(e => e.tipo === 'habilidad.plagiador' && [e.actor,e.objetivo].includes(player.nombre));
+    const resources = [['monedas','moneda','monedas'], ['prestigio','prestigio','prestigio'], ['cartas','idea','ideas']]
+      .filter(([key]) => old[key] !== player[key])
+      .map(([key, icon, label]) => ({icon, label, value:player[key] - old[key]}));
+    const ownChanges = [];
+    for (const study of player.estudios) {
+      const previous = old.estudios.find(e => e.indice === study.indice);
+      let title;
+      if (study.publicado && !previous?.publicado) title = 'Artículo publicado';
+      else if (!previous) title = 'Nuevo estudio';
+      else if (previous.trabajo !== study.trabajo) title = study.trabajo > previous.trabajo ? 'Avanza el estudio' : 'Revisión del estudio';
+      else if (previous.prestigioExtra !== study.prestigioExtra) title = 'Más prestigio';
+      if (title) ownChanges.push({player:player.nombre, title, study, previous, art:study.carta.arte,
+        detail:study.carta.nombre, publication:study.publicado && !previous?.publicado});
+    }
+    if ((resources.length || exchange) && !ownChanges.length) ownChanges.push({player:player.nombre,
+      title:exchange ? 'Mano intercambiada' : resources.some(r => r.icon === 'idea' && r.value > 0) ? 'Nuevas ideas' : 'Recursos de la academia',
+      detail:exchange ? exchange.texto : '',
+      art:exchange || resources.some(r => r.icon === 'idea') ? 'cartas/reverso_idea.png' : 'recursos/moneda.png'});
+    if (ownChanges.length) ownChanges[0].resources = resources;
+    changes.push(...ownChanges);
+    if (player.rol && old.rol?.nombre !== player.rol.nombre) changes.push({player:player.nombre,
+      title:player.nombre === after.yo && after.fase === 'SELECCION_ROLES' ? 'Tu personaje elegido' : 'Personaje revelado', detail:player.rol.nombre, art:player.rol.arte});
   }
-  if (after.ideas < before.ideas && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    document.querySelector('.idea-deck')?.animate([{transform:'translateY(0)'},{transform:'translateY(-14px) rotate(3deg)'},{transform:'translateY(0)'}], {duration:400});
+  return changes;
+}
+
+function playerElement(name, me) {
+  return name === me ? document.getElementById('local') : [...document.querySelectorAll('.rival')].find(e => e.dataset.player === name);
+}
+function studyElement(change) {
+  return [...document.querySelectorAll('#board .study-row, #board .table-study')]
+    .find(e => e.dataset.player === change.player && Number(e.dataset.index) === change.study.indice);
+}
+export function captureTable() {
+  return {hand:document.getElementById('hand')?.getBoundingClientRect(),
+    rivals:new Map([...document.querySelectorAll('.rival')].map(e => [e.dataset.player,e.getBoundingClientRect()]))};
+}
+function pulse(element, publication = false) {
+  if (!element || reducedMotion()) return;
+  element.animate([{boxShadow:`0 0 0 2px ${publication ? '#ffe3a0' : '#a9d7e8'}, 0 0 28px #e5bd7088`},
+    {boxShadow:'0 0 0 0 transparent'}], {duration:1400, easing:'ease-out'});
+}
+function resourceChange(resources, target) {
+  if (!resources?.length || !target || reducedMotion() || document.hidden) return;
+  const rect = target.getBoundingClientRect();
+  if (rect.bottom < 0 || rect.top > innerHeight) return;
+  const badge = document.createElement('div');
+  badge.className = 'resource-change'; badge.setAttribute('aria-hidden','true');
+  badge.innerHTML = resources.map(r => `<span>${img(r.icon === 'idea' ? 'cartas/reverso_idea.png' : `recursos/${r.icon}.png`)}${r.value > 0 ? '+' : '−'}${Math.abs(r.value)}</span>`).join('');
+  badge.style.left = `${Math.max(70,Math.min(innerWidth-70,rect.left+rect.width/2))}px`;
+  badge.style.top = `${Math.max(12,rect.top+rect.height/2)}px`;
+  document.body.append(badge); flights.add(badge);
+  const remove = () => {badge.remove(); flights.delete(badge);};
+  badge.animate([{opacity:0,transform:'translate(-50%,8px)'},{opacity:1,offset:.2},
+    {opacity:1,offset:.7},{opacity:0,transform:'translate(-50%,-25px)'}],{duration:1500,easing:'ease-out'}).finished.then(remove,remove);
+}
+function fly(art, from, target) {
+  if (!from || !target || reducedMotion() || document.hidden) return;
+  const to = target.getBoundingClientRect();
+  if (!to.width || to.bottom < 0 || to.top > innerHeight) return;
+  const card = document.createElement('div');
+  card.className = 'flying-card'; card.setAttribute('aria-hidden','true'); card.innerHTML = img(art);
+  card.style.left = `${to.left + to.width / 2 - 30}px`; card.style.top = `${to.top + to.height / 2 - 40}px`;
+  document.body.append(card); flights.add(card);
+  const animation = card.animate([
+    {transform:`translate(${from.left + from.width / 2 - to.left - to.width / 2}px,${from.top + from.height / 2 - to.top - to.height / 2}px) rotate(-12deg) scale(1.25)`,opacity:0},
+    {opacity:1,offset:.15}, {transform:'translate(0,0) rotate(0) scale(1)',opacity:1},
+  ], {duration:750,easing:'cubic-bezier(.2,.7,.25,1)'});
+  const remove = () => {card.remove(); flights.delete(card);};
+  animation.finished.then(remove,remove);
+}
+function showNext() {
+  const host = document.getElementById('activity-current');
+  if (!host || !queue.length) { playing = false; return; }
+  playing = true;
+  const entry = queue.shift();
+  host.innerHTML = `<div class="activity-move ${entry.publication ? 'is-publication' : ''}">${img(entry.art,'activity-art')}<div><span class="activity-player">${esc(entry.player || 'La academia')}</span><strong>${esc(entry.title)}</strong>${entry.detail ? `<p>${esc(entry.detail)}</p>` : ''}</div></div>
+    ${entry.study ? `<div class="activity-progress">${entry.study.publicado ? `◆ Publicado · ${entry.study.carta.prestigio + entry.study.prestigioExtra} prestigio` : `${entry.previous && entry.previous.trabajo !== entry.study.trabajo ? `${entry.previous.trabajo} → ` : ''}${entry.study.trabajo} / ${entry.study.carta.trabajo} trabajo`}<progress value="${entry.study.trabajo}" max="${entry.study.carta.trabajo}" aria-label="Trabajo del estudio"></progress></div>` : ''}
+    <div class="activity-resources">${(entry.resources || []).map(r => `<span>${img(r.icon === 'idea' ? 'cartas/reverso_idea.png' : `recursos/${r.icon}.png`)}${r.value > 0 ? '+' : '−'}${Math.abs(r.value)} ${r.label}</span>`).join('')}</div>`;
+  if (!reducedMotion()) host.animate([{opacity:.35,transform:'translateY(6px)'},{opacity:1,transform:'translateY(0)'}],{duration:250});
+  playbackTimer = setTimeout(showNext, 1700);
+}
+export function resetFeedback() {
+  clearTimeout(playbackTimer); queue = []; playing = false;
+  for (const card of flights) card.remove();
+  flights.clear();
+}
+export function feedback(before, after, positions = {}) {
+  const changes = tableChanges(before,after);
+  const events = after.eventos.filter(e => e.numero > (before?.eventos.at(-1)?.numero || 0));
+  if (!before) {
+    resetFeedback();
+    // Reconnection shows a summary, never replays old resource gains or card flights.
+    queue.push({title:'La mesa está al día',detail:after.eventos.at(-1)?.texto || `Ronda ${after.ronda}`,art:'Logo/logo_tesis.png'});
+  } else {
+    for (const change of changes) {
+      const target = change.study ? studyElement(change) : playerElement(change.player,after.yo);
+      pulse(target,change.publication);
+      resourceChange(change.resources,playerElement(change.player,after.yo));
+      if (change.study && !change.previous) fly(change.art,change.player === after.yo ? positions.hand : positions.rivals?.get(change.player),target);
+      if (change.resources?.some(r => r.icon === 'idea' && r.value > 0)
+          && events.some(e => e.actor === change.player && ['accion.pensar','habilidad.investigador_principal'].includes(e.tipo)))
+        fly('cartas/reverso_idea.png',document.querySelector('.idea-deck')?.getBoundingClientRect(),playerElement(change.player,after.yo));
+      if (change.study && change.previous && !reducedMotion()) {
+        const progress = target?.querySelector('progress');
+        if (progress) {
+          const start = performance.now(), from = change.previous.trabajo, to = change.study.trabajo;
+          const frame = now => {
+            if (!progress.isConnected) return;
+            const amount = Math.min(1,(now-start)/650);
+            progress.value = from + (to-from)*amount;
+            if (amount < 1) requestAnimationFrame(frame);
+          };
+          progress.value = from; requestAnimationFrame(frame);
+        }
+      }
+    }
+    for (const event of events.filter(e => e.tipo === 'habilidad.plagiador')) {
+      const actor = playerElement(event.actor,after.yo), other = playerElement(event.objetivo,after.yo);
+      fly('cartas/reverso_idea.png',actor?.getBoundingClientRect(),other);
+      fly('cartas/reverso_idea.png',other?.getBoundingClientRect(),actor);
+    }
+    queue.push(...changes);
+    if (!changes.length && events.length && before.fase === 'TURNO_JUGADOR' && after.fase === before.fase && before.actual === after.actual)
+      queue.push({title:'Habilidad en la mesa',detail:events.map(e => e.texto).join(' '),art:'cartas/reverso_personaje.png'});
   }
+  // Keep live play responsive after a burst; the full record stays in Crónica.
+  if (queue.length > 4) queue = queue.slice(-4);
+  if (!playing) showNext();
 }
 const tooltip = document.getElementById('tooltip');
 function show(target) {

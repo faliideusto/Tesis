@@ -234,7 +234,8 @@ public final class SesionJuego {
         };
         if (texto != null) {
             eventos.add(new Vistas.Evento(eventos.isEmpty() ? 1 : eventos.get(eventos.size() - 1).numero() + 1,
-                    texto, "PUBLICADO".equals(d.get("estado"))));
+                    texto, "PUBLICADO".equals(d.get("estado")), e.tipo(), actor,
+                    "habilidad.plagiador".equals(e.tipo()) ? String.valueOf(d.get("objetivo")) : null));
             if (eventos.size() > 80) eventos.remove(0);
         }
     }

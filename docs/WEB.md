@@ -47,6 +47,8 @@ El registro usa `ConcurrentHashMap` y serializa la generación/inserción de sal
 
 Solo una revisión nueva reconstruye las partes que cambiaron. El helper `update` conserva nodos cuyo HTML no cambia. Polls sin cambios no cierran modales, reinician scroll ni repiten efectos. Un cambio real de revisión invalida selectores obsoletos. Los avisos visibles se limitan a tres. Tras un fallo temporal se conserva identidad/mesa y se muestra «Reconectando…». Un token inválido o sala caducada deja volver al inicio. El menú puede pausar el polling y permite volver a la sala guardada.
 
+Los estudios rivales y los últimos movimientos permanecen visibles en la mesa. La elección de personaje y los resultados se abren a petición del jugador; el cierre de ronda utiliza un aviso con botón de continuación. Los eventos públicos incluyen `tipo`, `actor` y, solo para el intercambio del Plagiador, `objetivo`, para distinguir animaciones sin interpretar el texto ni exponer información privada. Detalles y pruebas: [Mesa visual](MESA-VISUAL.md).
+
 ## Despliegue y límites
 
 Ver README para `HOST`, `PORT` y `PUBLIC_ORIGIN`. Para dispositivos de la misma LAN se usa la IP del ordenador servidor. Para redes distintas se necesita backend Java accesible públicamente y HTTPS; configurar su proxy/host/puerto y acceso de red. No se ha contratado, publicado ni desplegado nada.

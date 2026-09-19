@@ -1,4 +1,4 @@
-const KEY = 'ciudadela.sala';
+const KEY = 'tesis.sala';
 let identity;
 try { identity = JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch { identity = null; }
 let queue = Promise.resolve();
@@ -7,7 +7,7 @@ function request(path, body, authenticated = false) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 12000);
     try {
-      const headers = body === undefined ? {} : {'Content-Type':'application/json', 'X-Ciudadela':'1'};
+      const headers = body === undefined ? {} : {'Content-Type':'application/json', 'X-Tesis':'1'};
       if (authenticated && identity) headers.Authorization = `Bearer ${identity.playerToken}`;
       const response = await fetch(`/api/${path}`, {
         method: body === undefined ? 'GET' : 'POST', cache:'no-store', headers,

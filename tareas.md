@@ -1,6 +1,6 @@
 # Tareas pendientes
 
-Documento de trabajo para continuar el desarrollo de la adaptación académica de Ciudadelas.
+Documento de trabajo para continuar el desarrollo de la adaptación académica de Tesis.
 
 ## 1. Completar el flujo real de partida ✅
 

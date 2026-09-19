@@ -1,5 +1,7 @@
 FROM maven:3.9-eclipse-temurin-17 AS build
 
+LABEL org.opencontainers.image.title="Tesis"
+
 WORKDIR /app
 
 COPY pom.xml .
@@ -10,6 +12,8 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 FROM maven:3.9-eclipse-temurin-17
+
+LABEL org.opencontainers.image.title="Tesis"
 
 WORKDIR /app
 

@@ -1,4 +1,4 @@
-export const asset = path => `/assets/Ciudadelas-assets/${path}`;
+export const asset = path => `/assets/Tesis-assets/${path}`;
 export const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const img = (path, cls = '', alt = '') => `<img class="${cls}" src="${asset(path)}" alt="${esc(alt)}" draggable="false">`;
 export function update(id, html) {

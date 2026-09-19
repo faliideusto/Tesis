@@ -17,7 +17,7 @@ Los estados de sala son `LOBBY`, `EN_PARTIDA` y `FINALIZADA`. Una única instanc
 | POST | `/api/salas/{codigo}/iniciar` | `{revision}` | Token del anfitrión |
 | POST | `/api/salas/{codigo}/accion` | `{revision,tipo,indice?,objetivo?}` | Token del jugador activo |
 
-Todas las mutaciones requieren `Content-Type: application/json` y `X-Ciudadela: 1`. El origen debe coincidir con el host HTTP/HTTPS o con `PUBLIC_ORIGIN`, si está configurado. No se habilita CORS. El límite de cuerpo es 8 KiB. En la API de salas se rechazan campos desconocidos, incluidos intentos de aportar una identidad arbitraria. Los códigos se normalizan a mayúsculas; nombres de 1–24 caracteres, sin controles y únicos sin distinguir mayúsculas en cada sala.
+Todas las mutaciones requieren `Content-Type: application/json` y `X-Tesis: 1`. El origen debe coincidir con el host HTTP/HTTPS o con `PUBLIC_ORIGIN`, si está configurado. No se habilita CORS. El límite de cuerpo es 8 KiB. En la API de salas se rechazan campos desconocidos, incluidos intentos de aportar una identidad arbitraria. Los códigos se normalizan a mayúsculas; nombres de 1–24 caracteres, sin controles y únicos sin distinguir mayúsculas en cada sala.
 
 Tipos de acción: `SELECCIONAR`, `COBRAR`, `PENSAR`, `INICIAR`, `TRABAJAR`, `HABILIDAD`, `FIN_TURNO`, `SIGUIENTE_RONDA`. Los índices son cero-based y solo tienen sentido en la revisión y perspectiva recibidas. El objetivo de una habilidad identifica su objetivo, nunca al actor.
 

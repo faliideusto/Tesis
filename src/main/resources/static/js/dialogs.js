@@ -8,7 +8,7 @@ export function dialog(title, content, {wide = false, locked = false, subtitle =
   if (!modal.open) previousFocus = document.activeElement;
   modal.className = `${wide ? 'wide' : ''} ${locked ? 'locked' : ''}`;
   modal.dataset.locked = String(locked);
-  document.getElementById('modal-content').innerHTML = `<div class="dialog-heading"><span class="eyebrow">CIUDADELA ACADÉMICA</span><h1 id="modal-title">${esc(title)}</h1>${subtitle ? `<p>${esc(subtitle)}</p>` : ''}</div>${!locked ? '<button class="dialog-close" data-command="close" aria-label="Cerrar">Cerrar</button>' : ''}<div class="dialog-body">${content}</div>`;
+  document.getElementById('modal-content').innerHTML = `<div class="dialog-heading"><span class="eyebrow">TESIS</span><h1 id="modal-title">${esc(title)}</h1>${subtitle ? `<p>${esc(subtitle)}</p>` : ''}</div>${!locked ? '<button class="dialog-close" data-command="close" aria-label="Cerrar">Cerrar</button>' : ''}<div class="dialog-body">${content}</div>`;
   if (!modal.open) modal.showModal();
   modal.scrollTop = 0;
 }

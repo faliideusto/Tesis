@@ -1,0 +1,27 @@
+{
+  "steps": 64,
+  "actions": [
+    "COBRAR",
+    "FIN_TURNO",
+    "HABILIDAD",
+    "INICIAR",
+    "PENSAR",
+    "SELECCIONAR",
+    "SIGUIENTE_RONDA",
+    "TRABAJAR"
+  ],
+  "reloads": [
+    "lobby",
+    "lobby",
+    "seleccion",
+    "turno",
+    "comite_pendiente"
+  ],
+  "errors": [],
+  "modal_stable_over_polls": true,
+  "rounds": 7,
+  "winners": [
+    "Jefe"
+  ],
+  "network_recovered": true
+}

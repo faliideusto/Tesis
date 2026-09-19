@@ -1,4 +1,4 @@
-# Ciudadela Académica
+# Tesis
 
 Juego de cartas multijugador por salas para **2–7 personas**. Cada navegador controla a su jugador, con mano privada, sin cuentas: nombre y código de sala. El motor Java sigue siendo la única fuente de verdad.
 
@@ -46,17 +46,17 @@ py -m pip install playwright
 py tools/qa_multiplayer.py
 ```
 
-`CIUDADELA_URL` permite cambiar la dirección de la prueba. Evidencia temporal: `target/qa-multiplayer/`. Arquitectura y contrato: [docs/WEB.md](docs/WEB.md). Informe de implementación, cobertura y límites: [docs/MULTIJUGADOR.md](docs/MULTIJUGADOR.md).
+`TESIS_URL` permite cambiar la dirección de la prueba. Evidencia temporal: `target/qa-multiplayer/`. Arquitectura y contrato: [docs/WEB.md](docs/WEB.md).
 
 ## Modo terminal conservado
 
 ```powershell
-mvn compile exec:java "-Dexec.mainClass=es.ciudadela.Main"
+mvn compile exec:java "-Dexec.mainClass=es.tesis.Main"
 ```
 
 La documentación siguiente describe el motor y el modo terminal original.
 
-Motor Java/Maven para una adaptación didáctica de Ciudadelas orientada a proceso didactico.
+Motor Java/Maven de Tesis, un juego didáctico sobre investigación académica.
 
 ## Lectura funcional del informe
 
@@ -111,7 +111,7 @@ Para añadir un personaje nuevo:
 Desde la carpeta del proyecto, con Java 17 o superior y Maven:
 
 ```powershell
-mvn compile exec:java "-Dexec.mainClass=es.ciudadela.Main"
+mvn compile exec:java "-Dexec.mainClass=es.tesis.Main"
 ```
 
 También puedes ejecutar `Main` desde VS Code. La configuración inicial crea una partida local para Ana y Bruno en el mismo ordenador. La pantalla indica quién debe usar el teclado. No hay conexión entre dispositivos.
@@ -191,7 +191,7 @@ Sin indicar archivo se utiliza `partida.json`. Las rutas relativas parten de la 
 Para arrancar directamente desde un archivo guardado:
 
 ```powershell
-mvn compile exec:java "-Dexec.mainClass=es.ciudadela.Main" "-Dexec.args=--cargar partida.json"
+mvn compile exec:java "-Dexec.mainClass=es.tesis.Main" "-Dexec.args=--cargar partida.json"
 ```
 
 La recuperación mantiene el jugador, la fase, las acciones consumidas, las habilidades usadas y los efectos de ronda. No repite ingresos, robos automáticos ni repartos. Al recuperar en una sesión abierta, el historial conserva también las acciones anteriores a la recuperación; al arrancar desde archivo, se carga su historial.

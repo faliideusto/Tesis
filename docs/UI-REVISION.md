@@ -30,13 +30,14 @@ Las pruebas de componentes usaron exclusivamente DOM temporal en el navegador de
 
 ## Evidencia
 
-- [Tablero 1920×1080](qa/tablero-1920.png)
-- [Tablero 1600×900](qa/tablero-1600.png)
-- [Tablero 1366×768](qa/tablero-1366.png)
-- [Cinco jugadores](qa/cinco-jugadores.png)
-- [Selección de personajes](qa/personajes.png)
-- [Cohortes](qa/cohortes.png)
-- [Trabajar con dos estudios](qa/trabajar.png)
+Las capturas previas se sustituyeron por capturas actuales de Tesis. El informe anterior conserva su alcance histórico; la validación actual se detalla en [Rebranding](REBRANDING.md).
+
+- [Inicio](qa/inicio.png)
+- [Sala de espera](qa/lobby-fali.png)
+- [Mesa de Fali](qa/mesa-fali.png)
+- [Mesa de Jefe](qa/mesa-jefe.png)
+- [Personajes](qa/personajes.png)
+- [Resultado final](qa/final-fali.png)
 
 ## Límites
 

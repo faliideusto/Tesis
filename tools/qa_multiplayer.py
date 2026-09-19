@@ -1,5 +1,5 @@
 """Prueba opcional real de UI: pip install playwright; py tools/qa_multiplayer.py.
-Requiere el servidor en CIUDADELA_URL (por defecto http://localhost:8091).
+Requiere el servidor en TESIS_URL (por defecto http://localhost:8091).
 Usa dos contextos aislados y solo controles de la UI para mutar la partida.
 Los GET autenticados se usan como oráculo de prueba; nunca se imprimen tokens.
 """
@@ -7,12 +7,12 @@ import json, os
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 
-base=os.environ.get('CIUDADELA_URL','http://localhost:8091')
+base=os.environ.get('TESIS_URL','http://localhost:8091')
 out=Path('target/qa-multiplayer'); out.mkdir(parents=True,exist_ok=True)
 report={'steps':0,'actions':[], 'reloads':[], 'errors':[]}
 
 def view(page):
-    identity=page.evaluate("JSON.parse(sessionStorage.getItem('ciudadela.sala'))")
+    identity=page.evaluate("JSON.parse(sessionStorage.getItem('tesis.sala'))")
     response=page.request.get(base+'/api/salas/'+identity['codigo']+'/estado',headers={'Authorization':'Bearer '+identity['playerToken']})
     assert response.ok
     return response.json()
@@ -29,6 +29,7 @@ def reload(page, phase):
     page.reload()
     expect(page.locator('.lobby-panel' if phase=='lobby' else '#board')).to_be_visible()
     assert view(page)==before
+    assert page.locator('img').evaluate_all('(images) => images.every(i => i.complete && i.naturalWidth > 0)')
     report['reloads'].append(phase)
 
 with sync_playwright() as p:
@@ -39,6 +40,8 @@ with sync_playwright() as p:
     for page in (a,b):
         page.on('pageerror',lambda error:report['errors'].append(str(error)))
         page.goto(base)
+        expect(page).to_have_title('Tesis · La mesa del conocimiento')
+        page.screenshot(path=str(out/('inicio.png')),full_page=True)
     a.locator('#create-room input').fill('Fali')
     a.get_by_role('button',name='Crear sala',exact=True).click()
     expect(a.locator('.room-code')).to_be_visible()
@@ -61,7 +64,9 @@ with sync_playwright() as p:
         expect(page.locator('#board')).to_be_visible()
         if state['fase']=='SELECCION_ROLES':
             expect(page.locator('#modal-title')).to_have_text('Elige tu personaje')
-            if not did_selection: reload(page,'seleccion'); did_selection=True
+            if not did_selection:
+                reload(page,'seleccion'); did_selection=True
+                page.screenshot(path=str(out/'personajes.png'),full_page=True)
             # Comité ejercita la decisión inicial; Pre-Doctoral agiliza después la partida.
             pref=[1,7,4,6,2,5,8,3] if state['ronda']==1 else [7,4,6,2,5,8,3,1]
             role=min(state['seleccion'],key=lambda r:pref.index(r['orden']))

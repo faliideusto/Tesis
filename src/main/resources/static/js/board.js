@@ -5,8 +5,8 @@ import {rival, localPlayer, studies} from './players.js';
 const icons = {COBRAR:'cobrar', PENSAR:'pensar', INICIAR:'iniciar_estudio', TRABAJAR:'trabajar', FIN_TURNO:'finalizar_turno'};
 export function board(state) {
   if (!document.getElementById('board')) document.getElementById('app').innerHTML = `
-    <section id="board" class="board" aria-label="Mesa de Ciudadela Académica">
-      <header class="board-header"><button class="brand" data-command="home" aria-label="Menú principal">${img('Logo/logo_ciudadela_academica.png')}</button>
+    <section id="board" class="board" aria-label="Mesa de Tesis">
+      <header class="board-header"><button class="brand" data-command="home" aria-label="Menú principal">${img('Logo/logo_tesis.png')}</button>
       <div id="turn-panel" class="turn-panel" aria-live="polite"></div><nav class="utility"><button data-command="history">Crónica</button><button data-command="help">Reglas</button></nav></header>
       <div id="rivals" class="rivals"></div><section id="decks" class="decks" aria-label="Mazos de la mesa"></section>
       <div id="phase-message" class="phase-message"></div>
@@ -21,7 +21,7 @@ export function board(state) {
   document.getElementById('rivals').dataset.count = others.length;
   update('rivals', others.map(rival).join(''));
   update('decks', `<div class="deck character-deck">${img('ui/marco_mazo.png','deck-base')}${img('cartas/reverso_personaje.png','deck-back')}<b class="deck-count">${state.roles}</b><span>PERSONAJES</span></div>
-    <div class="table-seal"><span>CIUDADELA</span><b>El conocimiento<br>deja huella.</b><span>ACADÉMICA</span></div>
+    <div class="table-seal"><span>TESIS</span><b>El conocimiento<br>deja huella.</b><span>INVESTIGA · PUBLICA</span></div>
     <div class="deck idea-deck ${state.ideas === 0 ? 'exhausted' : ''}">${img('ui/marco_mazo.png','deck-base')}${img('cartas/reverso_idea.png','deck-back')}<b class="deck-count">${state.ideas}</b><span>IDEAS${state.ideas === 0 ? ' · AGOTADO' : ''}</span></div>`);
   update('local', localPlayer(me, state)); update('studies', studies(me));
   document.getElementById('studies').classList.toggle('no-studies', !me.estudios.length);

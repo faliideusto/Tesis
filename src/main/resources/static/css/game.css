@@ -26,7 +26,7 @@ button,input,select{font-family:var(--ui)}
 .connection-error{padding:30px}
 
 /* The supplied scene remains a backdrop: every player, card and control is live HTML. */
-.home-screen,.board{background-image:linear-gradient(0deg,#040b15bb,#040b1522 65%,#040b1555),url('/assets/Ciudadelas-assets/tablero/fondo_partida.png');background-size:cover;background-position:center;position:relative;isolation:isolate}
+.home-screen,.board{background-image:linear-gradient(0deg,#040b15bb,#040b1522 65%,#040b1555),url('/assets/Tesis-assets/tablero/fondo_partida.png');background-size:cover;background-position:center;position:relative;isolation:isolate}
 .home-screen{min-height:100svh;display:grid;grid-template-columns:1.15fr 1fr;align-items:center;gap:7vw;padding:90px max(5vw,30px) 65px}
 .home-screen:before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#040c18c9,#040c18a3 48%,#040c1844);z-index:-1}
 .home-nav{position:absolute;top:28px;left:5vw;right:5vw;display:flex;justify-content:space-between;align-items:center;font:10px var(--ui);letter-spacing:3px;color:#cbbb9b}
@@ -58,7 +58,7 @@ select{width:100%;padding:11px 14px;background:#101d2b;border:1px solid #776143;
 .board-header{grid-row:1;display:flex;align-items:center;justify-content:space-between;z-index:2}
 .brand{background:none;width:180px;height:100%;padding:0}
 .brand img{width:100%;height:120%;margin-top:-5%}
-.turn-panel{position:absolute;top:1.5%;left:50%;transform:translateX(-50%);width:360px;min-height:98px;background:url('/assets/Ciudadelas-assets/ui/panel_turno.png') center/100% 100% no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:12px 30px 12px 88px;text-align:center;filter:drop-shadow(0 6px 12px #000)}
+.turn-panel{position:absolute;top:1.5%;left:50%;transform:translateX(-50%);width:360px;min-height:98px;background:url('/assets/Tesis-assets/ui/panel_turno.png') center/100% 100% no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:12px 30px 12px 88px;text-align:center;filter:drop-shadow(0 6px 12px #000)}
 .turn-panel>span{font:11px var(--ui);letter-spacing:2px;color:var(--gold)}
 .turn-panel>strong{font-size:19px;font-weight:400;max-width:220px;overflow-wrap:anywhere}
 .utility{display:flex;gap:8px;align-items:center}
@@ -68,7 +68,7 @@ select{width:100%;padding:11px 14px;background:#101d2b;border:1px solid #776143;
 .rivals[data-count="1"]{justify-content:center;grid-template-columns:minmax(300px,460px)}
 .rivals[data-count="3"]>:last-child{grid-column:1;transform:translateX(-12%)}
 .rivals[data-count="4"]>:nth-child(n+3),.rivals[data-count="5"]>:nth-child(n+3),.rivals[data-count="6"]>:nth-child(n+3){margin-top:5px}
-.rival{pointer-events:auto;position:relative;background:url('/assets/Ciudadelas-assets/ui/panel_rival.png') center/100% 100% no-repeat;aspect-ratio:3;container-type:inline-size;text-align:left;filter:drop-shadow(0 5px 8px #000);transition:filter .2s;min-width:0;padding:0}
+.rival{pointer-events:auto;position:relative;background:url('/assets/Tesis-assets/ui/panel_rival.png') center/100% 100% no-repeat;aspect-ratio:3;container-type:inline-size;text-align:left;filter:drop-shadow(0 5px 8px #000);transition:filter .2s;min-width:0;padding:0}
 .rival:hover{filter:drop-shadow(0 0 8px #bc9658)}
 .rival.active{filter:drop-shadow(0 0 12px #ecc26d);animation:active-glow 2s ease-in-out infinite}
 .rival-portrait{position:absolute;left:5%;top:35%;width:18%;height:48%;border:1px solid #caa360;border-radius:50%;overflow:hidden;background:#111c2b}
@@ -145,10 +145,10 @@ progress::-moz-progress-bar{background:#6d9cbb}
 .board footer{grid-row:4;text-align:center;position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:8px}
 .action-hint{font:10px var(--ui);letter-spacing:1.8px;color:#c5ae7e;padding-bottom:8px}
 .actions{display:flex;justify-content:center;gap:0;height:calc(100% - 14px);min-height:66px;max-width:1120px;width:100%}
-.action-button{background:url('/assets/Ciudadelas-assets/ui/boton_accion.png') center/100% 100% no-repeat;flex:1;min-width:0;height:100%;position:relative;filter:drop-shadow(0 4px 5px #000);transition:transform .15s,filter .2s;padding:0}
+.action-button{background:url('/assets/Tesis-assets/ui/boton_accion.png') center/100% 100% no-repeat;flex:1;min-width:0;height:100%;position:relative;filter:drop-shadow(0 4px 5px #000);transition:transform .15s,filter .2s;padding:0}
 .action-button img{width:100%;height:100%;min-height:0;object-fit:contain;margin:0}
 .action-content{position:absolute;inset:29% 13% 31%;display:grid;grid-template-columns:30px 1fr;align-items:center;gap:6px}.action-label{font:13px/1.1 var(--serif);text-transform:uppercase;text-align:center}
-.action-button.end-turn{background-image:url('/assets/Ciudadelas-assets/ui/boton_fin_turno.png')}
+.action-button.end-turn{background-image:url('/assets/Tesis-assets/ui/boton_fin_turno.png')}
 .action-button:disabled{filter:grayscale(.65) brightness(.8)}
 .action-button:not(:disabled):hover{transform:translateY(-5px);filter:drop-shadow(0 0 9px #ddac53)}
 .action-button:not(:disabled):active{transform:translateY(1px)}
@@ -156,7 +156,7 @@ progress::-moz-progress-bar{background:#6d9cbb}
 .privacy .player-zone{visibility:hidden}
 
 /* Decisions use the parchment and burgundy artwork. */
-dialog{color-scheme:light;border:1px solid #9d7138;padding:42px 42px 32px;background:linear-gradient(#eee0bfed,#e3cda7f5),url('/assets/Ciudadelas-assets/ui/marco_modal.png') center/100% 100%;color:#2d2117;width:min(780px,94vw);max-height:90svh;overflow:auto;box-shadow:0 0 0 5px #4b251b,0 0 0 6px #c7a05c,0 30px 100px #000d;border-radius:4px;animation:modal-in .2s ease-out}
+dialog{color-scheme:light;border:1px solid #9d7138;padding:42px 42px 32px;background:linear-gradient(#eee0bfed,#e3cda7f5),url('/assets/Tesis-assets/ui/marco_modal.png') center/100% 100%;color:#2d2117;width:min(780px,94vw);max-height:90svh;overflow:auto;box-shadow:0 0 0 5px #4b251b,0 0 0 6px #c7a05c,0 30px 100px #000d;border-radius:4px;animation:modal-in .2s ease-out}
 dialog:before{content:'';position:absolute;inset:7px;border:1px solid #a17f4866;pointer-events:none}
 dialog::backdrop{background:#020814ca;backdrop-filter:blur(7px)}
 dialog.wide{width:min(1740px,96vw)}
@@ -235,7 +235,7 @@ dialog.wide{width:min(1740px,96vw)}
   border: solid transparent;
   border-width: 24px 32px 32px;
   /* Nine-slice scaling keeps the text in the parchment as its height grows. */
-  border-image: url('/assets/Ciudadelas-assets/ui/marco_tooltip.png') 255 350 355 350 fill / 24px 32px 32px / 0 stretch;
+  border-image: url('/assets/Tesis-assets/ui/marco_tooltip.png') 255 350 355 350 fill / 24px 32px 32px / 0 stretch;
   padding: 4px 6px;
   filter: drop-shadow(0 6px 10px #0009);
   font: 12px/1.55 var(--ui);

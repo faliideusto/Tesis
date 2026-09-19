@@ -1,0 +1,22 @@
+package es.tesis.habilidades;
+
+import es.tesis.dominio.Jugador;
+import es.tesis.motor.ContextoJuego;
+
+public class PlagiadorHabilidad implements HabilidadPersonaje {
+
+    @Override
+    public void ejecutar(ContextoJuego contexto, Jugador actor, String objetivo) {
+        Jugador otro = contexto.buscarJugador(objetivo);
+        if (otro == null) {
+            throw new IllegalArgumentException("No existe el jugador objetivo: " + objetivo);
+        }
+        if (otro == actor) throw new IllegalArgumentException("Elige otro jugador");
+        if (contexto.estaProtegido(otro.nombre())) throw new IllegalStateException("La Decana es inmune");
+        actor.intercambiarManoCon(otro);
+        contexto.publicarEvento("habilidad.plagiador", java.util.Map.of(
+                "actor", actor.nombre(),
+                "objetivo", otro.nombre()
+        ));
+    }
+}

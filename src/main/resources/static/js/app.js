@@ -29,7 +29,7 @@ function schedulePoll() {
 function home() {
   stopPolling(); screen='home'; closeDialog(); connectionStatus();
   app.innerHTML = `<section class="home-screen"><nav class="home-nav"><span>UNA MESA. MUCHAS IDEAS.</span><button class="text-button" data-command="help">Cómo jugar</button></nav>
-    <div class="home-copy">${img('Logo/logo_ciudadela_academica.png','home-logo','Ciudadela Académica')}<span class="eyebrow">EL CONOCIMIENTO DEJA HUELLA</span>
+    <div class="home-copy">${img('Logo/logo_tesis.png','home-logo','Tesis')}<span class="eyebrow">EL CONOCIMIENTO DEJA HUELLA</span>
     <h1>Construye tu<br><em>legado académico.</em></h1><p>Reúne a tu academia. Cada persona juega desde su dispositivo, con su mano privada y una mesa compartida.</p>
     <div class="home-features"><span>8 personajes</span><span>7 tipos de idea</span><span>2–7 jugadores</span></div></div>
     <section class="setup-panel"><span class="eyebrow">LAS PUERTAS ESTÁN ABIERTAS</span><h2>Reúne a tu academia</h2><p>Solo necesitas tu nombre y un código de sala.</p>
@@ -41,7 +41,7 @@ function home() {
 }
 function lobby() {
   closeDialog();
-  app.innerHTML = `<section class="home-screen lobby-screen"><div class="home-copy">${img('Logo/logo_ciudadela_academica.png','home-logo','Ciudadela Académica')}<span class="eyebrow">TU ACADEMIA TE ESPERA</span><h1>Una sala.<br><em>Muchas ideas.</em></h1><p>Comparte el código con los demás. Cada persona debe abrir esta misma web en su dispositivo.</p><button class="text-button" data-command="home">Volver al inicio</button></div>
+  app.innerHTML = `<section class="home-screen lobby-screen"><div class="home-copy">${img('Logo/logo_tesis.png','home-logo','Tesis')}<span class="eyebrow">TU ACADEMIA TE ESPERA</span><h1>Una sala.<br><em>Muchas ideas.</em></h1><p>Comparte el código con los demás. Cada persona debe abrir esta misma web en su dispositivo.</p><button class="text-button" data-command="home">Volver al inicio</button></div>
     <section class="setup-panel lobby-panel"><span class="eyebrow">CÓDIGO DE SALA</span><h2 class="room-code">${esc(room.codigo)}</h2><p>Tu identidad: <strong>${esc(room.yo)}</strong></p><h3>Jugadores · ${room.jugadores.length} / 7</h3><ul class="lobby-players">${room.jugadores.map(n=>`<li>${n===room.anfitrion?'♛ ':''}${esc(n)}${n===room.yo?' · tú':''}<small>${n===room.anfitrion?'Anfitrión':''}</small></li>`).join('')}</ul>
     ${room.soyAnfitrion ? `<button class="gold-button" data-command="start-game" ${room.jugadores.length<2?'disabled':''}>Iniciar partida</button><p class="setup-note">${room.jugadores.length<2?'Esperando jugadores. Se necesitan al menos dos.':'Todo preparado. Puedes iniciar la partida.'}</p>` : `<p class="waiting-copy">Esperando a que ${esc(room.anfitrion)} inicie la partida…</p>`}</section></section>`;
 }

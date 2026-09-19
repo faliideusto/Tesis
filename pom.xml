@@ -3,17 +3,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>es.ciudadela</groupId>
-    <artifactId>ciudadela-academica</artifactId>
+    <groupId>es.tesis</groupId>
+    <artifactId>tesis</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>Ciudadela Académica</name>
-    <description>Motor didáctico en Java para una adaptación académica de Citadels</description>
+    <name>Tesis</name>
+    <description>Tesis: juego de cartas de investigación académica con salas multijugador</description>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <exec.mainClass>es.ciudadela.web.ServidorWeb</exec.mainClass>
+        <exec.mainClass>es.tesis.web.ServidorWeb</exec.mainClass>
     </properties>
     <dependencies>
         <dependency>

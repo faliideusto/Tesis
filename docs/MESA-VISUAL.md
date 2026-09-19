@@ -1,7 +1,7 @@
 # Tesis: acciones visibles en la mesa
 
-El cambio se limita a la presentación y al adaptador web. El motor, las reglas,
-las acciones, las habilidades y la privacidad permanecen intactos.
+La mesa refleja las reglas actuales de siete personajes y hasta seis jugadores.
+Editorial es automática y Revisor 2 puede devolver publicaciones a desarrollo.
 Se reutilizan las ilustraciones, marcos, colores y tipografías del juego.
 
 ## Qué cambia
@@ -10,7 +10,8 @@ Se reutilizan las ilustraciones, marcos, colores y tipografías del juego.
   sin el encabezado «Tus ideas» ni el contador de cartas.
 - Los mazos son más pequeños y permanecen centrados junto a los últimos movimientos.
   Las cartas públicas de los rivales se muestran completas bajo cada academia:
-  marco, ilustración, nombre y valores, a 150 × 225 px (120 × 180 px en móvil).
+  marco, ilustración, nombre y valores. En escritorio su tamaño se adapta a la
+  altura disponible, hasta 150 × 225 px; en móvil usan 120 × 180 px.
   El progreso aparece debajo para no tapar la carta.
 - Elegir personaje, avanzar de ronda y consultar el resultado usan el botón inferior
   de la mesa, sin duplicar botones en el mensaje central.
@@ -29,6 +30,12 @@ Se reutilizan las ilustraciones, marcos, colores y tipografías del juego.
   ver los resultados los abre; los demás tienen el botón en su mesa.
 - La distribución permite ver los estudios de todos los participantes y adapta los
   botones de acción y el encabezado a pantallas pequeñas.
+- A 1920 × 1080 la mesa, la mano y las acciones caben sin scroll de página.
+  Con seis jugadores hay tres rivales arriba y dos debajo de los extremos.
+  Con cinco se ocupan las cuatro posiciones laterales; con cuatro, arriba al
+  centro y los dos laterales inferiores. Los movimientos ocupan el centro libre.
+  Las cartas se solapan solo cuando no caben separadas; al enfocarlas o pasar
+  el cursor se levantan, y al pulsarlas se abre su detalle completo.
 
 ## Sin retrasar la partida
 
@@ -49,14 +56,14 @@ sistema de movimiento reducido, conservando los datos y las ilustraciones.
 
 ## Verificación
 
-- `mvn test`: 126 pruebas correctas del motor, salas, privacidad y persistencia.
+- `mvn test`: motor, salas, privacidad, persistencia, distribución de robos e ingresos.
 - `py tools/qa_multiplayer.py`: partida completa en dos contextos independientes
   de Chrome, todas las acciones base, habilidad, selección voluntaria, estabilidad
   del diálogo durante el sondeo, recargas y recuperación de conexión.
 - `py tools/qa_table_feedback.py`: estados controlados de colocación, robo privado
   con mazo inagotable, trabajo, revisión, publicación, estudios duplicados,
   ausencia de repeticiones, cambios de fase sin ventana, movimiento reducido y
-  recuperación. Comprueba mesas de dos y siete jugadores en escritorio, tableta
+  recuperación. Comprueba todas las mesas de dos a seis jugadores en escritorio, tableta
   y móvil, sin desbordamiento horizontal ni solapamiento de secciones.
 
 Los dos scripts requieren Chrome, Playwright y el servidor en `TESIS_URL`

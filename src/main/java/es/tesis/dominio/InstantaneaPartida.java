@@ -22,18 +22,19 @@ public record InstantaneaPartida(List<JugadorDatos> jugadores, List<RolDatos> ro
         }
     }
 
-    public record IdeaDatos(String nombre, int coste, int trabajo, int prestigio) {
-        public IdeaDatos { new IdeaCarta(nombre, coste, trabajo, prestigio); }
+    public record IdeaDatos(String nombre, int coste, int trabajo, int prestigio, int ingresoPorTurno) {
+        public IdeaDatos(String nombre, int coste, int trabajo, int prestigio) { this(nombre, coste, trabajo, prestigio, 0); }
+        public IdeaDatos { new IdeaCarta(nombre, coste, trabajo, prestigio, ingresoPorTurno); }
         static IdeaDatos de(IdeaCarta carta) {
-            return new IdeaDatos(carta.nombre(), carta.costeMonedas(), carta.trabajoRequerido(), carta.prestigio());
+            return new IdeaDatos(carta.nombre(), carta.costeMonedas(), carta.trabajoRequerido(), carta.prestigio(), carta.ingresoPorTurno());
         }
-        IdeaCarta crear() { return new IdeaCarta(nombre, coste, trabajo, prestigio); }
+        IdeaCarta crear() { return new IdeaCarta(nombre, coste, trabajo, prestigio, ingresoPorTurno); }
     }
 
     public record EstudioDatos(IdeaDatos idea, int trabajo, int prestigioExtra) {
         public EstudioDatos {
             Objects.requireNonNull(idea);
-            if (trabajo < 0 || prestigioExtra < 0 || (trabajo < idea.trabajo() && prestigioExtra != 0)) {
+            if (trabajo < 0 || prestigioExtra < 0) {
                 throw new IllegalArgumentException("Estudio guardado no válido");
             }
         }

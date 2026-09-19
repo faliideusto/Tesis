@@ -35,7 +35,7 @@ class PerspectivaHabilidadesTest {
         j.iniciarEstudio(new IdeaCarta("Estudio público",1,trabajo,3));
     }
     @Test void jsonNoIncluyeManosAjenasNiRolOcultoInclusoConDatosDistinguibles() {
-        var m=preparar(2,8);
+        var m=preparar(2,7);
         m.a.añadirCartaIdea(new IdeaCarta("SECRETO_DE_FALI",1,1,1));
         m.b.añadirCartaIdea(new IdeaCarta("SECRETO_DE_JEFE",1,1,1));
         var gson=new Gson(); String a=gson.toJson(m.ver(m.a)); String b=gson.toJson(m.ver(m.b));
@@ -46,7 +46,7 @@ class PerspectivaHabilidadesTest {
         assertEquals(403,assertThrows(ErrorSala.class,()->m.sesion.estado(new Jugador("Fali"))).estado);
     }
     @Test void comitePendienteSeRecuperaYObligaAResolverAntesDeActuar() {
-        var m=preparar(1,7); assertTrue(m.ver(m.a).habilidadPendiente()); assertFalse(m.ver(m.b).habilidadPendiente());
+        var m=preparar(1,6); assertTrue(m.ver(m.a).habilidadPendiente()); assertFalse(m.ver(m.b).habilidadPendiente());
         assertEquals(m.ver(m.a),m.ver(m.a));
         assertThrows(IllegalStateException.class,()->m.actuar(m.a,"COBRAR",null,null));
         assertThrows(IllegalStateException.class,()->m.actuar(m.a,"FIN_TURNO",null,null));
@@ -55,43 +55,53 @@ class PerspectivaHabilidadesTest {
         m.actuar(m.a,"FIN_TURNO",null,null); assertEquals("FIN_RONDA",m.ver(m.b).fase());
     }
     @Test void estadisticoBonificaSoloSuEstudio() {
-        var m=preparar(2,8); estudio(m.a,1); m.a.trabajarEstudio(0,1);
+        var m=preparar(2,7); estudio(m.a,1); m.a.trabajarEstudio(0,1);
         m.actuar(m.a,"HABILIDAD",0,null); assertEquals(4,m.a.prestigio()); assertEquals(0,m.b.prestigio());
         assertThrows(IllegalStateException.class,()->m.actuar(m.a,"HABILIDAD",0,null));
     }
-    @Test void plagiadorActualizaLasDosManosPrivadas() {
-        var m=preparar(3,8); var a=m.a.cartasIdea(); var b=m.b.cartasIdea();
-        m.actuar(m.a,"HABILIDAD",null,m.b.nombre());
-        assertEquals(b,m.a.cartasIdea()); assertEquals(a,m.b.cartasIdea());
-        assertEquals(b.stream().map(IdeaCarta::nombre).toList(),m.ver(m.a).mano().stream().map(Vistas.Carta::nombre).toList());
-        assertEquals(a.stream().map(IdeaCarta::nombre).toList(),m.ver(m.b).mano().stream().map(Vistas.Carta::nombre).toList());
-        var evento=m.ver(m.b).eventos().stream().filter(e->e.tipo().equals("habilidad.plagiador")).findFirst().orElseThrow();
-        assertEquals(m.a.nombre(),evento.actor()); assertEquals(m.b.nombre(),evento.objetivo());
+    @Test void catalogoNuevoTieneSietePersonajesSinPlagiador() {
+        var roles=FabricaMazos.crearRoles().cartas();
+        assertEquals(7,roles.size());
+        assertTrue(roles.stream().noneMatch(r->r.nombre().equals("Plagiador")));
     }
     @Test void investigadorRobaUnaVezAunqueSeConsulteMucho() {
-        var m=preparar(4,8); for(int i=0;i<20;i++){assertEquals(3,m.ver(m.a).mano().size()); assertEquals(2,m.ver(m.b).mano().size());}
-        assertEquals(7,m.ver(m.a).ideas());
+        var m=preparar(3,7); for(int i=0;i<20;i++){assertEquals(3,m.ver(m.a).mano().size()); assertEquals(2,m.ver(m.b).mano().size());}
+        assertEquals(8,m.ver(m.a).ideas());
         var evento=m.ver(m.b).eventos().stream().filter(e->e.tipo().equals("habilidad.investigador_principal")).findFirst().orElseThrow();
         assertEquals(m.a.nombre(),evento.actor()); assertNull(evento.objetivo());
     }
     @Test void decanaProtegeAntesDeSuTurnoSinEnviarSuRol() {
-        var m=preparar(3,5); assertNull(m.ver(m.a).jugadores().get(1).rol());
-        var antes=m.a.cartasIdea(); assertThrows(IllegalStateException.class,()->m.actuar(m.a,"HABILIDAD",null,m.b.nombre()));
-        assertEquals(antes,m.a.cartasIdea()); assertFalse(m.ver(m.a).acciones().stream().filter(x->x.id().equals("HABILIDAD")).findFirst().orElseThrow().disponible());
+        var m=preparar(1,4); assertNull(m.ver(m.a).jugadores().get(1).rol());
+        m.actuar(m.a,"HABILIDAD",null,m.b.personaje().nombre());
+        m.actuar(m.a,"FIN_TURNO",null,null);
+        assertEquals(m.b.nombre(),m.ver(m.b).actual());
+        assertEquals("TURNO_JUGADOR",m.ver(m.b).fase());
     }
-    @Test void editorialCompraTrabajoDespuesDeLasAccionesYPublica() {
-        var m=preparar(6,8); estudio(m.a,2); m.a.sumarMonedas(4);
-        m.actuar(m.a,"COBRAR",null,null); m.actuar(m.a,"PENSAR",null,null);
-        m.actuar(m.a,"HABILIDAD",0,null); m.actuar(m.a,"HABILIDAD",0,null);
-        assertEquals(1,m.a.cantidadPublicados()); assertEquals(0,m.ver(m.a).accionesRestantes());
-        assertTrue(m.ver(m.b).jugadores().get(0).estudios().get(0).publicado());
+    @Test void editorialEsAutomaticaYNoOfreceCompraDeTrabajo() {
+        var m=preparar(5,7); estudio(m.a,2); m.a.sumarMonedas(4);
+        var habilidad=m.ver(m.a).acciones().stream().filter(a->a.id().equals("HABILIDAD")).findFirst().orElseThrow();
+        assertFalse(habilidad.disponible()); assertTrue(habilidad.opciones().isEmpty());
+        assertTrue(m.ver(m.a).jugadores().get(0).rol().automatica());
+        assertThrows(IllegalArgumentException.class,()->m.actuar(m.a,"HABILIDAD",0,null));
+        assertEquals(0,m.a.estudios().get(0).trabajoAcumulado());
+        assertEquals(6,m.a.monedas());
+    }
+    @Test void revisorReabrePublicacionesDesdeLasOpcionesWeb() {
+        var m=preparar(7,6); estudio(m.b,3); m.b.trabajarEstudio(0,3);
+        var habilidad=m.ver(m.a).acciones().stream().filter(a->a.id().equals("HABILIDAD")).findFirst().orElseThrow();
+        assertTrue(habilidad.disponible());
+        assertTrue(habilidad.opciones().stream().anyMatch(o->m.b.nombre().equals(o.objetivo()) && o.indice()==0));
+        m.actuar(m.a,"HABILIDAD",0,m.b.nombre());
+        assertEquals(1,m.b.estudios().get(0).trabajoAcumulado());
+        assertEquals(0,m.b.cantidadPublicados()); assertEquals(0,m.b.prestigio());
+        assertFalse(m.ver(m.b).jugadores().get(1).estudios().get(0).publicado());
     }
     @Test void preDoctoralAportaDosPuntos() {
-        var m=preparar(7,8); estudio(m.a,2); m.actuar(m.a,"TRABAJAR",0,null);
+        var m=preparar(6,7); estudio(m.a,2); m.actuar(m.a,"TRABAJAR",0,null);
         assertEquals(2,m.a.estudios().get(0).trabajoAcumulado()); assertEquals(1,m.a.cantidadPublicados());
     }
     @Test void revisorValidaObjetivoYQuitaTrabajoPublico() {
-        var m=preparar(8,7); estudio(m.b,3); m.b.trabajarEstudio(0,1);
+        var m=preparar(7,6); estudio(m.b,3); m.b.trabajarEstudio(0,1);
         assertThrows(IllegalArgumentException.class,()->m.actuar(m.a,"HABILIDAD",0,"Intruso"));
         m.actuar(m.a,"HABILIDAD",0,m.b.nombre()); assertEquals(0,m.b.estudios().get(0).trabajoAcumulado());
         assertEquals(1,m.a.monedas()); assertEquals(0,m.ver(m.b).jugadores().get(1).estudios().get(0).trabajo());

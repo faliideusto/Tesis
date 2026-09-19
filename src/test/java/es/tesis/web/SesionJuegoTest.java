@@ -15,7 +15,7 @@ class SesionJuegoTest {
             var juego = new SesionJuego();
             var s = juego.crear(List.of("Ana")); s = juego.revelar(s.revision());
             var elegido = s.seleccion().stream().filter(r -> r.orden()==orden).findFirst();
-            if(elegido.isPresent() && s.mano().get(0).nombre().equals(orden == 8 ? "Casos y Controles" : "Artículo Ecológico")) {
+            if(elegido.isPresent() && s.mano().get(0).nombre().equals(orden == 7 ? "Casos y Controles" : "Artículo Ecológico")) {
                 s=action(juego,s,"SELECCIONAR",elegido.get().indice(),null);
                 return new Mesa(juego,juego.revelar(s.revision()));
             }
@@ -34,21 +34,21 @@ class SesionJuegoTest {
         return s.bloqueada() ? juego.revelar(s.revision()) : s;
     }
 
-    @ParameterizedTest @ValueSource(ints={1,2,3,4,5,6,7})
+    @ParameterizedTest @ValueSource(ints={1,2,3,4,5,6})
     void creaTodosLosTamanyosValidosSinAlterarElMazo(int cantidad) {
         var juego = new SesionJuego();
         var nombres = java.util.stream.IntStream.range(0,cantidad).mapToObj(i -> "Persona " + i).toList();
         var s = juego.crear(nombres);
         assertEquals(cantidad,s.jugadores().size());
-        assertEquals(7,s.ideas());
-        assertEquals(7,s.roles());
+        assertEquals(8,s.ideas());
+        assertEquals(6,s.roles());
         assertTrue(s.bloqueada()); assertTrue(s.mano().isEmpty()); assertTrue(s.seleccion().isEmpty());
         assertTrue(s.jugadores().stream().allMatch(j -> j.monedas()==2 && j.cartas()==2 && j.rol()==null));
     }
 
     @Test void rechazaConfiguracionesInvalidasSinSustituirLaMesa() {
         var juego = new SesionJuego(); var original = juego.crear(List.of("Ana","Bruno"));
-        for (var nombres : List.of(List.<String>of(),List.of("Ana","ANA"),List.of(" ","B"),List.of("A","B","C","D","E","F","G","H")))
+        for (var nombres : List.of(List.<String>of(),List.of("Ana","ANA"),List.of(" ","B"),List.of("A","B","C","D","E","F","G")))
             assertThrows(IllegalArgumentException.class,() -> juego.crear(nombres));
         assertEquals(original,juego.estado());
     }
@@ -58,7 +58,7 @@ class SesionJuegoTest {
         final var bloqueado = s;
         assertThrows(IllegalStateException.class,() -> action(juego,bloqueado,"SELECCIONAR",0,null));
         s = juego.revelar(s.revision());
-        assertEquals(2,s.mano().size()); assertEquals(7,s.seleccion().size());
+        assertEquals(2,s.mano().size()); assertEquals(6,s.seleccion().size());
         String primero = s.actual(); String secreto = s.seleccion().get(0).nombre();
         s = action(juego,s,"SELECCIONAR",0,null);
         assertNotEquals(primero,s.actual()); assertTrue(s.bloqueada());
@@ -66,7 +66,7 @@ class SesionJuegoTest {
         assertTrue(s.jugadores().stream().allMatch(j -> j.rol()==null));
         assertFalse(new Gson().toJson(s).contains(secreto));
         s = juego.revelar(s.revision());
-        assertEquals(2,s.mano().size()); assertEquals(6,s.seleccion().size());
+        assertEquals(2,s.mano().size()); assertEquals(5,s.seleccion().size());
     }
 
     @Test void limiteDeAccionesYVersionEvitanDobleEnvio() {
@@ -121,7 +121,7 @@ class SesionJuegoTest {
             if (s.bloqueada()) { s=juego.revelar(s.revision()); continue; }
             if (s.fase().equals("SELECCION_ROLES")) {
                 var rol = s.seleccion().stream().filter(r -> r.orden()!=1 && r.orden()!=3)
-                        .min(Comparator.comparingInt(r -> r.orden()==7 ? 0 : r.orden()==4 ? 1 : r.orden()+10)).orElseThrow();
+                        .min(Comparator.comparingInt(r -> r.orden()==6 ? 0 : r.orden()==3 ? 1 : r.orden()+10)).orElseThrow();
                 s=action(juego,s,"SELECCIONAR",rol.indice(),null); continue;
             }
             if (s.fase().equals("FIN_RONDA")) { finRonda=true; s=action(juego,s,"SIGUIENTE_RONDA",null,null); continue; }
@@ -144,16 +144,15 @@ class SesionJuegoTest {
         assertThrows(IllegalStateException.class,() -> action(juego,resultado,"COBRAR",null,null));
     }
 
-    @Test void editorialPublicaConHabilidadDespuesDeConsumirAcciones() {
-        var mesa=conRol(6); var juego=mesa.juego(); var s=mesa.estado();
+    @Test void editorialNoCompraTrabajoDespuesDeConsumirAcciones() {
+        var mesa=conRol(5); var juego=mesa.juego(); var s=mesa.estado();
         s=action(juego,s,"INICIAR",0,null); s=action(juego,s,"COBRAR",null,null);
         assertEquals(0,s.accionesRestantes());
         var habilidad=s.acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow();
-        assertTrue(habilidad.disponible()); assertEquals(0,habilidad.opciones().get(0).indice());
-        s=action(juego,s,"HABILIDAD",0,null);
-        assertEquals(0,s.jugadores().get(0).monedas()); assertEquals(1,s.jugadores().get(0).publicados());
-        assertTrue(s.eventos().stream().anyMatch(Vistas.Evento::publicacion));
-        assertEquals(0,s.accionesRestantes());
+        assertFalse(habilidad.disponible()); assertTrue(habilidad.opciones().isEmpty());
+        final var antes=s;
+        assertThrows(IllegalArgumentException.class,()->action(juego,antes,"HABILIDAD",0,null));
+        assertEquals(antes,juego.estado());
     }
 
     @Test void estadisticoBonificaPublicacionDesdeLasOpcionesWeb() {
@@ -167,27 +166,27 @@ class SesionJuegoTest {
     }
 
     @Test void automaticasConservanRoboTrabajoEInmunidad() {
-        var investigador=conRol(4);
-        assertEquals(3,investigador.estado().mano().size()); assertEquals(7,investigador.estado().ideas());
-        var pre=conRol(7); var s=action(pre.juego(),pre.estado(),"INICIAR",0,null);
+        var investigador=conRol(3);
+        assertEquals(3,investigador.estado().mano().size()); assertEquals(8,investigador.estado().ideas());
+        var pre=conRol(6); var s=action(pre.juego(),pre.estado(),"INICIAR",0,null);
         s=action(pre.juego(),s,"TRABAJAR",0,null);
         assertEquals(2,s.jugadores().get(0).estudios().get(0).trabajo());
         assertEquals(1,s.jugadores().get(0).publicados());
-        for(var estado:List.of(investigador.estado(),pre.estado(),conRol(5).estado())) {
+        for(var estado:List.of(investigador.estado(),pre.estado(),conRol(4).estado())) {
             assertTrue(estado.jugadores().get(0).rol().automatica());
             assertFalse(estado.acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow().disponible());
         }
     }
 
     @Test void revisorMantieneObjetivoEIndiceYRechazaTrabajoInexistente() {
-        var mesa=conRol(8); var juego=mesa.juego(); var s=mesa.estado();
+        var mesa=conRol(7); var juego=mesa.juego(); var s=mesa.estado();
         s=action(juego,s,"PENSAR",null,null);
         s=action(juego,s,"INICIAR",0,null);
         s=action(juego,s,"FIN_TURNO",null,null); s=action(juego,s,"SIGUIENTE_RONDA",null,null);
         // Esperar una ronda en la que el Revisor no se descarte, sin alterar el mazo.
         for(int ronda=0;ronda<100;ronda++) {
             s=juego.revelar(s.revision());
-            var revisor=s.seleccion().stream().filter(r -> r.orden()==8).findFirst();
+            var revisor=s.seleccion().stream().filter(r -> r.orden()==7).findFirst();
             if(revisor.isPresent()) { s=action(juego,s,"SELECCIONAR",revisor.get().indice(),null); s=juego.revelar(s.revision()); break; }
             var otro=s.seleccion().stream().filter(r -> r.orden()!=1).findFirst().orElseThrow();
             s=action(juego,s,"SELECCIONAR",otro.indice(),null); s=juego.revelar(s.revision());
@@ -207,6 +206,8 @@ class SesionJuegoTest {
             assertNotNull(getClass().getResource("/static/assets/Tesis-assets/"+dto.arte()));
             assertNotNull(getClass().getResource("/static/assets/Tesis-assets/"+dto.marco()));
             assertEquals(c.costeMonedas(),dto.coste()); assertEquals(c.trabajoRequerido(),dto.trabajo());
+            assertEquals(c.nombre().equals("Patente"),dto.legendaria());
+            assertEquals(c.nombre().equals("Patente") ? 2 : 0,dto.ingresoPorTurno());
             if(c.nombre().equals("Ensayo Comunitario")) { assertEquals(8,dto.coste()); assertEquals(4,dto.trabajo()); }
         }
         for(var r:es.tesis.dominio.FabricaMazos.crearRoles().cartas()) {

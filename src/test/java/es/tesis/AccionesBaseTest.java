@@ -149,40 +149,16 @@ class AccionesBaseTest {
     }
 
     @Test
-    void editorialCompraTrabajoRepetidamenteTrasLasDosAccionesYPublica() {
+    void editorialNoPermiteComprarTrabajoNiConsumeRecursos() {
         var motor = crearMotor();
         var jugador = motor.contexto().jugadorActual();
         jugador.asignarPersonaje(new Personaje("Editorial", 6, new EditorialHabilidad()));
-        jugador.iniciarEstudio(new IdeaCarta("Artículo", 1, 3, 5));
-        jugador.sumarMonedas(2);
-        motor.ejecutarAccion(new TrabajarAccion(0));
-        assertEquals(1, jugador.estudios().get(0).trabajoAcumulado());
-        motor.ejecutarAccion(new CobrarAccion());
-        motor.ejecutarAccion(new UsarHabilidadAccion(0));
-        motor.ejecutarAccion(new UsarHabilidadAccion(0));
-        assertEquals(0, jugador.monedas());
-        assertEquals(2, motor.partida().accionesBaseRealizadas());
-        assertEquals(1, jugador.cantidadPublicados());
-        assertEquals(5, jugador.prestigio());
-        jugador.sumarMonedas(3);
-        assertThrows(IllegalStateException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion(0)));
-        assertEquals(3, jugador.monedas());
-        assertEquals(5, jugador.prestigio());
-    }
-
-    @Test
-    void editorialRechazaObjetivosInvalidosYDineroInsuficienteSinCobrar() {
-        var motor = crearMotor();
-        var jugador = motor.contexto().jugadorActual();
-        jugador.asignarPersonaje(new Personaje("Editorial", 6, new EditorialHabilidad()));
-        jugador.iniciarEstudio(new IdeaCarta("Artículo", 1, 3, 5));
-        assertThrows(IllegalArgumentException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion(-1)));
-        assertThrows(IllegalArgumentException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion(1)));
-        assertThrows(IllegalArgumentException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion("Ana")));
-        assertThrows(IllegalStateException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion(0)));
-        assertEquals(2, jugador.monedas());
+        jugador.iniciarEstudio(new IdeaCarta("Articulo", 1, 3, 5));
+        jugador.sumarMonedas(10);
+        assertThrows(IllegalArgumentException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion(0)));
+        assertEquals(12, jugador.monedas());
         assertEquals(0, jugador.estudios().get(0).trabajoAcumulado());
-        assertEquals(0, motor.partida().accionesBaseRealizadas());
+        assertFalse(motor.partida().habilidadUsada());
     }
 
     @Test

@@ -9,16 +9,30 @@ public class Mazo<T extends Carta> {
     private final List<T> cartas;
     private final List<T> cartasIniciales;
     private final boolean inagotable;
+    private final List<Integer> pesos;
+    private final int pesoTotal;
 
     public Mazo(List<T> cartas) {
         this(cartas, false);
     }
 
     Mazo(List<T> cartas, boolean inagotable) {
+        this(cartas, inagotable, Collections.nCopies(cartas.size(), 1));
+    }
+
+    public Mazo(List<T> cartas, List<Integer> pesos) {
+        this(cartas, true, pesos);
+    }
+
+    private Mazo(List<T> cartas, boolean inagotable, List<Integer> pesos) {
         if (inagotable && cartas.isEmpty()) throw new IllegalArgumentException("El catálogo no puede estar vacío");
+        if (pesos.size() != cartas.size() || pesos.stream().anyMatch(p -> p == null || p <= 0))
+            throw new IllegalArgumentException("Cada carta debe tener un peso positivo");
         this.cartas = new ArrayList<>(cartas);
         this.cartasIniciales = new ArrayList<>(cartas);
         this.inagotable = inagotable;
+        this.pesos = List.copyOf(pesos);
+        this.pesoTotal = pesos.stream().mapToInt(Integer::intValue).sum();
     }
 
     public boolean esInagotable() { return inagotable; }
@@ -55,10 +69,20 @@ public class Mazo<T extends Carta> {
             throw new IllegalStateException("El mazo está vacío");
         }
 
+        if (inagotable) return cartaParaSorteo(java.util.concurrent.ThreadLocalRandom.current().nextInt(pesoTotal));
         int indice = java.util.concurrent.ThreadLocalRandom.current()
                 .nextInt(cartas.size());
 
         return retirar(indice);
+    }
+
+    T cartaParaSorteo(int valor) {
+        if (valor < 0 || valor >= pesoTotal) throw new IllegalArgumentException("Sorteo fuera de rango");
+        for (int i = 0; i < pesos.size(); i++) {
+            valor -= pesos.get(i);
+            if (valor < 0) return cartas.get(i);
+        }
+        throw new IllegalStateException("Distribución no válida");
     }
 
     public T retirar(int indice) {

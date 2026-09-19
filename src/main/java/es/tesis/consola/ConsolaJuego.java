@@ -128,15 +128,12 @@ public final class ConsolaJuego {
     private void usarHabilidad(Jugador jugador) {
         var habilidad = jugador.personaje().habilidad();
         if (habilidad instanceof PreDoctoralHabilidad || habilidad instanceof InvestigadorPrincipalHabilidad
-                || habilidad instanceof DecanaHabilidad) {
+                || habilidad instanceof DecanaHabilidad || habilidad instanceof EditorialHabilidad) {
             salida.println("Esta habilidad se aplica automáticamente: " + describirHabilidad(habilidad));
             return;
         }
         motor.contexto().reglas().validarHabilidad(motor.contexto());
-        if (habilidad instanceof EditorialHabilidad) {
-            int indice = elegirEstudio(jugador, e -> e.estado() == EstadoEstudio.EN_DESARROLLO, "Estudio propio (3 monedas)");
-            if (indice >= 0) motor.ejecutarAccion(new UsarHabilidadAccion(indice));
-        } else if (habilidad instanceof EstadisticoHabilidad) {
+        if (habilidad instanceof EstadisticoHabilidad) {
             int indice = elegirEstudio(jugador, e -> e.estado() == EstadoEstudio.PUBLICADO, "Artículo propio publicado");
             if (indice >= 0) motor.ejecutarAccion(new UsarHabilidadAccion(indice));
         } else if (habilidad instanceof ComiteEticaHabilidad) {
@@ -161,8 +158,7 @@ public final class ConsolaJuego {
             }
             if (objetivo == null) throw new IllegalArgumentException("Elige un jugador de la lista");
             if (habilidad instanceof Revisor2Habilidad) {
-                int indice = elegirEstudio(objetivo, e -> e.estado() == EstadoEstudio.EN_DESARROLLO
-                        && e.trabajoAcumulado() > 0, "Estudio para revisar (1 moneda)");
+                int indice = elegirEstudio(objetivo, e -> e.trabajoAcumulado() > 0, "Artículo para revisar (1 moneda, retira 2 puntos)");
                 if (indice >= 0) motor.ejecutarAccion(new UsarHabilidadAccion(objetivo.nombre(), indice));
             } else {
                 motor.ejecutarAccion(new UsarHabilidadAccion(objetivo.nombre()));
@@ -201,14 +197,14 @@ public final class ConsolaJuego {
     }
 
     private String describirHabilidad(HabilidadPersonaje habilidad) {
-        if (habilidad instanceof ComiteEticaHabilidad) return "Debes nombrar un rol al inicio para vetarlo; una vez por turno.";
-        if (habilidad instanceof EstadisticoHabilidad) return "Añade 1 de prestigio a una publicación propia; una vez por turno.";
+        if (habilidad instanceof ComiteEticaHabilidad) return "Nombra un rol al inicio de tu turno. Ese jugador no podrá realizar ninguna acción.";
+        if (habilidad instanceof EstadisticoHabilidad) return "Añade 1 de prestigio a uno de tus artículos ya publicado.";
         if (habilidad instanceof PlagiadorHabilidad) return "Intercambia tu mano con otro jugador; una vez por turno.";
-        if (habilidad instanceof InvestigadorPrincipalHabilidad) return "Roba una idea extra al inicio y elige primero la próxima ronda; automática.";
-        if (habilidad instanceof DecanaHabilidad) return "Inmunidad a habilidades rivales durante toda la ronda; automática.";
-        if (habilidad instanceof EditorialHabilidad) return "Cobra por publicaciones al inicio y compra trabajo por 3 monedas; compras repetibles.";
-        if (habilidad instanceof PreDoctoralHabilidad) return "La acción Trabajar aporta 2 puntos; automática.";
-        if (habilidad instanceof Revisor2Habilidad) return "Paga 1 moneda para retirar 1 de trabajo de un estudio; una vez por turno.";
+        if (habilidad instanceof InvestigadorPrincipalHabilidad) return "Al iniciar tu turno, recibe 1 idea extra. Comenzarás la elección de rol la próxima ronda.";
+        if (habilidad instanceof DecanaHabilidad) return "Obtienes inmunidad frente a cualquier habilidad rival durante toda la ronda.";
+        if (habilidad instanceof EditorialHabilidad) return "Al iniciar tu turno, recibe 1 Moneda por cada artículo publicado en la mesa.";
+        if (habilidad instanceof PreDoctoralHabilidad) return "La acción de trabajar te aporta 2 puntos de trabajo durante toda la ronda.";
+        if (habilidad instanceof Revisor2Habilidad) return "Una vez por turno, podrás pagar 1 Moneda para retirar 2 Puntos de Trabajo de cualquier artículo.";
         return "Consulta las reglas de este personaje.";
     }
 

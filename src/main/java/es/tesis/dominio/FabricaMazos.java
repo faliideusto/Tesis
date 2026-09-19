@@ -14,20 +14,20 @@ public final class FabricaMazos {
                 new IdeaCarta("Cohortes", 3, 3, 5),
                 new IdeaCarta("Ensayo Clínico Aleatorizado", 4, 4, 7),
                 new IdeaCarta("Ensayo Comunitario", 8, 4, 9),
-                new IdeaCarta("Revisión Sistemática", 2, 5, 6)
-        ), true);
+                new IdeaCarta("Revisión Sistemática", 2, 5, 6),
+                new IdeaCarta("Patente", 3, 5, 5, 2)
+        ), List.of(20, 20, 17, 13, 10, 6, 10, 4));
 
     }
     public static Mazo<Personaje> crearRoles() {
         return new Mazo<>(List.of(
                 new Personaje("Comité de Ética", 1, new ComiteEticaHabilidad()),
                 new Personaje("Estadístico", 2, new EstadisticoHabilidad()),
-                new Personaje("Plagiador", 3, new PlagiadorHabilidad()),
-                new Personaje("Investigador Principal", 4, new InvestigadorPrincipalHabilidad()),
-                new Personaje("Decana", 5, new DecanaHabilidad()),
-                new Personaje("Editorial", 6, new EditorialHabilidad()),
-                new Personaje("Pre-Doctoral", 7, new PreDoctoralHabilidad()),
-                new Personaje("Revisor 2", 8, new Revisor2Habilidad())
+                new Personaje("Investigador Principal", 3, new InvestigadorPrincipalHabilidad()),
+                new Personaje("Decana", 4, new DecanaHabilidad()),
+                new Personaje("Editorial", 5, new EditorialHabilidad()),
+                new Personaje("Pre-Doctoral", 6, new PreDoctoralHabilidad()),
+                new Personaje("Revisor 2", 7, new Revisor2Habilidad())
         ));
 
     }

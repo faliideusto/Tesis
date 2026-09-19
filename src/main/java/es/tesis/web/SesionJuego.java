@@ -19,8 +19,8 @@ public final class SesionJuego {
 
     public static Vistas.Configuracion configuracion() {
         int maximo = FabricaMazos.crearRoles().cartas().size() - 1;
-        return new Vistas.Configuracion(1, Math.min(7, maximo), 7,
-                "El mazo mantiene siempre los 7 tipos de idea. Se reparten 2 cartas aleatorias por persona y cada robo puede repetir un tipo. Admite hasta 7 jugadores. No hay IA.");
+        return new Vistas.Configuracion(1, Math.min(6, maximo), 8,
+                "El mazo mantiene siempre los 8 tipos de idea. El reparto y los robos usan las probabilidades de cada artículo, con reposición. Admite hasta 6 jugadores. No hay IA.");
     }
 
     public synchronized Vistas.Estado crear(List<String> nombres) {
@@ -184,10 +184,10 @@ public final class SesionJuego {
         if (h instanceof ComiteEticaHabilidad) {
             c.partida().mazoRoles().cartasIniciales().stream().filter(r -> r != j.personaje())
                     .forEach(r -> opciones.add(new Vistas.Opcion(r.nombre(), null, r.nombre())));
-        } else if (h instanceof EstadisticoHabilidad || h instanceof EditorialHabilidad) {
+        } else if (h instanceof EstadisticoHabilidad) {
             for (int i = 0; i < j.estudios().size(); i++) {
                 boolean publicado = j.estudios().get(i).estado() == EstadoEstudio.PUBLICADO;
-                if ((h instanceof EstadisticoHabilidad && publicado) || (h instanceof EditorialHabilidad && !publicado && j.monedas() >= 3))
+                if (publicado)
                     opciones.add(new Vistas.Opcion(j.estudios().get(i).carta().nombre(), i, null));
             }
         } else if (h instanceof PlagiadorHabilidad) {
@@ -198,7 +198,7 @@ public final class SesionJuego {
                 if (otro != j && c.estaProtegido(otro.nombre())) continue;
                 for (int i = 0; i < otro.estudios().size(); i++) {
                     var e = otro.estudios().get(i);
-                    if (e.estado() == EstadoEstudio.EN_DESARROLLO && e.trabajoAcumulado() > 0)
+                    if (e.trabajoAcumulado() > 0)
                         opciones.add(new Vistas.Opcion(otro.nombre() + " · " + e.carta().nombre(), i, otro.nombre()));
                 }
             }
@@ -225,8 +225,9 @@ public final class SesionJuego {
             case "habilidad.comite_etica" -> actor + " nombra «" + d.get("rol") + "» para el veto.";
             case "habilidad.estadistico" -> actor + " añade 1 de prestigio a «" + d.get("articulo") + "».";
             case "habilidad.plagiador" -> actor + " intercambia su mano con " + d.get("objetivo") + ".";
-            case "habilidad.revisor_2" -> actor + " retira 1 de trabajo de «" + d.get("articulo") + "».";
+            case "habilidad.revisor_2" -> actor + " retira hasta 2 puntos de trabajo de «" + d.get("articulo") + "», que queda en desarrollo.";
             case "habilidad.editorial.inicio" -> actor + " recibe " + d.get("monedasRecibidas") + " monedas de Editorial.";
+            case "articulo.ingresos" -> actor + " recibe " + d.get("monedas") + " monedas de sus patentes publicadas.";
             case "habilidad.investigador_principal" -> actor + " elegirá primero la próxima ronda" + (Boolean.TRUE.equals(d.get("cartaRobada")) ? " y roba una idea extra." : ".");
             case "habilidad.decana" -> actor + " tiene la inmunidad de Decana.";
             case "partida.fin" -> "Partida finalizada. Victoria: " + d.get("ganadores") + ".";

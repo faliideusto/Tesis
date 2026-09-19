@@ -292,6 +292,66 @@ class FlujoYHabilidadesTest {
         assertThrows(IllegalStateException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion(otro.nombre(), 0)));
     }
 
+    @Test void revisorReabrePublicadosYConservaBonificacionTrasGuardarYRepublicar() {
+        var motor = comenzar(new Revisor2Habilidad(), new PreDoctoralHabilidad());
+        Jugador otro = conRol(motor, 2);
+        otro.iniciarEstudio(new IdeaCarta("Publicado", 1, 3, 4));
+        otro.trabajarEstudio(0, 4);
+        otro.estudios().get(0).añadirPrestigioExtra(); otro.sumarPrestigio(1);
+        motor.partida().tablero().agregarEstudio(otro.estudios().get(0));
+        motor.ejecutarAccion(new UsarHabilidadAccion(otro.nombre(), 0));
+        assertEquals(1, otro.estudios().get(0).trabajoAcumulado());
+        assertEquals(0, otro.cantidadPublicados()); assertEquals(0, otro.prestigio());
+        assertEquals(0, motor.partida().tablero().cantidadEstudiosPublicados());
+        var json = new es.tesis.persistencia.SerializadorPartidaJson();
+        var recuperado = new MotorJuegoImpl(new ReglasAcademicas(), new BusEventosSimple());
+        recuperado.recuperarPartida(json.deserializar(json.serializar(motor.guardarPartida())));
+        Jugador restaurado = conRol(recuperado, 2);
+        assertEquals(1, restaurado.estudios().get(0).prestigioExtra());
+        assertEquals(0, restaurado.prestigio());
+        recuperado.avanzarFase();
+        recuperado.ejecutarAccion(new TrabajarAccion(0));
+        assertEquals(1, restaurado.cantidadPublicados()); assertEquals(5, restaurado.prestigio());
+        assertEquals("5", recuperado.historial().stream().filter(e -> e.tipo().equals("accion.trabajar")).reduce((a,b) -> b).orElseThrow().datos().get("prestigio"));
+        assertEquals(1, recuperado.partida().tablero().cantidadEstudiosPublicados());
+        restaurado.revisarEstudio(0); restaurado.trabajarEstudio(0, 2);
+        assertEquals(5, restaurado.prestigio());
+    }
+
+    @Test void patenteCobraSoloPublicadaAlInicioYNoDuplicaIngresosAlRecuperar() {
+        var motor = comenzar(new PreDoctoralHabilidad(), new PreDoctoralHabilidad());
+        var titular = conRol(motor, 2);
+        var patente = FabricaMazos.crearIdeas().cartas().stream().filter(c -> c.nombre().equals("Patente")).findFirst().orElseThrow();
+        titular.iniciarEstudio(patente); titular.iniciarEstudio(patente);
+        titular.trabajarEstudio(0,5);
+        motor.avanzarFase();
+        assertEquals(4,titular.monedas());
+        var json = new es.tesis.persistencia.SerializadorPartidaJson();
+        var recuperado = new MotorJuegoImpl(new ReglasAcademicas(), new BusEventosSimple());
+        recuperado.recuperarPartida(json.deserializar(json.serializar(motor.guardarPartida())));
+        var restaurado = conRol(recuperado,2);
+        assertEquals(4,restaurado.monedas());
+        assertEquals(2,restaurado.estudios().get(0).carta().ingresoPorTurno());
+        restaurado.revisarEstudio(0);
+        new EstadoTurno().entrar(recuperado.contexto());
+        assertEquals(4,restaurado.monedas());
+        restaurado.trabajarEstudio(0,2); restaurado.trabajarEstudio(1,5);
+        assertEquals(4,restaurado.monedas());
+        new EstadoTurno().entrar(recuperado.contexto());
+        assertEquals(8,restaurado.monedas());
+        assertEquals(10,restaurado.prestigio());
+    }
+
+    @Test void revisorRetiraDosPuntosDeUnEstudioEnDesarrollo() {
+        var motor = comenzar(new Revisor2Habilidad(), new PreDoctoralHabilidad());
+        Jugador otro = conRol(motor, 2);
+        estudio(otro, 2, false);
+        motor.ejecutarAccion(new UsarHabilidadAccion(otro.nombre(), 0));
+        assertEquals(0, otro.estudios().get(0).trabajoAcumulado());
+        assertEquals(1, motor.contexto().jugadorActual().monedas());
+        assertEquals(0, motor.partida().accionesBaseRealizadas());
+    }
+
     @Test void revisorRechazaObjetivosInvalidosSinCobrarNiConsumirUso() {
         var motor = comenzar(new Revisor2Habilidad(), new PreDoctoralHabilidad());
         Jugador actor = motor.contexto().jugadorActual();
@@ -301,7 +361,6 @@ class FlujoYHabilidadesTest {
         assertThrows(IllegalArgumentException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion("Nadie", 0)));
         assertThrows(IllegalArgumentException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion(otro.nombre(), -1)));
         assertThrows(IllegalStateException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion(otro.nombre(), 0)));
-        assertThrows(IllegalStateException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion(otro.nombre(), 1)));
         assertEquals(2, actor.monedas());
         assertFalse(motor.partida().habilidadUsada());
         estudio(actor, 1, false);

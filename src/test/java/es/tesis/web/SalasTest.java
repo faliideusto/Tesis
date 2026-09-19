@@ -62,14 +62,14 @@ class SalasTest {
         assertEquals(403,assertThrows(ErrorSala.class,()->m.sala.iniciar(otro.playerToken(),otro.sala().revision())).estado);
         iniciar(m); assertEquals("EN_PARTIDA",m.ver().fase());
     }
-    @ParameterizedTest @ValueSource(ints={2,3,4,5,6,7})
+    @ParameterizedTest @ValueSource(ints={2,3,4,5,6})
     void repartoYSeleccionPrivadaParaTodosLosTamanyos(int cantidad) {
-        var m=mesa(cantidad); if(cantidad==7) assertThrows(ErrorSala.class,()->m.sala.unirse("Extra"));
+        var m=mesa(cantidad); if(cantidad==6) assertThrows(ErrorSala.class,()->m.sala.unirse("Extra"));
         iniciar(m);
         for(String nombre:m.tokens.keySet()) {
             var s=m.ver(nombre); assertEquals(nombre,s.yo()); assertEquals(2,s.partida().mano().size());
-            assertEquals(7,s.partida().ideas());
-            assertEquals(s.partida().actual().equals(nombre)?7:0,s.partida().seleccion().size());
+            assertEquals(8,s.partida().ideas());
+            assertEquals(s.partida().actual().equals(nombre)?6:0,s.partida().seleccion().size());
             assertTrue(s.partida().jugadores().stream().allMatch(j->j.rol()==null));
         }
         seleccionar(m); assertEquals("TURNO_JUGADOR",m.ver().partida().fase());
@@ -105,7 +105,7 @@ class SalasTest {
         m.actuar(actual.yo(),"PENSAR",null,null);
         assertEquals(manoRival,m.ver(rival).partida().mano());
         assertEquals(actual.partida().mano().size()+1,m.actual().partida().mano().size());
-        assertEquals(7,m.actual().partida().ideas());
+        assertEquals(8,m.actual().partida().ideas());
     }
     @Test void dosSolicitudesSimultaneasNoDuplicanCobro() throws Exception {
         var m=mesa(2); iniciar(m); seleccionar(m); var actual=m.actual();
@@ -137,7 +137,7 @@ class SalasTest {
         reloj.instante=reloj.instante.plus(Duration.ofHours(2)); registro.limpiar();
         assertNotNull(registro.buscar(a.codigo())); assertEquals(404,assertThrows(ErrorSala.class,()->registro.buscar(b.codigo())).estado);
     }
-    @ParameterizedTest @ValueSource(ints={2,7})
+    @ParameterizedTest @ValueSource(ints={2,6})
     void partidaCompletaConVariasRondasDesdeTodasLasIdentidades(int cantidad) {
         var m=mesa(cantidad); iniciar(m); var usados=new HashSet<String>();
         for(int paso=0;paso<3000&&!m.ver().fase().equals("FINALIZADA");paso++) {

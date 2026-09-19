@@ -72,7 +72,7 @@ with sync_playwright() as p:
                 page.locator('[data-command=phase]').click()
                 page.screenshot(path=str(out/'personajes.png'),full_page=True)
             # Comité ejercita la decisión inicial; Pre-Doctoral agiliza después la partida.
-            pref=[1,7,4,6,2,5,8,3] if state['ronda']==1 else [7,4,6,2,5,8,3,1]
+            pref=[1,6,3,5,2,4,7] if state['ronda']==1 else [6,3,5,2,4,7,1]
             role=min(state['seleccion'],key=lambda r:pref.index(r['orden']))
             page.locator(f'.role-selection [data-index="{role["indice"]}"]').click()
             expect(page.locator('#modal-title')).to_have_text('Representa a tu academia')

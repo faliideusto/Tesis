@@ -29,9 +29,9 @@ function schedulePoll() {
 function home() {
   stopPolling(); screen='home'; closeDialog(); resetFeedback(); connectionStatus();
   app.innerHTML = `<section class="home-screen"><nav class="home-nav"><span>UNA MESA. MUCHAS IDEAS.</span><button class="text-button" data-command="help">Cómo jugar</button></nav>
-    <div class="home-copy">${img('Logo/logo_tesis.png','home-logo','Tesis')}<span class="eyebrow">EL CONOCIMIENTO DEJA HUELLA</span>
-    <h1>Construye tu<br><em>legado académico.</em></h1><p>Reúne a tu academia. Cada persona juega desde su dispositivo, con su mano privada y una mesa compartida.</p>
-    <div class="home-features"><span>8 personajes</span><span>7 tipos de idea</span><span>2–7 jugadores</span></div></div>
+    <div class="home-copy">${img('Logo/logo_tesis.png','home-logo','Tesis')}<span class="eyebrow">La diferencia está en la ciencia</span>
+    <h1>Construye tu<br><em>legado científico.</em></h1><p>Reúne a tu academia. Cada persona juega desde su dispositivo, con su mano privada y una mesa compartida.</p>
+    <div class="home-features"><span>7 personajes</span><span>8 tipos de idea</span><span>2–6 jugadores</span></div></div>
     <section class="setup-panel"><span class="eyebrow">LAS PUERTAS ESTÁN ABIERTAS</span><h2>Reúne a tu academia</h2><p>Solo necesitas tu nombre y un código de sala.</p>
       <form id="create-room" class="room-form"><label>Tu nombre<input name="nombre" maxlength="24" required autocomplete="nickname" placeholder="Fali"></label><button class="gold-button" type="submit">Crear sala</button></form>
       <div class="room-divider">O ENTRA EN UNA SALA</div>
@@ -83,10 +83,12 @@ const act = (type, option = {}) => run(() => api.action(room.revision,type,optio
 function help() {
   dialog('El conocimiento se convierte en prestigio', `<div class="rules-copy"><p><strong>1. Elige un personaje.</strong> Se descarta un rol al azar. Cada persona elige entre los restantes. Se juega en orden de personaje, de menor a mayor.</p>
     <p><strong>2. Decide cómo avanzar.</strong> En tu turno puedes realizar hasta dos acciones: cobrar 2 monedas, pensar para robar una idea, pagar una idea para iniciar un estudio o trabajar en un estudio propio.</p>
-    <p><strong>3. Aprovecha tu habilidad.</strong> No consume acciones base. Las habilidades activas se usan una vez por turno, salvo Editorial, que puede comprar trabajo varias veces. El Comité debe nombrar un rol antes de actuar.</p>
+    <p><strong>3. Aprovecha tu habilidad.</strong> No consume acciones base. Las habilidades activas se usan una vez por turno. El Comité debe nombrar un rol antes de actuar. Editorial recibe una moneda por cada artículo publicado en la mesa al iniciar su turno.</p>
+    <p><strong>Revisor 2.</strong> Puede pagar una moneda para retirar hasta dos puntos de trabajo de cualquier artículo. Si estaba publicado, vuelve a desarrollo y recuperará su prestigio cuando se publique otra vez. Decana tiene inmunidad frente a habilidades rivales durante toda la ronda.</p>
     <p><strong>4. Publica y deja tu huella.</strong> Al completar el trabajo, publicas automáticamente y ganas el prestigio de la carta. Cuando alguien publica su tercer artículo, se termina la ronda. Gana quien tenga más prestigio; los empates comparten victoria.</p>
     <p><strong>Una sala, varios dispositivos.</strong> Comparte el código y juega desde tu navegador. Solo tú ves tu mano. Al recargar recuperas tu identidad en esta pestaña. Las salas caducan tras 24 horas sin consultas válidas y se pierden al reiniciar el servidor.</p>
-    <p><strong>Mazo inagotable.</strong> Los siete tipos de idea permanecen siempre disponibles. Cada reparto y robo elige una carta al azar, con posibilidad de repetir un tipo. Las cartas no se acaban.</p></div>`, {wide:false});
+    <p><strong>Mazo inagotable.</strong> Cada reparto y robo usa estas probabilidades, con reposición: Ecológico 20%, Transversal 20%, Casos y Controles 17%, Cohortes 13%, Revisión Sistemática 10%, Ensayo Clínico Aleatorizado 10%, Ensayo Comunitario 6% y Patente 4%.</p>
+    <p><strong>Patente · Legendaria.</strong> Cuesta 3 monedas y 5 de trabajo; da 5 de prestigio. Mientras esté publicada, genera 2 monedas al inicio de tu turno. Si se revisa, deja de generar ingresos hasta republicarse.</p></div>`, {wide:false});
 }
 function chooseAction(id) {
   const action = state.acciones.find(a => a.id === id);
@@ -109,6 +111,7 @@ function inspect(c, study = null, player = null) {
     && state.acciones.find(a => a.id === 'TRABAJAR')?.opciones.some(o => o.indice === study.indice);
   dialog(c.nombre, `<div class="card-detail">${ideaCard(c,{command:'noop'})}<div><span class="eyebrow">${study ? study.publicado ? 'ARTÍCULO PUBLICADO' : 'ESTUDIO EN DESARROLLO' : 'CARTA DE IDEA'}</span><h2>${esc(c.nombre)}</h2>
     <dl><div><dt>Coste de inicio</dt><dd>${c.coste} monedas</dd></div><div><dt>Trabajo requerido</dt><dd>${c.trabajo} puntos</dd></div><div><dt>Prestigio</dt><dd>${c.prestigio}${study?.prestigioExtra ? ` + ${study.prestigioExtra}` : ''}</dd></div></dl>
+    ${c.ingresoPorTurno ? `<p>Legendaria. Mientras esté publicada, recibes ${c.ingresoPorTurno} monedas al iniciar tu turno.</p>` : ''}
     ${study ? `<p>Progreso: ${study.trabajo} / ${c.trabajo}</p>` : ''}
     ${canStart ? `<button class="gold-button" data-command="start" data-index="${c.indice}">Iniciar estudio · ${c.coste} monedas</button>` : ''}
     ${canWork ? `<button class="gold-button" data-command="work" data-index="${study.indice}">Trabajar en este estudio</button>` : ''}

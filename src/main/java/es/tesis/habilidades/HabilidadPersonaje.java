@@ -5,7 +5,7 @@ import es.tesis.motor.ContextoJuego;
 
 public interface HabilidadPersonaje {
 
-    // Las habilidades activas se usan una vez por turno; Editorial es la excepción explícita del informe.
+    // Las habilidades activas se usan una vez por turno.
     default boolean repetible() { return false; }
 
     default boolean esInmune() { return false; }

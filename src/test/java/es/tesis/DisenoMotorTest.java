@@ -83,18 +83,18 @@ class DisenoMotorTest {
     @Test void fabricaCreaMazosIndependientesConElCatalogoCompleto() {
         var roles = FabricaMazos.crearRoles();
         var otrosRoles = FabricaMazos.crearRoles();
-        assertEquals(8, roles.cartas().size());
+        assertEquals(7, roles.cartas().size());
         assertNotSame(roles.cartas().get(0), otrosRoles.cartas().get(0));
         roles.robar();
-        assertEquals(8, otrosRoles.cartas().size());
+        assertEquals(7, otrosRoles.cartas().size());
         roles.reiniciar();
-        assertEquals(8, roles.cartas().size());
+        assertEquals(7, roles.cartas().size());
         var ideas = FabricaMazos.crearIdeas();
         var otrasIdeas = FabricaMazos.crearIdeas();
-        assertEquals(7, ideas.cartas().size());
+        assertEquals(8, ideas.cartas().size());
         assertNotSame(ideas.cartas().get(0), otrasIdeas.cartas().get(0));
         ideas.robar();
-        assertEquals(7, otrasIdeas.cartas().size());
+        assertEquals(8, otrasIdeas.cartas().size());
     }
 
     @Test void coleccionesDevueltasNoPermitenEscrituraNiCambianConElOriginal() {
@@ -103,7 +103,7 @@ class DisenoMotorTest {
         var cartas = partida.mazoIdeas().cartas();
         assertThrows(UnsupportedOperationException.class, cartas::clear);
         partida.mazoIdeas().robar();
-        assertEquals(7, cartas.size());
+        assertEquals(8, cartas.size());
         var jugador = partida.jugadores().get(0);
         var mano = jugador.cartasIdea();
         jugador.añadirCartaIdea(cartas.get(0));

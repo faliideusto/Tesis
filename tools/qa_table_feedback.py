@@ -23,7 +23,7 @@ with sync_playwright() as p:
         window.fx = await import('/js/feedback.js');
         const card = {indice:0,nombre:'Casos y Controles',coste:2,trabajo:2,prestigio:3,
             arte:'articulos/03_casos_controles.png',marco:'cartas/marco_articulo_comun.png'};
-        const role = {indice:0,nombre:'Pre-Doctoral',orden:7,habilidad:'Cada acción Trabajar aporta 2 puntos de trabajo. Automática.',arte:'personajes/07_pre_doctoral.png'};
+        const role = {indice:0,nombre:'Pre-Doctoral',orden:6,habilidad:'La acción de trabajar te aporta 2 puntos de trabajo durante toda la ronda.',arte:'personajes/07_pre_doctoral.png'};
         window.initial = {yo:'Ana',fase:'TURNO_JUGADOR',ronda:1,actual:'Bruno',bloqueada:false,
             ideas:7,roles:5,accionesRestantes:0,habilidadPendiente:false,seleccion:[],eventos:[],ganadores:[],ultimaRonda:false,aviso:'',
             jugadores:[{nombre:'Ana',monedas:4,prestigio:0,cartas:2,publicados:0,rol:role,estudios:[],activo:false},
@@ -83,7 +83,7 @@ with sync_playwright() as p:
     expect(page.locator('#activity-current')).to_contain_text('Artículo publicado')
     expect(page.locator('#activity-current')).to_contain_text('+3 prestigio')
     page.wait_for_timeout(300)
-    rival_box = page.locator('#rivals').bounding_box()
+    rival_box = page.locator('.rival-seat').first.bounding_box()
     activity_box = page.locator('.table-activity').bounding_box()
     assert rival_box['y'] + rival_box['height'] <= activity_box['y']
     page.screenshot(path=str(out / 'publicacion.png'), full_page=True)
@@ -139,8 +139,8 @@ with sync_playwright() as p:
     expect(page.locator('#activity-current')).to_contain_text('La mesa está al día')
     expect(page.locator('.flying-card')).to_have_count(0)
 
-    # Layout stress: many public studies, seven seats and narrow screens.
-    for count, width, height in [(2,1600,900),(7,1600,900),(7,1024,768),(2,390,844),(7,390,844)]:
+    # Every supported table size, with public studies and narrow screens.
+    for count, width, height in [(n,w,h) for n in range(2,7) for w,h in [(1920,1080),(1600,900),(1024,768),(390,844)]]:
         page.set_viewport_size({'width':width,'height':height})
         page.evaluate("""count => {
             fx.resetFeedback(); const state=structuredClone(published);
@@ -151,14 +151,63 @@ with sync_playwright() as p:
         page.wait_for_function("() => [...document.images].every(i=>i.complete && i.naturalWidth>0)")
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (count,width,'overflow')
         assert page.locator('.table-study').count() == (count-1)*8
-        boxes = [page.locator(s).bounding_box() for s in ['#rivals','#decks','#phase-message','.player-zone']]
-        for first, second in zip(boxes, boxes[1:]):
-            assert first['y'] + first['height'] <= second['y'] + 1, (count,width,'overlap',boxes)
-        activity = page.locator('.table-activity').bounding_box()
-        assert boxes[0]['y'] + boxes[0]['height'] <= activity['y'] + 1
-        assert activity['y'] + activity['height'] <= boxes[2]['y'] + 1
-        page.screenshot(path=str(out / f'mesa-{count}-{width}.png'),full_page=True)
+        seats = [seat.bounding_box() for seat in page.locator('.rival-seat').all()]
+        for i, first in enumerate(seats):
+            for second in seats[i+1:]:
+                assert (first['x'] + first['width'] <= second['x'] + 1
+                        or second['x'] + second['width'] <= first['x'] + 1
+                        or first['y'] + first['height'] <= second['y'] + 1
+                        or second['y'] + second['height'] <= first['y'] + 1), (count,width,'seat overlap',seats)
+        if width >= 1000:
+            assert page.evaluate('document.documentElement.scrollHeight <= innerHeight'), (count,width,'vertical scroll')
+            if count == 4:
+                assert seats[0]['y'] < seats[1]['y'] and seats[1]['y'] == seats[2]['y']
+                centers = [s['x']+s['width']/2 for s in seats]
+                assert abs(centers[0]-width/2) < 2 and centers[1] < width/3 and centers[2] > width*2/3
+            if count == 6:
+                assert len({round(s['y']) for s in seats[:3]}) == 1
+                assert seats[3]['x'] == seats[0]['x'] and seats[4]['x'] == seats[2]['x']
+            assert page.evaluate("""() => [...document.querySelectorAll('.rival,.table-study,.hand .game-card,#actions')].every(e=>{
+                const r=e.getBoundingClientRect(); return r.top>=0 && r.bottom<=innerHeight+1 && r.left>=0 && r.right<=innerWidth+1;
+            })"""), (count,width,'content outside viewport')
+            activity=page.locator('.table-activity').bounding_box()
+            for seat in seats:
+                assert (seat['x']+seat['width']<=activity['x']+1 or activity['x']+activity['width']<=seat['x']+1
+                        or seat['y']+seat['height']<=activity['y']+1 or activity['y']+activity['height']<=seat['y']+1), (count,width,'activity covers rival')
+        else:
+            boxes = [page.locator(sel).bounding_box() for sel in ['#rivals','#decks','#phase-message','.player-zone']]
+            for first, second in zip(boxes, boxes[1:]):
+                assert first['y']+first['height']<=second['y']+1, (count,width,'overlap')
+        page.screenshot(path=str(out / f'mesa-{count}-{width}.jpg'),full_page=True,type='jpeg',quality=80)
+    # At full HD, all phases keep the hand, deployed cards and controls in the viewport.
+    page.set_viewport_size({'width':1920,'height':1080})
+    for phase in ['SELECCION_ROLES','TURNO_JUGADOR','FIN_RONDA','FIN_PARTIDA']:
+        page.evaluate("""phase => {
+            const s=structuredClone(published); s.fase=phase; s.actual='Ana';
+            while(s.jugadores.length<6) s.jugadores.push({...structuredClone(s.jugadores[1]),nombre:`Academia ${s.jugadores.length+1}`});
+            s.mano=Array.from({length:10},(_,indice)=>({...s.mano[0],indice}));
+            for(const player of s.jugadores) player.estudios=Array.from({length:8},(_,indice)=>({...structuredClone(published.jugadores[1].estudios[0]),indice}));
+            s.seleccion=phase==='SELECCION_ROLES'?[initial.jugadores[0].rol]:[];
+            s.acciones=phase==='FIN_RONDA'?[{id:'SIGUIENTE_RONDA',nombre:'Siguiente ronda',disponible:true}]:initial.acciones;
+            boardModule.board(s); fx.feedback(null,s);
+        }""",phase)
+        assert page.evaluate('document.documentElement.scrollHeight<=innerHeight && document.documentElement.scrollWidth<=innerWidth'), phase
+        expect(page.locator('#actions')).to_be_in_viewport()
+        expect(page.locator('#hand')).to_be_in_viewport()
+    page.evaluate("""() => {
+        const s=structuredClone(published); s.actual='Ana'; s.acciones=initial.acciones;
+        while(s.jugadores.length<6) s.jugadores.push({...structuredClone(s.jugadores[1]),nombre:`Academia ${s.jugadores.length+1}`});
+        const patente={indice:0,nombre:'Patente',coste:3,trabajo:5,prestigio:5,ingresoPorTurno:2,legendaria:true,
+            arte:'cartas/patente_legendaria.png',marco:'cartas/patente_legendaria.png'};
+        s.mano=[patente,...s.mano];
+        for(const player of s.jugadores.slice(1)) player.estudios=Array.from({length:3},(_,indice)=>({indice,carta:indice===0?patente:s.mano[1],trabajo:indice===0?5:1,prestigioExtra:0,publicado:indice===0}));
+        boardModule.board(s); fx.feedback(null,s);
+    }""")
+    page.wait_for_function("() => [...document.images].every(i=>i.complete && i.naturalWidth>0)")
+    assert page.evaluate('document.documentElement.scrollHeight<=innerHeight')
+    expect(page.locator('#hand .card-income')).to_have_text('+2 monedas / turno')
+    page.screenshot(path=str(out/'mesa-6-1920-final.jpg'),full_page=True,type='jpeg',quality=85)
     assert not errors, errors
-    (out / 'result.json').write_text(json.dumps({'errors':errors,'checks':['colocacion','robo privado con mazo inagotable','intercambio de manos del mismo tamaño','sin repeticion por polling','trabajo animado','revision','publicacion','duplicados','transicion sin modal','movimiento reducido','reconexion','2 y 7 jugadores: escritorio, tablet y movil']},ensure_ascii=False,indent=2),encoding='utf-8')
+    (out / 'result.json').write_text(json.dumps({'errors':errors,'checks':['colocacion','robo privado con mazo inagotable','intercambio de manos del mismo tamaño','sin repeticion por polling','trabajo animado','revision','publicacion','duplicados','transicion sin modal','movimiento reducido','reconexion','2 a 6 jugadores: escritorio, tablet y movil']},ensure_ascii=False,indent=2),encoding='utf-8')
     print('QA visual: todas las comprobaciones correctas.', flush=True)
     browser.close()

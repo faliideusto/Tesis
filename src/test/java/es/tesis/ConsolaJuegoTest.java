@@ -107,11 +107,10 @@ class ConsolaJuegoTest {
         var editorial = preparar(true, new EditorialHabilidad());
         actor(editorial).sumarMonedas(1);
         estudio(actor(editorial), "Editorial", 1, 2);
-        String avisoEditorial = ejecutar(editorial, "5\n1\nsalir\n");
-        assertTrue(avisoEditorial.contains("1 punto de trabajo por 3 monedas"));
-        assertTrue(avisoEditorial.contains("¡Artículo publicado!"));
-        assertEquals(0, actor(editorial).monedas());
-        assertEquals(0, editorial.partida().accionesBaseRealizadas());
+        String avisoEditorial = ejecutar(editorial, "5\nsalir\n");
+        assertTrue(avisoEditorial.contains("autom"));
+        assertEquals(3, actor(editorial).monedas());
+        assertEquals(1, actor(editorial).estudios().get(0).trabajoAcumulado());
         var estadistico = preparar(true, new EstadisticoHabilidad());
         estudio(actor(estadistico), "Publicado", 1, 1);
         String avisoEstadistico = ejecutar(estadistico, "5\n1\nsalir\n");
@@ -120,19 +119,13 @@ class ConsolaJuegoTest {
         assertEquals(6, actor(estadistico).prestigio());
     }
 
-    @Test void plagiadorYRevisorPermitenElegirJugadorPorNumero() {
-        var plagiador = preparar(true, new PlagiadorHabilidad(), new PreDoctoralHabilidad());
-        Jugador rival = plagiador.partida().jugadores().stream().filter(j -> j != actor(plagiador)).findFirst().orElseThrow();
-        var manoRival = List.copyOf(rival.cartasIdea());
-        String avisoPlagio = ejecutar(plagiador, "5\n1\nsalir\n");
-        assertTrue(avisoPlagio.contains("intercambia su mano con"));
-        assertEquals(manoRival, actor(plagiador).cartasIdea());
+    @Test void revisorPermiteElegirJugadorPorNumero() {
         var revisor = preparar(true, new Revisor2Habilidad(), new PreDoctoralHabilidad());
         Jugador objetivo = revisor.partida().jugadores().stream().filter(j -> j != actor(revisor)).findFirst().orElseThrow();
         estudio(objetivo, "Estudio revisable", 1, 3);
         int numero = revisor.partida().jugadores().indexOf(objetivo) + 1;
         String avisoRevision = ejecutar(revisor, "5\n" + numero + "\n1\nsalir\n");
-        assertTrue(avisoRevision.contains("paga 1 moneda y retira 1 de trabajo"));
+        assertTrue(avisoRevision.contains("paga 1 moneda y retira hasta 2 puntos de trabajo"));
         assertEquals(0, objetivo.estudios().get(0).trabajoAcumulado());
         assertEquals(1, actor(revisor).monedas());
     }

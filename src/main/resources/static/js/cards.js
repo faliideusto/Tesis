@@ -7,9 +7,10 @@ export function ideaCard(c, {command = 'inspect', disabled = false, selected = f
   </button>`;
 }
 export function ideaCardContents(c) {
-  return `${img(c.marco, 'card-frame')}${img(c.arte, 'card-art')}
+  return `${img(c.marco, 'card-frame')}${c.legendaria ? '' : img(c.arte, 'card-art')}
     <span class="card-name">${esc(c.nombre)}</span>
-    <span class="card-stats" aria-hidden="true">${[c.coste,c.trabajo,c.prestigio].map(value => `<span class="card-stat"><b>${value}</b></span>`).join('')}</span>`;
+    <span class="card-stats" aria-hidden="true">${[c.coste,c.trabajo,c.prestigio].map(value => `<span class="card-stat"><b>${value}</b></span>`).join('')}</span>
+    ${c.ingresoPorTurno ? `<span class="card-income">+${c.ingresoPorTurno} monedas / turno</span>` : ''}`;
 }
 export function roleCard(r, {command = 'role', selected = false} = {}) {
   const cadence = r.habilidad.match(/(?:Una vez por turno\.|Automática\.|sin límite de usos\.)$/i)?.[0] || '';

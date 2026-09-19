@@ -9,7 +9,7 @@ public final class Vistas {
                        boolean soyAnfitrion, List<String> jugadores, Estado partida) {}
     public record AccesoSala(String codigo, String playerToken, Sala sala) {}
     public record Configuracion(int minimo, int maximo, int capacidadTablero, String limitacion) {}
-    public record Carta(int indice, String nombre, int coste, int trabajo, int prestigio, String arte, String marco) {}
+    public record Carta(int indice, String nombre, int coste, int trabajo, int prestigio, String arte, String marco, int ingresoPorTurno, boolean legendaria) {}
     public record Rol(int indice, String nombre, int orden, String habilidad, String arte, boolean automatica) {}
     public record Estudio(int indice, Carta carta, int trabajo, int prestigioExtra, boolean publicado) {}
     public record Jugador(String nombre, int monedas, int prestigio, int cartas, int publicados,

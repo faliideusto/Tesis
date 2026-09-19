@@ -1,6 +1,6 @@
 # Tesis
 
-Juego de cartas multijugador por salas para **2–7 personas**. Cada navegador controla a su jugador, con mano privada, sin cuentas: nombre y código de sala. El motor Java sigue siendo la única fuente de verdad.
+Juego de cartas multijugador por salas para **2–6 personas**. Cada navegador controla a su jugador, con mano privada, sin cuentas: nombre y código de sala. El motor Java sigue siendo la única fuente de verdad.
 
 ## Ejecutar y jugar
 
@@ -11,9 +11,9 @@ mvn test
 mvn compile exec:java
 ```
 
-En el ordenador servidor abre `http://localhost:8080`. Crea una sala con tu nombre y comparte su código. Los demás deben abrir **el mismo servidor**: en la misma red, `http://IP_DEL_SERVIDOR:8080`. El firewall del servidor debe permitir ese puerto. El código por sí solo no conecta servidores diferentes. El anfitrión inicia cuando hay entre dos y siete participantes.
+En el ordenador servidor abre `http://localhost:8080`. Crea una sala con tu nombre y comparte su código. Los demás deben abrir **el mismo servidor**: en la misma red, `http://IP_DEL_SERVIDOR:8080`. El firewall del servidor debe permitir ese puerto. El código por sí solo no conecta servidores diferentes. El anfitrión inicia cuando hay entre dos y seis participantes.
 
-La selección es privada; cada persona actúa desde su dispositivo. Los personajes se revelan al llegar su turno. Al terminar una ronda, el último jugador indicado pulsa «Siguiente ronda» o «Ver resultados». Se conservan las ocho habilidades, las dos acciones base, las tres publicaciones que desencadenan el cierre y la victoria por prestigio. Los siete tipos de idea permanecen siempre disponibles; cada robo es aleatorio con reposición.
+La selección es privada; cada persona actúa desde su dispositivo. Los personajes se revelan al llegar su turno. Al terminar una ronda, el último jugador indicado pulsa «Siguiente ronda» o «Ver resultados». Hay siete habilidades, dos acciones base, tres publicaciones para desencadenar el cierre y victoria por prestigio. Los ocho tipos de idea permanecen siempre disponibles; cada robo usa las probabilidades indicadas más abajo, con reposición.
 
 F5 recupera la identidad de **esa pestaña** mediante `sessionStorage`. Las salas viven en memoria y caducan tras 24 horas sin peticiones autenticadas. Reiniciar el servidor las elimina. No hay bots, expulsión de jugadores, sustitución del anfitrión ni recuperación de identidad por nombre: si alguien abandona sin conservar su token, su turno puede quedar esperando.
 
@@ -34,7 +34,7 @@ Para Internet hace falta un servicio que ejecute Java y HTTPS, normalmente con u
 
 ## Verificación
 
-- `mvn test`: **126 pruebas, 0 fallos, 0 errores, 0 omitidas**. Se conservan las 99 anteriores y se añaden 27 de salas, identidad, privacidad, habilidades, concurrencia y partidas completas.
+- `mvn test`: pruebas de salas de hasta seis personas, privacidad, habilidades, republicación, persistencia, probabilidades e ingresos de Patente.
 - `mvn -DskipTests package`: **BUILD SUCCESS**.
 - Prueba real automatizada: dos contextos aislados de Chrome, creación/unión, partida completa, recargas, estabilidad de modal bajo polling y recuperación de red.
 
@@ -66,7 +66,10 @@ El diseño parte de estas decisiones del documento base:
 - Recursos: monedas, cartas de idea, puntos de trabajo y puntos de prestigio.
 - Ronda dividida en selección de roles y turnos de acción.
 - Acciones base: cobrar, pensar, iniciar estudio y trabajar.
-- Roles con habilidades específicas: Comité de Ética, Estadístico, Plagiador, Investigador Principal, Decana, Editorial, Pre-Doctoral y Revisor 2.
+- Roles con habilidades específicas: Comité de Ética, Estadístico, Investigador Principal, Decana, Editorial, Pre-Doctoral y Revisor 2.
+- Numeración de personajes: 1 Comité, 2 Estadístico, 3 Investigador Principal,
+  4 Decana, 5 Editorial, 6 Pre-Doctoral y 7 Revisor 2. El máximo es seis personas;
+  el séptimo personaje permite descartar uno en cada ronda.
 
 ## Arquitectura propuesta
 
@@ -144,14 +147,34 @@ Escribe `0`, `cancelar` o `volver` para abandonar una selección sin ejecutar la
 | --- | --- |
 | Comité de Ética | La consola pide obligatoriamente un rol al inicio, antes del menú de acciones. El jugador que lo tenga pierde su turno si no es inmune. Nombrar un rol no elegido consume la habilidad sin efecto. Cancelar deja la decisión pendiente: no puedes actuar ni terminar el turno hasta resolverla. |
 | Estadístico | Opción 5: selecciona uno de tus artículos publicados para añadir un punto de prestigio. |
-| Plagiador | Opción 5: elige otro jugador por número o nombre para intercambiar las manos. |
 | Investigador Principal | Automática: roba una idea aleatoria extra al inicio, y elige primero la siguiente ronda. |
 | Decana | Automática: inmunidad a habilidades rivales durante toda la ronda. |
-| Editorial | Cobra automáticamente por las publicaciones al iniciar el turno. Con la opción 5 compra un punto de trabajo en un estudio propio por tres monedas. Puede repetir la compra. |
+| Editorial | Al iniciar tu turno, recibe 1 Moneda por cada artículo publicado en la mesa. No compra trabajo. |
 | Pre-Doctoral | Automática: la opción 4 aporta dos puntos de trabajo. |
-| Revisor 2 | Opción 5: elige jugador y estudio en desarrollo con trabajo acumulado. Paga una moneda para retirar un punto de trabajo. |
+| Revisor 2 | Una vez por turno, paga 1 Moneda para retirar hasta 2 Puntos de Trabajo de cualquier artículo, incluso publicado. Vuelve a desarrollo y pierde su prestigio hasta republicarse; conserva la bonificación del Estadístico en la carta. Decana es inmune a revisiones rivales. |
 
-Las habilidades activas se usan una vez por turno, salvo las compras de Editorial. Las automáticas no necesitan activarse con la opción 5.
+Las habilidades activas se usan una vez por turno. Las automáticas no necesitan activarse con la opción 5. El Plagiador ya no forma parte del mazo de las nuevas partidas; el lector de guardados antiguos conserva su compatibilidad.
+
+### Probabilidades y Patente
+
+El reparto inicial y todos los robos usan la misma distribución con reposición:
+
+| Artículo | Probabilidad |
+| --- | ---: |
+| Ecológico | 20% |
+| Transversal | 20% |
+| Casos y Controles | 17% |
+| Cohortes | 13% |
+| Revisión Sistemática | 10% |
+| Ensayo Clínico Aleatorizado | 10% |
+| Ensayo Comunitario | 6% |
+| Patente | 4% |
+
+**Patente** es la única carta legendaria: cuesta 3 monedas y 5 de trabajo, da
+5 de prestigio y genera 2 monedas al inicio de cada turno de su propietario
+mientras esté publicada. Cada copia publicada aporta sus ingresos. Una revisión
+suspende sus ingresos hasta republicarla. Recuperar una partida no vuelve a cobrar
+el ingreso del turno en curso. Los turnos vetados no activan efectos de inicio.
 
 ### Consultar la partida
 

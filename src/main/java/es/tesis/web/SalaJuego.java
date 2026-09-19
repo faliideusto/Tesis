@@ -27,7 +27,7 @@ public final class SalaJuego {
         vigente();
         nombre = validarNombre(nombre);
         if (iniciada) throw new ErrorSala(409, "La partida ya ha comenzado.");
-        if (miembros.size() >= 7) throw new ErrorSala(409, "La sala está llena.");
+        if (miembros.size() >= 6) throw new ErrorSala(409, "La sala está llena (máximo 6 personas).");
         String elegido = nombre;
         if (miembros.values().stream().anyMatch(j -> j.nombre().equalsIgnoreCase(elegido)))
             throw new ErrorSala(409, "Ese nombre ya está en la sala.");

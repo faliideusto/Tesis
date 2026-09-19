@@ -112,8 +112,16 @@ public class Jugador {
         Estudio estudio = estudioEnDesarrollo(indice);
         estudio.agregarTrabajo(puntos);
         if (estudio.estado() == EstadoEstudio.PUBLICADO) {
-            sumarPrestigio(estudio.carta().prestigio());
+            sumarPrestigio(estudio.carta().prestigio() + estudio.prestigioExtra());
         }
+    }
+
+    public void revisarEstudio(int indice) {
+        if (indice < 0 || indice >= estudios.size()) throw new IllegalArgumentException("Índice de estudio no válido");
+        Estudio estudio = estudios.get(indice);
+        boolean publicado = estudio.estado() == EstadoEstudio.PUBLICADO;
+        estudio.retirarTrabajo();
+        if (publicado) sumarPrestigio(-estudio.carta().prestigio() - estudio.prestigioExtra());
     }
 
     public List<Estudio> estudiosPublicados() {

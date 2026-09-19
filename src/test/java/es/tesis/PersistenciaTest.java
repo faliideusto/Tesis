@@ -136,8 +136,7 @@ class PersistenciaTest {
         assertEquals(2, actor(recuperado).monedas());
         assertSame(actor(recuperado).estudios().get(0), recuperado.partida().tablero().estudiosEnMesa().get(1));
         recuperado.ejecutarAccion(new TrabajarAccion(0));
-        actor(recuperado).sumarMonedas(1);
-        recuperado.ejecutarAccion(new UsarHabilidadAccion(0));
+        actor(recuperado).trabajarEstudio(0, 1);
         assertEquals(2, recuperado.partida().tablero().cantidadEstudiosPublicados());
         assertEquals(4, actor(recuperado).prestigio());
         assertEquals(1, recuperado.historial().stream().filter(e -> e.tipo().equals("habilidad.editorial.inicio")).count());

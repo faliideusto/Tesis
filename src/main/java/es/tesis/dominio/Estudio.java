@@ -15,9 +15,9 @@ public class Estudio {
     }
 
     public void retirarTrabajo() {
-        if (estado == EstadoEstudio.PUBLICADO) throw new IllegalStateException("El estudio ya fue publicado");
         if (trabajoAcumulado == 0) throw new IllegalStateException("El estudio no tiene trabajo que retirar");
-        trabajoAcumulado--;
+        trabajoAcumulado = Math.max(0, Math.min(trabajoAcumulado, carta.trabajoRequerido()) - 2);
+        estado = EstadoEstudio.EN_DESARROLLO;
     }
 
     public Estudio(IdeaCarta carta) {

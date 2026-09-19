@@ -437,7 +437,7 @@ dialog{padding:35px 23px 25px}
 .rivals,.board[data-players] .rivals{position:relative;grid-row:2;top:auto;left:auto;right:auto;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 24px;align-items:start;pointer-events:auto}
 .board .rivals[data-count="1"]{grid-template-columns:minmax(280px,320px);justify-content:center}
 .board .rivals[data-count="2"]{grid-template-columns:repeat(2,minmax(260px,320px));justify-content:space-between}
-.rivals>:last-child,.board[data-players] .rivals>:last-child{transform:none}
+.rivals>:last-child,.board[data-players] .rivals>:last-child{transform:none;grid-column:auto}
 .rivals[data-count]>.rival-seat{margin-top:0}
 .rival-seat{min-width:0;max-width:420px;width:100%;justify-self:center}
 .rival-seat .rival{width:100%;display:block}
@@ -507,3 +507,47 @@ dialog{padding:35px 23px 25px}
   .table-study.game-card{flex-basis:120px;width:120px;height:180px}
   .actions.single-action{height:66px;min-height:66px}
 }
+
+
+/* Desktop table: seats surround the center; the hand and controls stay in view. */
+@media(min-width:1000px) and (min-height:650px){
+  .board,.board[data-players]{height:100svh;min-height:0;max-height:100svh;display:block;overflow:hidden;padding:0 3vw;--player-height:26svh;--table-card-width:clamp(64px,calc(24.66svh - 137px),150px)}
+  .board-header{height:70px}.brand{width:130px}.turn-panel{width:300px;min-height:70px;top:0;padding:8px 22px 8px 74px;gap:4px}.turn-panel>strong{font-size:17px}
+  .board .rivals[data-count]{position:absolute;inset:70px 4vw calc(var(--player-height) + 85px);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:12px 4vw;margin:0;pointer-events:none}
+  .board .rivals[data-count]>.rival-seat{width:100%;max-width:none;min-height:0;height:100%;margin:0;transform:none;grid-column:auto;display:flex;flex-direction:column;align-items:center;pointer-events:none}
+  .rival-seat .rival{width:276px;max-width:100%;height:clamp(74px,8.52svh,92px);aspect-ratio:auto;flex-shrink:0;pointer-events:auto}
+  .board .rivals[data-count="1"]>.rival-seat{grid-area:1/2}
+  .board .rivals[data-count="2"]>.rival-seat:first-child{grid-area:1/1}
+  .board .rivals[data-count="2"]>.rival-seat:last-child{grid-area:1/3}
+  .board .rivals[data-count="3"]>.rival-seat:nth-child(1){grid-area:1/2}
+  .board .rivals[data-count="3"]>.rival-seat:nth-child(2){grid-area:2/1}
+  .board .rivals[data-count="3"]>.rival-seat:nth-child(3){grid-area:2/3}
+  .board .rivals[data-count="4"]>.rival-seat:nth-child(1){grid-area:1/1}
+  .board .rivals[data-count="4"]>.rival-seat:nth-child(2){grid-area:1/3}
+  .board .rivals[data-count="4"]>.rival-seat:nth-child(3){grid-area:2/1}
+  .board .rivals[data-count="4"]>.rival-seat:nth-child(4){grid-area:2/3}
+  .board .rivals[data-count="5"]>.rival-seat:nth-child(1){grid-area:1/1}
+  .board .rivals[data-count="5"]>.rival-seat:nth-child(2){grid-area:1/2}
+  .board .rivals[data-count="5"]>.rival-seat:nth-child(3){grid-area:1/3}
+  .board .rivals[data-count="5"]>.rival-seat:nth-child(4){grid-area:2/1}
+  .board .rivals[data-count="5"]>.rival-seat:nth-child(5){grid-area:2/3}
+  .rival-studies{width:100%;container-type:inline-size;min-height:0;flex:1;overflow:visible;padding:5px 0 24px;gap:0;border:0;background:none;justify-content:center;pointer-events:none}
+  .table-study.game-card{width:var(--table-card-width);height:calc(var(--table-card-width)*1.5);flex:0 0 var(--table-card-width);pointer-events:auto;margin:0}
+  .table-study.game-card+.table-study{margin-left:min(6px,calc((100cqw - var(--table-card-width))/max(1,var(--study-count) - 1) - var(--table-card-width)))}
+  .table-study.game-card:hover,.table-study.game-card:focus-visible{z-index:6;transform:translateY(-6px) scale(1.1)}
+  .table-study .table-study-status{font-size:10px;padding:2px 0}
+  .decks,.board[data-players] .decks{position:absolute;left:36%;right:36%;top:43%;bottom:calc(var(--player-height) + 112px);height:auto;min-height:0;padding:0;gap:6px;align-items:center}
+  .deck{width:32px}.deck>span{display:none}.deck-count{width:20px;height:20px;font-size:11px}
+  .table-activity{width:100%;min-width:0;min-height:0;padding:10px;max-height:100%;overflow:auto}
+  .table-activity>.eyebrow{font-size:8px;letter-spacing:1.5px}.activity-art{width:34px;height:46px}.activity-move{gap:8px}.activity-move strong{font-size:15px}#activity-current{min-height:0;margin-top:7px}.activity-idle{padding:10px 0}
+  .phase-message{position:absolute;left:35%;width:30%;bottom:calc(var(--player-height) + 76px);max-height:52px;overflow:auto;gap:3px;font-size:11px}.table-recap{display:none}.phase-invitation{font-size:11px}
+  .board .player-zone{position:absolute;left:3vw;right:3vw;bottom:72px;height:var(--player-height);min-height:0;display:grid;grid-template-columns:28% minmax(0,1fr) 28%;align-items:end;gap:2%;padding:0;margin:0}
+  .hand-zone{grid-area:auto;height:100%;min-height:0}.hand{padding:5px 4px;max-height:100%}.hand .game-card{--card-width:min(155px,calc(var(--player-height)*.61));width:var(--card-width)}
+  .local-panel,.studies-panel{grid-area:auto;max-height:100%;height:auto;padding:12px;overflow:auto}.local-identity{grid-template-columns:52px minmax(0,1fr);gap:10px}.local-portrait{width:52px;height:76px}.local-identity h2{font-size:20px}.local-identity p{font-size:12px}.local-identity .resources{margin-top:7px;gap:10px}.local-identity .resource img{width:24px;height:24px}.local-identity .resource b{font-size:16px}.ability-copy{margin-top:8px;padding-top:7px;font-size:11px;line-height:1.35}.local-panel .eyebrow{font-size:8px}.local-footer{padding-top:5px}.studies-panel h2{font-size:20px}.study-scroll{max-height:calc(var(--player-height) - 54px)}
+  .board footer{position:absolute;left:3vw;right:3vw;bottom:4px;height:62px;min-height:0;background:none}.action-hint{font-size:10px;padding-bottom:2px}.actions{height:46px;min-height:46px}.actions.single-action{height:46px;min-height:46px}
+}
+@media(max-width:999px){
+  .board .rivals[data-count="3"]>.rival-seat:last-child,
+  .board .rivals[data-count="5"]>.rival-seat:last-child{grid-column:1/-1;width:calc((100% - 12px)/2)}
+}
+.card-income{position:absolute;z-index:4;top:84%;left:8%;width:84%;font:700 4.8cqw/1.1 var(--serif);color:#442261;text-align:center}

@@ -6,8 +6,13 @@ public class IdeaCarta implements Carta {
     private final int costeMonedas;
     private final int trabajoRequerido;
     private final int prestigio;
+    private final int ingresoPorTurno;
 
     public IdeaCarta(String nombre, int costeMonedas, int trabajoRequerido, int prestigio) {
+        this(nombre, costeMonedas, trabajoRequerido, prestigio, 0);
+    }
+
+    public IdeaCarta(String nombre, int costeMonedas, int trabajoRequerido, int prestigio, int ingresoPorTurno) {
         if (nombre == null || nombre.isBlank() || costeMonedas < 0 || trabajoRequerido <= 0 || prestigio < 0) {
             throw new IllegalArgumentException("La idea debe tener nombre, coste y prestigio no negativos y trabajo positivo");
         }
@@ -15,6 +20,8 @@ public class IdeaCarta implements Carta {
         this.costeMonedas = costeMonedas;
         this.trabajoRequerido = trabajoRequerido;
         this.prestigio = prestigio;
+        if (ingresoPorTurno < 0) throw new IllegalArgumentException("El ingreso no puede ser negativo");
+        this.ingresoPorTurno = ingresoPorTurno;
     }
 
     @Override
@@ -33,4 +40,5 @@ public class IdeaCarta implements Carta {
     public int prestigio() {
         return prestigio;
     }
+    public int ingresoPorTurno() { return ingresoPorTurno; }
 }

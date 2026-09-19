@@ -15,31 +15,33 @@ final class CatalogoVisual {
         Map.entry("Ensayo Comunitario", "07_ensayo_comunitario"));
 
     static Vistas.Carta carta(IdeaCarta c, int indice) {
+        if (c.nombre().equals("Patente")) return new Vistas.Carta(indice, c.nombre(), c.costeMonedas(),
+                c.trabajoRequerido(), c.prestigio(), "cartas/patente_legendaria.png", "cartas/patente_legendaria.png", c.ingresoPorTurno(), true);
         String marco = c.prestigio() <= 3 ? "comun" : c.prestigio() <= 6 ? "raro" : "epico";
         return new Vistas.Carta(indice, c.nombre(), c.costeMonedas(), c.trabajoRequerido(), c.prestigio(),
                 "articulos/" + ARTICULOS.getOrDefault(c.nombre(), "01_ecologico") + ".png",
-                "cartas/marco_articulo_" + marco + ".png");
+                "cartas/marco_articulo_" + marco + ".png", c.ingresoPorTurno(), false);
     }
 
     static Vistas.Rol rol(Personaje p, int indice) {
         var h = p.habilidad();
         String arte; String texto; boolean automatica = false;
         if (h instanceof ComiteEticaHabilidad) {
-            arte = "01_comite_etica"; texto = "Nombra un rol antes de actuar: pierde su turno si no es inmune. Una vez por turno.";
+            arte = "01_comite_etica"; texto = "Nombra un rol al inicio de tu turno. Ese jugador no podrá realizar ninguna acción.";
         } else if (h instanceof EstadisticoHabilidad) {
-            arte = "02_estadistico"; texto = "Añade 1 de prestigio a un artículo propio publicado. Una vez por turno.";
+            arte = "02_estadistico"; texto = "Añade 1 de prestigio a uno de tus artículos ya publicado.";
         } else if (h instanceof PlagiadorHabilidad) {
             arte = "03_plagiador"; texto = "Intercambia tu mano con otro jugador que no sea inmune. Una vez por turno.";
         } else if (h instanceof InvestigadorPrincipalHabilidad) {
-            arte = "04_investigador_principal"; texto = "Roba una idea extra al empezar y elige primero en la próxima ronda. Automática."; automatica = true;
+            arte = "04_investigador_principal"; texto = "Al iniciar tu turno, recibe 1 idea extra. Comenzarás la elección de rol la próxima ronda."; automatica = true;
         } else if (h instanceof DecanaHabilidad) {
-            arte = "05_decana"; texto = "Inmunidad a las habilidades rivales durante toda la ronda. Automática."; automatica = true;
+            arte = "05_decana"; texto = "Obtienes inmunidad frente a cualquier habilidad rival durante toda la ronda."; automatica = true;
         } else if (h instanceof EditorialHabilidad) {
-            arte = "06_editorial"; texto = "Al empezar, cobra por todos los artículos publicados en mesa. Compra 1 de trabajo por 3 monedas, sin límite de usos.";
+            arte = "06_editorial"; texto = "Al iniciar tu turno, recibe 1 Moneda por cada artículo publicado en la mesa."; automatica = true;
         } else if (h instanceof PreDoctoralHabilidad) {
-            arte = "07_pre_doctoral"; texto = "Cada acción Trabajar aporta 2 puntos de trabajo. Automática."; automatica = true;
+            arte = "07_pre_doctoral"; texto = "La acción de trabajar te aporta 2 puntos de trabajo durante toda la ronda."; automatica = true;
         } else {
-            arte = "08_revisor_2"; texto = "Paga 1 moneda para retirar 1 de trabajo de un estudio en desarrollo, incluso propio. Una vez por turno.";
+            arte = "08_revisor_2"; texto = "Una vez por turno, podrás pagar 1 Moneda para retirar 2 Puntos de Trabajo de cualquier artículo.";
         }
         return new Vistas.Rol(indice, p.nombre(), p.ordenTurno(), texto, "personajes/" + arte + ".png", automatica);
     }

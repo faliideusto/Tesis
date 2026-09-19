@@ -10,7 +10,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MazoIdeasTest {
-    @Test void catalogoCoincideConLosSieteArticulosDelInforme() {
+    @Test void catalogoCoincideConLosOchoArticulos() {
         var valores = new LinkedHashMap<String, List<Integer>>();
         for (var carta : FabricaMazos.crearIdeas().cartas()) {
             valores.put(carta.nombre(), List.of(carta.costeMonedas(), carta.trabajoRequerido(), carta.prestigio()));
@@ -20,6 +20,7 @@ class MazoIdeasTest {
                 "Artículo Transversal", List.of(2, 1, 2),
                 "Casos y Controles", List.of(2, 2, 3),
                 "Cohortes", List.of(3, 3, 5),
+                "Patente", List.of(3, 5, 5),
                 "Ensayo Clínico Aleatorizado", List.of(4, 4, 7),
                 "Ensayo Comunitario", List.of(8, 4, 9),
                 "Revisión Sistemática", List.of(2, 5, 6)), valores);
@@ -36,7 +37,7 @@ class MazoIdeasTest {
             assertEquals(catalogo, mazo.cartas());
             assertFalse(mazo.estaVacio());
         }
-        assertEquals(7, nombres.size());
+        assertEquals(8, nombres.size());
     }
 
     @Test void guardarYCargarMantieneLosRobosInagotables() {
@@ -47,7 +48,7 @@ class MazoIdeasTest {
         var restaurada = Partida.restaurar(guardada.partida());
         assertTrue(restaurada.mazoIdeas().esInagotable());
         for (int i = 0; i < 100; i++) restaurada.mazoIdeas().robar();
-        assertEquals(7, restaurada.mazoIdeas().cartas().size());
+        assertEquals(8, restaurada.mazoIdeas().cartas().size());
         assertTrue(restaurada.jugadores().stream().allMatch(j -> j.cartasIdea().size() == 2));
     }
 
@@ -60,6 +61,6 @@ class MazoIdeasTest {
         datos.getAsJsonObject("partida").remove("ideasInagotables");
         var restaurada = Partida.restaurar(serializador.deserializar(datos.toString()).partida());
         assertFalse(restaurada.mazoIdeas().esInagotable());
-        assertEquals(5, restaurada.mazoIdeas().cartas().size());
+        assertEquals(6, restaurada.mazoIdeas().cartas().size());
     }
 }

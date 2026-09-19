@@ -22,7 +22,7 @@ public final class AvisosConsola implements ObservadorJuego {
             case "accion.pensar" -> d.get("jugador") + " roba una carta de idea. Cartas en mano: " + d.get("mano") + ".";
             case "accion.iniciar_estudio" -> d.get("jugador") + " inicia «" + d.get("articulo") + "» pagando su coste.";
             case "accion.trabajar" -> trabajo(d.get("jugador"), d, d.get("trabajo") + " punto(s) de trabajo");
-            case "habilidad.editorial.trabajo" -> trabajo(d.get("actor"), d, "1 punto de trabajo por 3 monedas");
+            case "articulo.ingresos" -> d.get("actor") + " recibe " + d.get("monedas") + " monedas de sus patentes publicadas.";
             case "habilidad.editorial.inicio" -> d.get("actor") + " recibe " + d.get("monedasRecibidas") + " moneda(s) de Editorial.";
             case "habilidad.investigador_principal" -> d.get("actor")
                     + (Boolean.TRUE.equals(d.get("cartaRobada")) ? " roba una idea extra" : " no roba idea extra porque el mazo está vacío")
@@ -30,7 +30,7 @@ public final class AvisosConsola implements ObservadorJuego {
             case "habilidad.comite_etica" -> d.get("actor") + " nombra el rol «" + d.get("rol") + "» para el veto; se aplicará si corresponde.";
             case "habilidad.estadistico" -> d.get("actor") + " añade 1 de prestigio a «" + d.get("articulo") + "».";
             case "habilidad.plagiador" -> d.get("actor") + " intercambia su mano con " + d.get("objetivo") + ".";
-            case "habilidad.revisor_2" -> d.get("actor") + " paga 1 moneda y retira 1 de trabajo de «" + d.get("articulo") + "» de " + d.get("objetivo") + ".";
+            case "habilidad.revisor_2" -> d.get("actor") + " paga 1 moneda y retira hasta 2 puntos de trabajo de «" + d.get("articulo") + "» de " + d.get("objetivo") + ". El artículo queda en desarrollo.";
             case "habilidad.decana" -> d.get("actor") + " tiene la inmunidad de Decana durante toda la ronda.";
             case "partida.fin" -> "La partida ha terminado. Ganador(es): " + d.get("ganadores") + ".";
             // La consola ya informa de errores y guardados; no duplicar estos mensajes.

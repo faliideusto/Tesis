@@ -1,5 +1,73 @@
 # Ciudadela Académica
 
+Juego web local de cartas sobre el motor Java original. Toda acción se valida y ejecuta en Java; el navegador representa la partida con HTML, CSS y módulos JavaScript.
+
+## Arranque de la versión web
+
+Requisitos: **JDK 17 o superior** y **Maven 3.9 o superior**. No necesitas Node, npm, base de datos ni conexión a servicios externos para jugar. Utiliza un navegador de escritorio actualizado (Chrome, Edge o Firefox).
+
+Desde la raíz del repositorio:
+
+```powershell
+mvn clean test
+mvn compile exec:java
+```
+
+Abre **http://localhost:8080**. Mantén abierto el proceso Maven; `Ctrl+C` detiene el servidor. Para usar otro puerto:
+
+```powershell
+mvn compile exec:java "-Dexec.args=8090"
+```
+
+La mesa se configura con nombres y cantidad de participantes. Es un juego local de pantalla compartida: entrega el control a la persona indicada antes de pulsar «continuar». No hay IA ni multijugador online.
+
+- El catálogo existente admite **1–5 personas**: ocho roles, un descarte y diez ideas con reparto de dos por persona. Una persona permite practicar el mismo motor. La distribución visual está preparada para siete, pero seis y siete se deshabilitan por falta de ideas.
+- Elige personaje, realiza hasta dos acciones, utiliza su habilidad cuando corresponda y termina el turno. El trabajo publica automáticamente. Al alcanzar tres publicaciones se termina la ronda y se calcula la victoria por prestigio.
+- Las manos ajenas no se envían al navegador. En cada relevo se retira la información privada hasta que el siguiente participante continúa. Esto es privacidad de presentación en una mesa compartida, no autenticación individual.
+- Recargar recupera la mesa de la sesión y vuelve a ocultar la mano. Las mesas viven en memoria; se pierden al detener el servidor y caducan tras 24 horas sin actividad. La web todavía no importa ni exporta guardados; el CLI conserva ambas funciones.
+- **Limitación del motor conservada:** las ideas no se reciclan. Una distribución sin posibilidad de alcanzar tres publicaciones puede bloquear el final, especialmente con cinco personas. La web avisa cuando se agotan todas las ideas y estudios sin cumplir el umbral; no inventa un cierre alternativo.
+
+## Arquitectura web
+
+- `web/ServidorWeb.java`: servidor HTTP del JDK, recursos del classpath, sesiones aisladas mediante cookie, respuestas JSON con Gson, límites de solicitudes y control de origen. Escucha exclusivamente en `127.0.0.1`.
+- `web/SesionJuego.java`: adapta las decisiones web a los comandos y estados existentes; mantiene el relevo privado, la revisión del estado y la crónica pública. Nunca ejecuta reglas en JavaScript.
+- `web/Vistas.java`: DTOs inmutables `Configuracion`, `Estado`, `Jugador`, `Carta`, `Rol`, `Estudio`, `Accion`, `Opcion`, `Evento` y `Peticion`.
+- `web/CatalogoVisual.java`: correspondencias entre cartas reales, ilustraciones y explicaciones de habilidades.
+- `src/main/resources/static/index.html`, `css/` y `js/`: inicio, mesa adaptable, cartas por capas, estudios, selectores, modales, tooltips, notificaciones y animaciones con soporte de movimiento reducido.
+- Assets originales: `src/main/resources/static/assets/Ciudadelas-assets/`. Se respetan sus nombres y PNG; no se han modificado. Las imágenes de `referencias/` no se utilizan como tablero jugable.
+
+Se reutiliza **Gson 2.13.2**, ya presente. No se ha añadido ningún framework ni dependencia de ejecución. Se fija Surefire 3.5.4 para ejecutar JUnit 5 de forma reproducible. El objetivo de compilación sigue siendo Java 17.
+
+| Método | Endpoint | Uso |
+| --- | --- | --- |
+| GET | `/api/config` | Configuración admitida por el catálogo real |
+| POST | `/api/game` | Crear mesa con `nombres` |
+| GET | `/api/game/state` | Estado de la perspectiva activa o `null` si no hay mesa |
+| POST | `/api/game/reveal` | Continuar el relevo local con `revision` |
+| POST | `/api/game/lock` | Ocultar la perspectiva privada |
+| POST | `/api/game/select-role` | Elegir personaje (`tipo: SELECCIONAR`, `indice`) |
+| POST | `/api/game/action` | Acciones base, habilidad, fin de turno y siguiente ronda |
+
+Los POST usan JSON y cabecera `X-Ciudadela: 1`. Las mutaciones de una partida requieren su `revision`; un envío obsoleto devuelve HTTP 409. Los índices son cero-based y se obtienen del DTO, no del orden visual filtrado. Detalles, decisiones de privacidad y limitaciones en [docs/WEB.md](docs/WEB.md).
+
+## Verificación de la web
+
+```powershell
+mvn clean test
+```
+
+Resultado verificado: **93 pruebas, 0 fallos, 0 errores** con `mvn clean test`. Se conservan las 75 pruebas originales y se añaden 18 casos de sesiones, DTOs privados, tamaños válidos, turnos, selección, validación, habilidades, publicación, final de partida y HTTP real en puerto efímero. Se comprueban también recursos estáticos, UTF-8, aislamiento de sesiones, versiones obsoletas y peticiones inválidas. `mvn -DskipTests package` también genera el JAR correctamente tras pasar los tests.
+
+La sintaxis de los ocho módulos JavaScript se ha comprobado. **La revisión visual interactiva no pudo completarse:** el controlador de Windows se detuvo al no poder identificar con suficiente certeza la URL del navegador. No debe confundirse esta limitación con las pruebas automatizadas de Java/HTTP, que sí se ejecutan. Hay una lista de comprobación manual en [docs/WEB.md](docs/WEB.md).
+
+## Modo terminal conservado
+
+```powershell
+mvn compile exec:java "-Dexec.mainClass=es.ciudadela.Main"
+```
+
+La documentación siguiente describe el motor y el modo terminal original.
+
 Motor Java/Maven para una adaptación didáctica de Ciudadelas orientada a proceso didactico.
 
 ## Lectura funcional del informe
@@ -55,7 +123,7 @@ Para añadir un personaje nuevo:
 Desde la carpeta del proyecto, con Java 17 o superior y Maven:
 
 ```powershell
-mvn compile exec:java
+mvn compile exec:java "-Dexec.mainClass=es.ciudadela.Main"
 ```
 
 También puedes ejecutar `Main` desde VS Code. La configuración inicial crea una partida local para Ana y Bruno en el mismo ordenador. La pantalla indica quién debe usar el teclado. No hay conexión entre dispositivos.
@@ -135,7 +203,7 @@ Sin indicar archivo se utiliza `partida.json`. Las rutas relativas parten de la 
 Para arrancar directamente desde un archivo guardado:
 
 ```powershell
-mvn compile exec:java "-Dexec.args=--cargar partida.json"
+mvn compile exec:java "-Dexec.mainClass=es.ciudadela.Main" "-Dexec.args=--cargar partida.json"
 ```
 
 La recuperación mantiene el jugador, la fase, las acciones consumidas, las habilidades usadas y los efectos de ronda. No repite ingresos, robos automáticos ni repartos. Al recuperar en una sesión abierta, el historial conserva también las acciones anteriores a la recuperación; al arrancar desde archivo, se carga su historial.

@@ -72,3 +72,17 @@ Documento de trabajo para continuar el desarrollo de la adaptación académica d
 ## Conectividad entre dispositivos
 
 - Este paso lo vamos a dejar para las últimas fases del desarrollo
+
+## Interfaz web local
+
+- [x] API Java sobre el motor existente, sin reimplementar reglas en JavaScript.
+- [x] Inicio configurable y mesa con cartas, personajes, recursos y estudios reales.
+- [x] Selección, habilidades, acciones, publicación automática, turnos, rondas y clasificación.
+- [x] Relevo privado, DTOs filtrados, revisión de estado y notificaciones.
+- [x] Integración de assets originales, responsive, tooltips y movimiento reducido.
+- [x] Pruebas HTTP y de flujo completo; se conservan las pruebas originales.
+- [x] README de arranque y decisiones documentadas en `docs/WEB.md`.
+- [ ] Completar revisión visual interactiva: el controlador de Windows no pudo verificar la URL del navegador.
+- [ ] Resolver a nivel de reglas el posible agotamiento de ideas sin tres publicaciones (no se cambia silenciosamente).
+- [ ] Definir un mazo ampliado si se desean seis o siete jugadores reales.
+- [ ] Importar/exportar partidas desde la web, actualmente disponible solo en el CLI.

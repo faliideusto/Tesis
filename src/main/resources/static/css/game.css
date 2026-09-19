@@ -444,8 +444,8 @@ dialog{padding:35px 23px 25px}
 .rival-studies{display:flex;justify-content:flex-start;gap:6px;min-height:50px;overflow-x:auto;padding:4px 6px 6px;max-width:100%;background:linear-gradient(90deg,transparent,#07101dcc,transparent);border-bottom:1px solid #b9945638}
 .table-study:first-child{margin-left:auto}.table-study:last-child{margin-right:auto}
 .table-study{position:relative;flex:0 0 34px;height:46px;padding:0;background:#0b1728;border:1px solid #8d7956;box-shadow:0 2px 5px #0008;transition:transform .2s}
-.table-study img{width:100%;height:100%;object-fit:cover}.table-study span{position:absolute;bottom:0;left:0;right:0;background:#07101df0;color:var(--light);font:10px var(--ui);text-align:center}
-.table-study.published{border-color:var(--gold)}.table-study.published span{color:var(--gold)}.table-study:hover{transform:translateY(-3px)}
+.table-study-status{position:absolute;bottom:0;left:0;right:0;background:#07101df0;color:var(--light);font:10px var(--ui);text-align:center}
+.table-study.published{border-color:var(--gold)}.table-study.published .table-study-status{color:var(--gold)}.table-study:hover{transform:translateY(-3px)}
 .empty-table-studies{font:10px var(--ui);color:var(--muted);align-self:center}
 .decks,.board[data-players] .decks{grid-row:3;align-items:center;gap:32px;padding:8px 0 22px;min-height:205px}
 .deck{width:110px;flex-shrink:0}.deck>span{font-size:11px}
@@ -466,7 +466,7 @@ dialog{padding:35px 23px 25px}
 .phase-invitation .gold-button{padding:10px 18px;font-size:12px}.phase-message .table-notice{font-size:11px;padding:7px 12px}
 .table-recap{font:11px/1.5 var(--ui);color:#ccbea3;max-width:650px}.table-recap:empty{display:none}
 .player-zone{grid-row:5;min-height:300px;align-items:end}.board footer{grid-row:6}
-@media(min-width:1101px){.board[data-players="2"],.board[data-players="3"]{grid-template-rows:84px 158px minmax(190px,auto) auto minmax(260px,1fr) 84px;row-gap:4px}.board[data-players="2"] .player-zone,.board[data-players="3"] .player-zone{min-height:260px}.decks,.board[data-players] .decks{min-height:190px;padding-top:0}.table-activity{min-height:170px;padding-top:10px;padding-bottom:10px}}
+@media(min-width:1101px){.board[data-players="2"],.board[data-players="3"]{grid-template-rows:84px auto minmax(150px,auto) auto minmax(260px,1fr) 84px;row-gap:4px}.board[data-players="2"] .player-zone,.board[data-players="3"] .player-zone{min-height:260px}.decks,.board[data-players] .decks{min-height:190px;padding-top:0}.table-activity{min-height:170px;padding-top:10px;padding-bottom:10px}}
 @media(max-width:1100px){
   .board{display:flex;flex-direction:column;padding:0 20px 15px;gap:12px}.board-header{height:100px;flex-shrink:0}
   .rivals,.board[data-players] .rivals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:0}
@@ -486,4 +486,24 @@ dialog{padding:35px 23px 25px}
   .phase-invitation{font-size:11px}.phase-invitation .gold-button{font-size:11px}.table-recap{font-size:10px}
   .player-zone{gap:14px}.hand-zone{height:225px}.local-identity{grid-template-columns:1fr;gap:8px}.local-portrait{display:none}.local-identity .resources{gap:6px;flex-wrap:wrap}.local-identity .resource img{width:20px;height:20px}.local-identity .resource b{font-size:15px}.local-footer{flex-wrap:wrap}.local-panel .eyebrow{font-size:8px}.ability-copy{font-size:11px}.study-status{font-size:10px}.studies-panel{height:300px}.local-panel .text-button{font-size:10px}
   .board footer{height:135px;min-height:135px}.actions{height:112px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,1fr)}.action-content{inset:24% 12%;display:flex;justify-content:center;gap:4px}.action-button .action-content{max-width:none}.action-content img{width:19px;height:19px;min-height:0}.action-button .action-label{font-size:10px;max-width:none}
+}
+
+/* Compact decks leave more space for the academies' public articles. */
+.decks,.board[data-players] .decks{gap:16px;min-height:150px;padding:4px 0 12px}
+.deck{width:64px}
+.deck-count{width:25px;height:25px;font-size:14px}
+.deck>span{font-size:8px;letter-spacing:.6px}
+.rival-studies{min-height:50px;gap:12px;padding:10px 8px 30px;align-items:flex-start}
+.table-study.game-card{flex:0 0 150px;width:150px;height:225px;border:0;background:transparent;box-shadow:none}
+.table-study .table-study-status{top:calc(100% + 3px);bottom:auto;padding:3px 0;border:1px solid #8d7956;border-radius:3px;font:11px var(--ui)}
+.action-hint{letter-spacing:.5px}
+.phase-action .action-content{display:flex;justify-content:center}
+.actions.single-action{display:flex}
+.single-action .action-label{max-width:none;font-size:13px;text-transform:none}
+@media(max-width:600px){
+  .deck{width:48px}.deck>span{font-size:7px}
+  .decks,.board[data-players] .decks{gap:10px;min-height:0}
+  .table-activity{width:calc(100% - 116px);min-width:174px}
+  .table-study.game-card{flex-basis:120px;width:120px;height:180px}
+  .actions.single-action{height:66px;min-height:66px}
 }

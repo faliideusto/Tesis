@@ -6,6 +6,14 @@ Se reutilizan las ilustraciones, marcos, colores y tipografías del juego.
 
 ## Qué cambia
 
+- Los avisos «Esperando a…» y «Elige…» usan formato oración. La mano se muestra
+  sin el encabezado «Tus ideas» ni el contador de cartas.
+- Los mazos son más pequeños y permanecen centrados junto a los últimos movimientos.
+  Las cartas públicas de los rivales se muestran completas bajo cada academia:
+  marco, ilustración, nombre y valores, a 150 × 225 px (120 × 180 px en móvil).
+  El progreso aparece debajo para no tapar la carta.
+- Elegir personaje, avanzar de ronda y consultar el resultado usan el botón inferior
+  de la mesa, sin duplicar botones en el mensaje central.
 - Los estudios públicos de cada rival aparecen bajo su academia, con su trabajo
   acumulado o una marca de publicación. Se pueden pulsar para consultar la carta.
 - Iniciar un estudio mueve su ilustración desde la mano o academia a su lugar

@@ -1,4 +1,5 @@
 import {img, esc, resource} from './dom.js';
+import {ideaCardContents} from './cards.js';
 
 export function rival(p) {
   return `<section class="rival-seat" aria-label="Academia de ${esc(p.nombre)}"><button class="rival ${p.activo ? 'active' : ''}" data-command="rival" data-player="${esc(p.nombre)}" aria-label="Ver estudios de ${esc(p.nombre)}">
@@ -6,7 +7,7 @@ export function rival(p) {
     <span class="rival-body"><strong>${esc(p.nombre)}</strong><span class="rival-role">${p.rol ? esc(p.rol.nombre) : 'Personaje reservado'}</span>
     <span class="resources">${resource('moneda', p.monedas, 'Monedas')}${resource('prestigio', p.prestigio, 'Prestigio')}<span class="hand-count">${img('cartas/reverso_idea.png')} ${p.cartas}</span></span></span>
     <span class="published-count">${p.publicados} publicados</span>
-  </button><div class="rival-studies" aria-label="Estudios públicos de ${esc(p.nombre)}">${p.estudios.map(e => `<button class="table-study ${e.publicado ? 'published' : ''}" data-command="public-study" data-player="${esc(p.nombre)}" data-index="${e.indice}" data-tip="${esc(e.carta.nombre)} · ${e.publicado ? 'Publicado' : `${e.trabajo} / ${e.carta.trabajo} trabajo`}" aria-label="${esc(e.carta.nombre)}, ${e.publicado ? 'publicado' : `${e.trabajo} de ${e.carta.trabajo} trabajo`}">${img(e.carta.arte)}<span>${e.publicado ? '◆' : `${e.trabajo}/${e.carta.trabajo}`}</span></button>`).join('') || '<span class="empty-table-studies">Sin estudios todavía</span>'}</div></section>`;
+  </button><div class="rival-studies" aria-label="Estudios públicos de ${esc(p.nombre)}">${p.estudios.map(e => `<button class="game-card idea-card table-study ${e.publicado ? 'published' : ''}" data-command="public-study" data-player="${esc(p.nombre)}" data-index="${e.indice}" data-tip="${esc(e.carta.nombre)} · ${e.publicado ? 'Publicado' : `${e.trabajo} / ${e.carta.trabajo} trabajo`}" aria-label="${esc(e.carta.nombre)}, ${e.publicado ? 'publicado' : `${e.trabajo} de ${e.carta.trabajo} trabajo`}">${ideaCardContents(e.carta)}<span class="table-study-status">${e.publicado ? '◆' : `${e.trabajo}/${e.carta.trabajo}`}</span></button>`).join('') || '<span class="empty-table-studies">Sin estudios todavía</span>'}</div></section>`;
 }
 export function localPlayer(p, state) {
   return `<div class="local-identity">${img(p.rol?.arte || 'cartas/reverso_personaje.png', 'local-portrait')}

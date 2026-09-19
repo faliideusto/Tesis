@@ -96,7 +96,20 @@ with sync_playwright() as p:
     }""")
     expect(page.locator('#modal')).not_to_be_visible()
     expect(page.locator('[data-command=phase]')).to_be_visible()
+    expect(page.locator('#actions [data-command=phase]')).to_have_count(1)
+    expect(page.locator('#phase-message button')).to_have_count(0)
+    expect(page.locator('#hand-count, .zone-heading')).to_have_count(0)
+    expect(page.locator('#turn-panel strong')).to_have_text('Elige Ana')
     expect(page.locator('#activity-current')).to_contain_text('Artículo publicado')
+
+    page.evaluate("""() => {
+        const end = structuredClone(selection); end.fase='FIN_RONDA'; end.seleccion=[];
+        end.acciones=[{id:'SIGUIENTE_RONDA',nombre:'Siguiente ronda',disponible:true,descripcion:'Continuar'}];
+        boardModule.board(end);
+    }""")
+    expect(page.locator('[data-command=next-round]')).to_have_count(1)
+    expect(page.locator('#actions [data-command=next-round]')).to_be_visible()
+    expect(page.locator('#phase-message button')).to_have_count(0)
 
     # Plagiador exchanges hands, including equal-size hands: never a deck draw.
     page.evaluate("""() => {

@@ -6,48 +6,82 @@ import {studies, studyRow} from './players.js';
 import {dialog, closeDialog, phaseDialog} from './dialogs.js';
 import {notify, feedback} from './feedback.js';
 
-let state = null, config, busy = false, selectedRole = null, pendingAction = null;
+let state = null, room = null, busy = false, selectedRole = null, pendingAction = null;
+let timer, screen = 'home', generation = 0;
 const app = document.getElementById('app');
-
+const connection = document.createElement('div');
+connection.className='network-status'; connection.setAttribute('role','status'); connection.hidden=true;
+document.body.append(connection);
+function connectionStatus(text='') { connection.textContent=text; connection.hidden=!text; }
+function stopPolling() { clearTimeout(timer); generation++; }
+function schedulePoll() {
+  clearTimeout(timer);
+  if (screen === 'home' || !api.identity()) return;
+  const current = generation;
+  timer = setTimeout(async () => {
+    try {
+      const next = await api.state();
+      if (current === generation) { connectionStatus(); renderRoom(next); }
+    } catch (error) { if (current === generation) handleError(error); }
+    finally { if (current === generation) schedulePoll(); }
+  },900);
+}
 function home() {
-  closeDialog();
+  stopPolling(); screen='home'; closeDialog(); connectionStatus();
   app.innerHTML = `<section class="home-screen"><nav class="home-nav"><span>UNA MESA. MUCHAS IDEAS.</span><button class="text-button" data-command="help">Cómo jugar</button></nav>
     <div class="home-copy">${img('Logo/logo_ciudadela_academica.png','home-logo','Ciudadela Académica')}<span class="eyebrow">EL CONOCIMIENTO DEJA HUELLA</span>
-    <h1>Construye tu<br><em>legado académico.</em></h1><p>Reúne ideas, asume un personaje y convierte tus estudios en publicaciones. La academia recordará a quien alcance el mayor prestigio.</p>
-    <div class="home-features"><span>8 personajes</span><span>7 tipos de idea</span><span>Una mesa compartida</span></div></div>
-    <section class="setup-panel"><span class="eyebrow">LAS PUERTAS ESTÁN ABIERTAS</span><h2>Reúne a tu academia</h2><p>Partida local · pasa el control en cada turno</p>
-      <form id="setup"><label for="player-count">Personas en la mesa</label><select id="player-count" name="count">${Array.from({length:config.capacidadTablero},(_,i) => `<option value="${i+1}" ${i+1 === 2 ? 'selected' : ''} ${i+1 > config.maximo ? 'disabled' : ''}>${i+1 === 1 ? '1 · práctica individual' : `${i+1} jugadores`}${i+1 > config.maximo ? ' · mazo insuficiente' : ''}</option>`).join('')}</select>
-      <div id="player-names"></div><p class="setup-note">${esc(config.limitacion)}</p><button type="submit" class="gold-button">Abrir la mesa</button></form>
-      ${state ? '<button class="text-button resume" data-command="resume">Volver a la partida en curso</button>' : ''}
+    <h1>Construye tu<br><em>legado académico.</em></h1><p>Reúne a tu academia. Cada persona juega desde su dispositivo, con su mano privada y una mesa compartida.</p>
+    <div class="home-features"><span>8 personajes</span><span>7 tipos de idea</span><span>2–7 jugadores</span></div></div>
+    <section class="setup-panel"><span class="eyebrow">LAS PUERTAS ESTÁN ABIERTAS</span><h2>Reúne a tu academia</h2><p>Solo necesitas tu nombre y un código de sala.</p>
+      <form id="create-room" class="room-form"><label>Tu nombre<input name="nombre" maxlength="24" required autocomplete="nickname" placeholder="Fali"></label><button class="gold-button" type="submit">Crear sala</button></form>
+      <div class="room-divider">O ENTRA EN UNA SALA</div>
+      <form id="join-room" class="room-form"><label>Código de sala<input name="codigo" maxlength="5" minlength="5" required autocomplete="off" placeholder="A7K3Q" class="code-input"></label><label>Tu nombre<input name="nombre" maxlength="24" required autocomplete="nickname" placeholder="Jefe"></label><button class="gold-button" type="submit">Unirse a sala</button></form>
+      ${api.identity() ? '<button class="text-button resume" data-command="resume">Volver a mi sala</button>' : ''}
     </section><div class="home-footer">INVESTIGAR <span>·</span> TRANSFORMAR <span>·</span> MEJORAR</div></section>`;
-  names(2);
 }
-function names(count) {
-  const old = [...document.querySelectorAll('[name="player"]')].map(input => input.value);
-  document.getElementById('player-names').innerHTML = Array.from({length:count},(_,i) => `<label class="name-field"><span>${String(i+1).padStart(2,'0')}</span><input name="player" aria-label="Nombre del jugador ${i+1}" value="${esc(old[i] || `Jugador ${i+1}`)}" maxlength="24" required autocomplete="off"></label>`).join('');
+function lobby() {
+  closeDialog();
+  app.innerHTML = `<section class="home-screen lobby-screen"><div class="home-copy">${img('Logo/logo_ciudadela_academica.png','home-logo','Ciudadela Académica')}<span class="eyebrow">TU ACADEMIA TE ESPERA</span><h1>Una sala.<br><em>Muchas ideas.</em></h1><p>Comparte el código con los demás. Cada persona debe abrir esta misma web en su dispositivo.</p><button class="text-button" data-command="home">Volver al inicio</button></div>
+    <section class="setup-panel lobby-panel"><span class="eyebrow">CÓDIGO DE SALA</span><h2 class="room-code">${esc(room.codigo)}</h2><p>Tu identidad: <strong>${esc(room.yo)}</strong></p><h3>Jugadores · ${room.jugadores.length} / 7</h3><ul class="lobby-players">${room.jugadores.map(n=>`<li>${n===room.anfitrion?'♛ ':''}${esc(n)}${n===room.yo?' · tú':''}<small>${n===room.anfitrion?'Anfitrión':''}</small></li>`).join('')}</ul>
+    ${room.soyAnfitrion ? `<button class="gold-button" data-command="start-game" ${room.jugadores.length<2?'disabled':''}>Iniciar partida</button><p class="setup-note">${room.jugadores.length<2?'Esperando jugadores. Se necesitan al menos dos.':'Todo preparado. Puedes iniciar la partida.'}</p>` : `<p class="waiting-copy">Esperando a que ${esc(room.anfitrion)} inicie la partida…</p>`}</section></section>`;
 }
-async function run(task, {transition = true} = {}) {
+function renderRoom(next, force=false) {
+  if (!force && room?.codigo===next.codigo && room.revision===next.revision) return;
+  const before=state;
+  room=next; screen=room.fase==='LOBBY'?'lobby':'game';
+  if (screen==='lobby') { state=null; lobby(); return; }
+  state={...room.partida, yo:room.yo};
+  selectedRole=null; pendingAction=null;
+  board(state); feedback(before,state); phaseDialog(state);
+}
+function handleError(error) {
+  if (error.status) connectionStatus();
+  if ([401,404].includes(error.status) && screen !== 'home') {
+    api.forget(); room=null; state=null; home();
+    dialog('No podemos recuperar tu sala',`<p>${esc(error.message)}</p><p>Vuelve a crear una sala o introduce un código para unirte.</p>`); return;
+  }
+  if (!error.status) connectionStatus('Reconectando… conservamos tu identidad y volveremos a intentarlo.');
+  else notify(error.message,'error');
+}
+async function run(task) {
   if (busy) return;
-  busy = true; document.body.classList.add('busy');
-  try {
-    const before = state; const next = await task();
-    if (next) { state = next; board(state); feedback(before, state); if (transition) phaseDialog(state); }
-  } catch (error) {
-    notify(error instanceof TypeError ? 'No hay conexión con la mesa. Comprueba que el servidor siga abierto y vuelve a intentarlo.' : error.message, 'error');
-    if (error.status === 409) {
-      try { state = await api.state(); if (state) { board(state); phaseDialog(state); } }
-      catch { notify('No se ha podido actualizar la mesa. Recarga cuando vuelva la conexión.', 'error'); }
+  stopPolling(); busy=true; document.body.classList.add('busy'); connectionStatus('Conectando con la sala…');
+  try { renderRoom(await task(),true); connectionStatus(); }
+  catch (error) {
+    handleError(error);
+    if (error.status===409 && api.identity()) {
+      try { renderRoom(await api.state(),true); connectionStatus(); } catch (next) { handleError(next); }
     }
-  } finally { busy = false; document.body.classList.remove('busy'); }
+  } finally { busy=false; document.body.classList.remove('busy'); schedulePoll(); }
 }
-const act = (type, option = {}) => run(() => api.action(state.revision, type, option));
+const act = (type, option = {}) => run(() => api.action(room.revision,type,option));
 
 function help() {
   dialog('El conocimiento se convierte en prestigio', `<div class="rules-copy"><p><strong>1. Elige un personaje.</strong> Se descarta un rol al azar. Cada persona elige entre los restantes. Se juega en orden de personaje, de menor a mayor.</p>
     <p><strong>2. Decide cómo avanzar.</strong> En tu turno puedes realizar hasta dos acciones: cobrar 2 monedas, pensar para robar una idea, pagar una idea para iniciar un estudio o trabajar en un estudio propio.</p>
     <p><strong>3. Aprovecha tu habilidad.</strong> No consume acciones base. Las habilidades activas se usan una vez por turno, salvo Editorial, que puede comprar trabajo varias veces. El Comité debe nombrar un rol antes de actuar.</p>
     <p><strong>4. Publica y deja tu huella.</strong> Al completar el trabajo, publicas automáticamente y ganas el prestigio de la carta. Cuando alguien publica su tercer artículo, se termina la ronda. Gana quien tenga más prestigio; los empates comparten victoria.</p>
-    <p><strong>Mesa compartida.</strong> Al cambiar de jugador, entrega el control antes de mostrar su mano. Las partidas se conservan al recargar en este navegador mientras el servidor siga abierto, hasta 24 horas sin actividad.</p>
+    <p><strong>Una sala, varios dispositivos.</strong> Comparte el código y juega desde tu navegador. Solo tú ves tu mano. Al recargar recuperas tu identidad en esta pestaña. Las salas caducan tras 24 horas sin consultas válidas y se pierden al reiniciar el servidor.</p>
     <p><strong>Mazo inagotable.</strong> Los siete tipos de idea permanecen siempre disponibles. Cada reparto y robo elige una carta al azar, con posibilidad de repetir un tipo. Las cartas no se acaban.</p></div>`, {wide:false});
 }
 function chooseAction(id) {
@@ -58,7 +92,7 @@ function chooseAction(id) {
   let content;
   if (id === 'INICIAR') content = `<div class="idea-selection">${state.mano.map(c => ideaCard(c,{command:'start-choice',disabled:!action.opciones.some(o => o.indice === c.indice)})).join('')}</div>`;
   else if (id === 'TRABAJAR') {
-    const player = state.jugadores.find(p => p.nombre === state.actual);
+    const player = state.jugadores.find(p => p.nombre === state.yo);
     const allowed = new Set(action.opciones.map(o => o.indice));
     content = `<div class="study-selector">${player.estudios.filter(e => allowed.has(e.indice)).map(e => studyRow(e, player.nombre, {selection:true})).join('')}</div>`;
   } else content = `<div class="target-list">${action.opciones.map((o,i) => `<button class="target-button" data-command="target" data-index="${i}">${esc(o.etiqueta)}<span>Seleccionar</span></button>`).join('')}</div>`;
@@ -67,7 +101,7 @@ function chooseAction(id) {
 function inspect(c, study = null, player = null) {
   const canStart = !study && state.acciones.find(a => a.id === 'INICIAR')?.opciones.some(o => o.indice === c.indice)
     && state.acciones.find(a => a.id === 'INICIAR')?.disponible;
-  const canWork = study && player === state.actual && state.acciones.find(a => a.id === 'TRABAJAR')?.disponible
+  const canWork = study && player === state.yo && state.acciones.find(a => a.id === 'TRABAJAR')?.disponible
     && state.acciones.find(a => a.id === 'TRABAJAR')?.opciones.some(o => o.indice === study.indice);
   dialog(c.nombre, `<div class="card-detail">${ideaCard(c,{command:'noop'})}<div><span class="eyebrow">${study ? study.publicado ? 'ARTÍCULO PUBLICADO' : 'ESTUDIO EN DESARROLLO' : 'CARTA DE IDEA'}</span><h2>${esc(c.nombre)}</h2>
     <dl><div><dt>Coste de inicio</dt><dd>${c.coste} monedas</dd></div><div><dt>Trabajo requerido</dt><dd>${c.trabajo} puntos</dd></div><div><dt>Prestigio</dt><dd>${c.prestigio}${study?.prestigioExtra ? ` + ${study.prestigioExtra}` : ''}</dd></div></dl>
@@ -77,26 +111,21 @@ function inspect(c, study = null, player = null) {
     ${!study && !canStart ? '<p class="muted">No puedes iniciar esta idea ahora. Consulta tus monedas y acciones disponibles.</p>' : ''}</div></div>`);
 }
 
-document.addEventListener('change', e => { if (e.target.id === 'player-count') names(Number(e.target.value)); });
 document.addEventListener('submit', e => {
-  if (e.target.id !== 'setup') return; e.preventDefault();
-  const jugadores = [...e.target.querySelectorAll('[name="player"]')].map(input => input.value.trim());
-  if (state && state.fase !== 'FIN_PARTIDA') {
-    dialog('Abrir una nueva mesa', '<p>La partida en curso se sustituirá. Los nombres elegidos están preparados.</p><button class="gold-button" data-command="confirm-new">Empezar nueva partida</button>');
-    pendingAction = {nombres:jugadores};
-  } else run(() => api.create(jugadores));
+  if (!['create-room','join-room'].includes(e.target.id)) return;
+  e.preventDefault();
+  const fields=new FormData(e.target); const name=String(fields.get('nombre')).trim();
+  run(() => e.target.id==='create-room' ? api.create(name) : api.join(String(fields.get('codigo')),name));
 });
 document.addEventListener('click', e => {
   const button = e.target.closest('[data-command]'); if (!button || button.disabled || busy) return;
   const index = Number(button.dataset.index);
   switch (button.dataset.command) {
     case 'home': home(); break;
-    case 'resume': run(() => api.lock(state.revision)); break;
-    case 'confirm-new': run(() => api.create(pendingAction.nombres)); break;
+    case 'resume': screen='connecting'; run(() => api.state()); break;
+    case 'start-game': run(() => api.start(room.revision)); break;
     case 'help': help(); break;
     case 'close': closeDialog(); break;
-    case 'reveal': run(() => api.reveal(state.revision)); break;
-    case 'lock': run(() => api.lock(state.revision)); break;
     case 'next-round': act('SIGUIENTE_RONDA'); break;
     case 'action': chooseAction(button.dataset.action); break;
     case 'role': {
@@ -124,7 +153,7 @@ document.addEventListener('click', e => {
       dialog(`Academia de ${p.nombre}`, `<div class="rival-details"><p>${p.monedas} monedas · ${p.prestigio} prestigio · ${p.cartas} ideas en mano</p>${studies(p,false).replace('Mis estudios','Estudios públicos')}</div>`); break;
     }
     case 'ability-detail': {
-      const r = state.jugadores.find(p => p.nombre === state.actual).rol;
+      const r = state.jugadores.find(p => p.nombre === state.yo).rol;
       dialog(r.nombre, `<div class="role-confirm">${roleCard(r,{command:'noop'})}<div><h2>${esc(r.nombre)}</h2><p>${esc(r.habilidad)}</p></div></div>`); break;
     }
     case 'history': dialog('Crónica de la mesa', `<ol class="chronicle">${state.eventos.map(event => `<li class="${event.publicacion ? 'publication' : ''}">${esc(event.texto)}</li>`).join('') || '<li>La academia acaba de abrir sus puertas.</li>'}</ol>`); break;
@@ -132,12 +161,12 @@ document.addEventListener('click', e => {
 });
 
 async function boot() {
-  try {
-    [config,state] = await Promise.all([api.config(), api.state()]);
-    if (state) { state = await api.lock(state.revision); board(state); phaseDialog(state); } else home();
-  } catch {
-    app.innerHTML = '<div class="connection-error"><h1>No podemos abrir la academia</h1><p>Comprueba que el servidor esté iniciado y recarga esta página.</p><button class="gold-button" id="retry">Volver a intentar</button></div>';
-    document.getElementById('retry').addEventListener('click', boot);
-  }
+  if (!api.identity()) { home(); return; }
+  screen='connecting';
+  try { renderRoom(await api.state(),true); connectionStatus(); }
+  catch (error) {
+    handleError(error);
+    if (screen!=='home') app.innerHTML='<div class="connection-error"><h1>Recuperando tu academia</h1><p>Volveremos a conectar automáticamente.</p><button class="text-button" data-command="home">Volver al inicio</button></div>';
+  } finally { schedulePoll(); }
 }
 boot();

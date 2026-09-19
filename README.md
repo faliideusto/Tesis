@@ -1,64 +1,52 @@
 # Ciudadela Académica
 
-Juego web local de cartas sobre el motor Java original. Toda acción se valida y ejecuta en Java; el navegador representa la partida con HTML, CSS y módulos JavaScript.
+Juego de cartas multijugador por salas para **2–7 personas**. Cada navegador controla a su jugador, con mano privada, sin cuentas: nombre y código de sala. El motor Java sigue siendo la única fuente de verdad.
 
-## Arranque de la versión web
+## Ejecutar y jugar
 
-Requisitos: **JDK 17 o superior** y **Maven 3.9 o superior**. No necesitas Node, npm, base de datos ni conexión a servicios externos para jugar. Utiliza un navegador de escritorio actualizado (Chrome, Edge o Firefox).
-
-Desde la raíz del repositorio:
+Requisitos: JDK 17 o superior y Maven 3.9 o superior.
 
 ```powershell
-mvn clean test
+mvn test
 mvn compile exec:java
 ```
 
-Abre **http://localhost:8080**. Mantén abierto el proceso Maven; `Ctrl+C` detiene el servidor. Para usar otro puerto:
+En el ordenador servidor abre `http://localhost:8080`. Crea una sala con tu nombre y comparte su código. Los demás deben abrir **el mismo servidor**: en la misma red, `http://IP_DEL_SERVIDOR:8080`. El firewall del servidor debe permitir ese puerto. El código por sí solo no conecta servidores diferentes. El anfitrión inicia cuando hay entre dos y siete participantes.
+
+La selección es privada; cada persona actúa desde su dispositivo. Los personajes se revelan al llegar su turno. Al terminar una ronda, el último jugador indicado pulsa «Siguiente ronda» o «Ver resultados». Se conservan las ocho habilidades, las dos acciones base, las tres publicaciones que desencadenan el cierre y la victoria por prestigio. Los siete tipos de idea permanecen siempre disponibles; cada robo es aleatorio con reposición.
+
+F5 recupera la identidad de **esa pestaña** mediante `sessionStorage`. Las salas viven en memoria y caducan tras 24 horas sin peticiones autenticadas. Reiniciar el servidor las elimina. No hay bots, expulsión de jugadores, sustitución del anfitrión ni recuperación de identidad por nombre: si alguien abandona sin conservar su token, su turno puede quedar esperando.
+
+## Configuración y despliegue
+
+- `PORT`: puerto, por defecto `8080`; un argumento de CLI lo sustituye.
+- `HOST`: interfaz de escucha, por defecto `0.0.0.0`. Usa `127.0.0.1` para limitarlo al ordenador local.
+- `PUBLIC_ORIGIN`: origen público exacto, como `https://juego.example`, si se sirve detrás de un proxy.
+- Frontend y API comparten origen; todas las rutas del navegador son relativas.
 
 ```powershell
-mvn compile exec:java "-Dexec.args=8090"
+$env:PORT = '8091'
+$env:HOST = '0.0.0.0'
+mvn compile exec:java
 ```
 
-La mesa se configura con nombres y cantidad de participantes. Es un juego local de pantalla compartida: entrega el control a la persona indicada antes de pulsar «continuar». No hay IA ni multijugador online.
+Para Internet hace falta un servicio que ejecute Java y HTTPS, normalmente con un proxy que mantenga el host público. GitHub Pages no ejecuta este backend. Esta versión requiere una sola instancia; no hay base de datos ni almacenamiento compartido entre réplicas. No se ha desplegado externamente. El JAR normal no incluye dependencias ni un lanzador autónomo; el comando Maven anterior sirve para ejecutar con su classpath.
 
-- El catálogo admite **1–7 personas**: ocho roles, un descarte y siete tipos de idea. Cada persona recibe dos cartas aleatorias. Los siete tipos permanecen en el mazo tras cada robo, por lo que pueden repetirse y nunca se agotan.
-- Elige personaje, realiza hasta dos acciones, utiliza su habilidad cuando corresponda y termina el turno. El trabajo publica automáticamente. Al alcanzar tres publicaciones se termina la ronda y se calcula la victoria por prestigio.
-- Las manos ajenas no se envían al navegador. En cada relevo se retira la información privada hasta que el siguiente participante continúa. Esto es privacidad de presentación en una mesa compartida, no autenticación individual.
-- Recargar recupera la mesa de la sesión y vuelve a ocultar la mano. Las mesas viven en memoria; se pierden al detener el servidor y caducan tras 24 horas sin actividad. La web todavía no importa ni exporta guardados; el CLI conserva ambas funciones.
-- El mazo contiene únicamente los siete artículos del informe: Ecológico, Transversal, Casos y Controles, Cohortes, Ensayo Clínico Aleatorizado, Ensayo Comunitario y Revisión Sistemática.
+## Verificación
 
-## Arquitectura web
+- `mvn test`: **126 pruebas, 0 fallos, 0 errores, 0 omitidas**. Se conservan las 99 anteriores y se añaden 27 de salas, identidad, privacidad, habilidades, concurrencia y partidas completas.
+- `mvn -DskipTests package`: **BUILD SUCCESS**.
+- Prueba real automatizada: dos contextos aislados de Chrome, creación/unión, partida completa, recargas, estabilidad de modal bajo polling y recuperación de red.
 
-- `web/ServidorWeb.java`: servidor HTTP del JDK, recursos del classpath, sesiones aisladas mediante cookie, respuestas JSON con Gson, límites de solicitudes y control de origen. Escucha exclusivamente en `127.0.0.1`.
-- `web/SesionJuego.java`: adapta las decisiones web a los comandos y estados existentes; mantiene el relevo privado, la revisión del estado y la crónica pública. Nunca ejecuta reglas en JavaScript.
-- `web/Vistas.java`: DTOs inmutables `Configuracion`, `Estado`, `Jugador`, `Carta`, `Rol`, `Estudio`, `Accion`, `Opcion`, `Evento` y `Peticion`.
-- `web/CatalogoVisual.java`: correspondencias entre cartas reales, ilustraciones y explicaciones de habilidades.
-- `src/main/resources/static/index.html`, `css/` y `js/`: inicio, mesa adaptable, cartas por capas, estudios, selectores, modales, tooltips, notificaciones y animaciones con soporte de movimiento reducido.
-- Assets originales: `src/main/resources/static/assets/Ciudadelas-assets/`. Se respetan sus nombres y PNG; no se han modificado. Las imágenes de `referencias/` no se utilizan como tablero jugable.
-
-Se reutiliza **Gson 2.13.2**, ya presente. No se ha añadido ningún framework ni dependencia de ejecución. Se fija Surefire 3.5.4 para ejecutar JUnit 5 de forma reproducible. El objetivo de compilación sigue siendo Java 17.
-
-| Método | Endpoint | Uso |
-| --- | --- | --- |
-| GET | `/api/config` | Configuración admitida por el catálogo real |
-| POST | `/api/game` | Crear mesa con `nombres` |
-| GET | `/api/game/state` | Estado de la perspectiva activa o `null` si no hay mesa |
-| POST | `/api/game/reveal` | Continuar el relevo local con `revision` |
-| POST | `/api/game/lock` | Ocultar la perspectiva privada |
-| POST | `/api/game/select-role` | Elegir personaje (`tipo: SELECCIONAR`, `indice`) |
-| POST | `/api/game/action` | Acciones base, habilidad, fin de turno y siguiente ronda |
-
-Los POST usan JSON y cabecera `X-Ciudadela: 1`. Las mutaciones de una partida requieren su `revision`; un envío obsoleto devuelve HTTP 409. Los índices son cero-based y se obtienen del DTO, no del orden visual filtrado. Detalles, decisiones de privacidad y limitaciones en [docs/WEB.md](docs/WEB.md).
-
-## Verificación de la web
+La prueba visual es opcional y no añade dependencias de producción:
 
 ```powershell
-mvn clean test
+py -m pip install playwright
+# Con Chrome instalado y el servidor escuchando en 8091:
+py tools/qa_multiplayer.py
 ```
 
-Resultado verificado tras corregir el mazo: **99 pruebas, 0 fallos, 0 errores** con `mvn test`. Incluye el catálogo de siete artículos y sus valores, mil robos sin agotamiento, reparto para uno a siete jugadores, guardado y recuperación, habilidades, final de partida y HTTP real en puerto efímero.
-
-La segunda pasada de UI/UX se verificó visualmente con Chrome a 1920×1080, 1600×900 y 1366×768, con partidas reales y capturas. Consulta los cambios, evidencia y límites en [docs/UI-REVISION.md](docs/UI-REVISION.md).
+`CIUDADELA_URL` permite cambiar la dirección de la prueba. Evidencia temporal: `target/qa-multiplayer/`. Arquitectura y contrato: [docs/WEB.md](docs/WEB.md). Informe de implementación, cobertura y límites: [docs/MULTIJUGADOR.md](docs/MULTIJUGADOR.md).
 
 ## Modo terminal conservado
 

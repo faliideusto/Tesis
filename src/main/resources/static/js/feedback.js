@@ -1,13 +1,15 @@
 export function notify(message, kind = '') {
   const item = document.createElement('div'); item.className = `toast ${kind}`; item.textContent = message;
-  document.getElementById('notifications').append(item);
+  const notifications = document.getElementById('notifications');
+  notifications.append(item);
+  while (notifications.children.length > 3) notifications.firstElementChild.remove();
   setTimeout(() => item.remove(), 5500);
 }
 export function feedback(before, after) {
   if (!before) return;
   const last = before.eventos.at(-1)?.numero || 0;
   after.eventos.filter(e => e.numero > last).slice(-3).forEach(e => notify(e.texto, e.publicacion ? 'publication' : ''));
-  const old = before.jugadores.find(p => p.nombre === after.actual), current = after.jugadores.find(p => p.nombre === after.actual);
+  const old = before.jugadores.find(p => p.nombre === after.yo), current = after.jugadores.find(p => p.nombre === after.yo);
   if (old && current && !matchMedia('(prefers-reduced-motion: reduce)').matches && (old.monedas !== current.monedas || old.prestigio !== current.prestigio)) {
     document.getElementById('local')?.animate([{filter:'brightness(1.8)'},{filter:'brightness(1)'}], {duration:500});
   }

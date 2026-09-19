@@ -15,12 +15,10 @@ export function dialog(title, content, {wide = false, locked = false, subtitle =
 modal.addEventListener('cancel', e => { if (modal.dataset.locked === 'true') e.preventDefault(); });
 
 export function phaseDialog(state) {
-  if (state.bloqueada) {
-    dialog(`Tu turno, ${state.actual}`, `<div class="handoff">${img('cartas/reverso_personaje.png')}<p>Pasa el control a <strong>${esc(state.actual)}</strong>.</p><p class="muted">Las manos y las elecciones se mantienen privadas entre turnos.</p><button class="gold-button" data-command="reveal">Soy ${esc(state.actual)} · continuar</button></div>`, {locked:true, subtitle:state.fase === 'SELECCION_ROLES' ? `Ronda ${state.ronda} · selección de personaje` : `Ronda ${state.ronda} · turno de acción`});
-  } else if (state.fase === 'SELECCION_ROLES') {
+  if (state.fase === 'SELECCION_ROLES' && state.seleccion.length) {
     dialog('Elige tu personaje', `<div class="role-selection">${state.seleccion.map(r => roleCard(r)).join('')}</div><p class="selection-caption">Selecciona una carta para leer su habilidad y confirmar tu elección.</p>`, {wide:true, locked:true, subtitle:`${state.actual} · el orden del personaje determina cuándo jugarás.`});
   } else if (state.fase === 'FIN_RONDA') {
-    dialog(`La ronda ${state.ronda} ha terminado`, `<div class="round-summary">${ranking(state)}<p>${state.ultimaRonda ? 'Se ha alcanzado la tercera publicación. Es hora de reconocer el legado de cada academia.' : 'Los personajes regresan al mazo. Una nueva ronda trae nuevas posibilidades.'}</p><button class="gold-button" data-command="next-round">${state.ultimaRonda ? 'Descubrir el resultado' : 'Comenzar siguiente ronda'}</button></div>`, {locked:true});
+    dialog(`La ronda ${state.ronda} ha terminado`, `<div class="round-summary">${ranking(state)}<p>${state.ultimaRonda ? 'Se ha alcanzado la tercera publicación. Es hora de reconocer el legado de cada academia.' : 'Los personajes regresan al mazo. Una nueva ronda trae nuevas posibilidades.'}</p>${state.acciones.some(a=>a.id==='SIGUIENTE_RONDA') ? `<button class="gold-button" data-command="next-round">${state.ultimaRonda ? 'Descubrir el resultado' : 'Comenzar siguiente ronda'}</button>` : `<p>Esperando a ${esc(state.actual)} para continuar.</p>`}</div>`, {locked:true});
   } else if (state.fase === 'FIN_PARTIDA') {
     dialog(state.ganadores.length > 1 ? 'Una victoria compartida' : 'Un legado para la academia', `<div class="final-result">${img('recursos/prestigio.png','victory-medal')}<h2>${state.ganadores.map(esc).join(' · ')}</h2><p>${state.ganadores.length > 1 ? 'Comparten' : 'Obtiene'} la victoria por prestigio.</p>${ranking(state)}<div class="dialog-buttons"><button class="gold-button" data-command="home">Nueva partida</button><button class="plain-button" data-command="close">Explorar la mesa</button></div></div>`, {locked:false, subtitle:`Partida completada en ${state.ronda} rondas`});
   } else closeDialog();

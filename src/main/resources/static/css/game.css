@@ -420,3 +420,13 @@ dialog{padding:35px 23px 25px}
 }
 
 .local-identity .resources{margin-top:16px;gap:15px}.local-identity .resource img{width:29px;height:29px}.local-identity .resource b{font-size:18px}.local-footer{border-top:1px solid #b994562e;padding-top:9px}.local-panel .eyebrow{font-size:10px;letter-spacing:2px}
+
+/* Sala y conexión: la mesa y sus cartas conservan el diseño existente. */
+.room-form{display:grid;gap:14px}.room-form label{display:grid;gap:7px;font:12px var(--ui)}
+.room-form input{width:100%;padding:11px 12px;border:1px solid #776143;background:#101d2b;color:var(--light);font-size:14px}
+.code-input{text-transform:uppercase;letter-spacing:4px}.room-divider{font:10px var(--ui);color:var(--muted);text-align:center;padding:23px 0;letter-spacing:2px}
+.lobby-panel .room-code{font:42px var(--ui);letter-spacing:9px;color:var(--gold);margin:20px 0}
+.lobby-players{list-style:none;padding:0;margin:20px 0 28px}.lobby-players li{padding:12px 0;border-bottom:1px solid #b9945633;font-size:20px;overflow-wrap:anywhere}
+.lobby-players small{display:block;font:10px var(--ui);color:var(--gold);margin-top:4px}.waiting-copy{line-height:1.8;color:var(--gold)}
+.gold-button:disabled{filter:grayscale(.6);opacity:.5;transform:none}
+.network-status{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:2000;background:#081323f5;border:1px solid var(--gold);padding:10px 18px;font:12px/1.5 var(--ui);max-width:90vw;text-align:center}

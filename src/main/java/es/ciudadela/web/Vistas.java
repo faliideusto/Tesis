@@ -5,6 +5,9 @@ import java.util.List;
 /** Contrato de presentación. Nunca se serializan entidades ni instantáneas del motor. */
 public final class Vistas {
     private Vistas() {}
+    public record Sala(String codigo, long revision, String fase, String yo, String anfitrion,
+                       boolean soyAnfitrion, List<String> jugadores, Estado partida) {}
+    public record AccesoSala(String codigo, String playerToken, Sala sala) {}
     public record Configuracion(int minimo, int maximo, int capacidadTablero, String limitacion) {}
     public record Carta(int indice, String nombre, int coste, int trabajo, int prestigio, String arte, String marco) {}
     public record Rol(int indice, String nombre, int orden, String habilidad, String arte, boolean automatica) {}

@@ -9,7 +9,7 @@ import es.ciudadela.reglas.ReglasAcademicas;
 import java.util.*;
 import java.util.stream.IntStream;
 
-/** Una mesa local por sesión HTTP. Las mutaciones y sus vistas son atómicas. */
+/** Adaptador del motor y proyecciones privadas por jugador; conserva el modo local de pruebas. */
 public final class SesionJuego {
     private MotorJuego motor;
     private boolean bloqueada = true;
@@ -28,8 +28,12 @@ public final class SesionJuego {
             throw new IllegalArgumentException("Elige entre 1 y " + configuracion().maximo() + " jugadores.");
         if (nombres.stream().anyMatch(n -> n == null || n.isBlank() || n.length() > 24 || n.chars().anyMatch(Character::isISOControl)))
             throw new IllegalArgumentException("Cada nombre debe tener entre 1 y 24 caracteres sin saltos de línea.");
+        return crearJugadores(nombres.stream().map(String::trim).map(Jugador::new).toList());
+    }
+
+    synchronized Vistas.Estado crearJugadores(List<Jugador> jugadores) {
         var nuevo = new MotorJuegoImpl(new ReglasAcademicas(), new BusEventosSimple());
-        nuevo.iniciarPartida(new Partida(nombres.stream().map(String::trim).map(Jugador::new).toList(),
+        nuevo.iniciarPartida(new Partida(jugadores,
                 FabricaMazos.crearRoles(), FabricaMazos.crearIdeas()));
         motor = nuevo;
         revelados.clear(); eventos.clear(); bloqueada = true; revision++;
@@ -49,9 +53,19 @@ public final class SesionJuego {
     }
 
     public synchronized Vistas.Estado actuar(Vistas.Peticion p) {
+        return ejecutar(p, null);
+    }
+
+    synchronized Vistas.Estado actuar(Jugador jugador, Vistas.Peticion p) {
+        comprobarMiembro(jugador);
+        if (motor.partida().jugadorActual() != jugador) throw new ErrorSala(403, "No es tu turno.");
+        return ejecutar(p, jugador);
+    }
+
+    private Vistas.Estado ejecutar(Vistas.Peticion p, Jugador perspectiva) {
         if (p == null || p.revision() == null) throw new IllegalArgumentException("Falta la versión de la partida.");
         comprobarVersion(p.revision());
-        if (bloqueada) throw new IllegalStateException("Pasa el control y muestra tu mano antes de jugar.");
+        if (perspectiva == null && bloqueada) throw new IllegalStateException("Pasa el control y muestra tu mano antes de jugar.");
         if (p.tipo() == null) throw new IllegalArgumentException("Indica una acción.");
         String anterior = motor.partida().jugadorActual().nombre();
         FaseDeTurno fase = motor.partida().faseActual();
@@ -79,7 +93,7 @@ public final class SesionJuego {
                 || fase != partida.faseActual()) bloqueada = partida.faseActual() == FaseDeTurno.SELECCION_ROLES
                         || partida.faseActual() == FaseDeTurno.TURNO_JUGADOR;
         revision++;
-        return estado();
+        return perspectiva == null ? estado() : estado(perspectiva);
     }
 
     private int indice(Vistas.Peticion p) {
@@ -95,27 +109,44 @@ public final class SesionJuego {
     }
 
     public synchronized Vistas.Estado estado() {
+        return vista(null);
+    }
+
+    synchronized Vistas.Estado estado(Jugador jugador) {
+        comprobarMiembro(jugador);
+        return vista(jugador);
+    }
+
+    private void comprobarMiembro(Jugador jugador) {
+        if (motor == null || !motor.partida().jugadores().contains(jugador))
+            throw new ErrorSala(403, "No perteneces a esta partida.");
+    }
+
+    private Vistas.Estado vista(Jugador perspectiva) {
         if (motor == null) return null;
         var p = motor.partida(); var actual = p.jugadorActual();
-        boolean privada = !bloqueada && (p.faseActual() == FaseDeTurno.SELECCION_ROLES || p.faseActual() == FaseDeTurno.TURNO_JUGADOR);
+        boolean local = perspectiva == null;
+        var propio = local ? actual : perspectiva;
+        boolean privada = !local || !bloqueada && (p.faseActual() == FaseDeTurno.SELECCION_ROLES || p.faseActual() == FaseDeTurno.TURNO_JUGADOR);
+        boolean puedeActuar = privada && propio == actual;
         var jugadores = p.jugadores().stream().map(j -> new Vistas.Jugador(j.nombre(), j.monedas(), j.prestigio(),
                 j.cartasIdea().size(), j.cantidadPublicados(), j.personaje() != null && (revelados.contains(j.nombre())
-                    || (privada && j == actual)) ? CatalogoVisual.rol(j.personaje(), -1) : null,
+                    || (privada && j == propio)) ? CatalogoVisual.rol(j.personaje(), -1) : null,
                 IntStream.range(0, j.estudios().size()).mapToObj(i -> {
                     var e = j.estudios().get(i);
                     return new Vistas.Estudio(i, CatalogoVisual.carta(e.carta(), i), e.trabajoAcumulado(),
                             e.prestigioExtra(), e.estado() == EstadoEstudio.PUBLICADO);
                 }).toList(), j == actual)).toList();
-        var mano = privada ? IntStream.range(0, actual.cartasIdea().size()).mapToObj(i -> CatalogoVisual.carta(actual.cartasIdea().get(i), i)).toList() : List.<Vistas.Carta>of();
-        var roles = privada && p.faseActual() == FaseDeTurno.SELECCION_ROLES
+        var mano = privada ? IntStream.range(0, propio.cartasIdea().size()).mapToObj(i -> CatalogoVisual.carta(propio.cartasIdea().get(i), i)).toList() : List.<Vistas.Carta>of();
+        var roles = puedeActuar && p.faseActual() == FaseDeTurno.SELECCION_ROLES
                 ? IntStream.range(0, p.mazoRoles().cartas().size()).mapToObj(i -> CatalogoVisual.rol(p.mazoRoles().cartas().get(i), i)).toList() : List.<Vistas.Rol>of();
         boolean pendiente = p.faseActual() == FaseDeTurno.TURNO_JUGADOR && actual.personaje().habilidad().requiereResolucionAlInicio() && !p.habilidadUsada();
         boolean agotada = p.mazoIdeas().estaVacio() && p.jugadores().stream().allMatch(j -> j.cartasIdea().isEmpty()
                 && j.estudios().stream().allMatch(e -> e.estado() == EstadoEstudio.PUBLICADO))
                 && !motor.contexto().reglas().debeFinalizarPartida(motor.contexto());
-        return new Vistas.Estado(revision, p.faseActual().name(), p.ronda(), actual.nombre(), bloqueada,
-                p.mazoIdeas().cartas().size(), p.mazoRoles().cartas().size(), p.faseActual() == FaseDeTurno.TURNO_JUGADOR ? 2 - p.accionesBaseRealizadas() : 0,
-                privada && pendiente, jugadores, mano, roles, bloqueada ? List.of() : acciones(), List.copyOf(eventos),
+        return new Vistas.Estado(revision, p.faseActual().name(), p.ronda(), actual.nombre(), local && bloqueada,
+                p.mazoIdeas().cartas().size(), p.mazoRoles().cartas().size(), (local || puedeActuar) && p.faseActual() == FaseDeTurno.TURNO_JUGADOR ? 2 - p.accionesBaseRealizadas() : 0,
+                puedeActuar && pendiente, jugadores, mano, roles, (local ? bloqueada : !puedeActuar) ? List.of() : acciones(), List.copyOf(eventos),
                 p.ganadores().stream().map(Jugador::nombre).toList(), motor.contexto().reglas().debeFinalizarPartida(motor.contexto()),
                 agotada ? "No quedan ideas ni estudios por completar y nadie ha publicado tres artículos. El motor no define un cierre para esta situación; podéis consultar el resultado actual o empezar otra partida." : "");
     }

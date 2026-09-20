@@ -19,7 +19,7 @@ export function board(state) {
   document.getElementById('board').classList.toggle('privacy', state.bloqueada);
   update('turn-panel', `<span>RONDA ${state.ronda}${state.ultimaRonda ? ' · ÚLTIMA' : ''}</span><strong>${state.fase === 'SELECCION_ROLES' ? 'Elige ' : state.fase === 'FIN_PARTIDA' ? 'Partida finalizada' : state.fase === 'FIN_RONDA' ? 'Cierre de ronda' : 'Turno de '}${['SELECCION_ROLES','TURNO_JUGADOR'].includes(state.fase) ? esc(state.actual) : ''}</strong>`);
   document.getElementById('rivals').dataset.count = others.length;
-  update('rivals', others.map(rival).join(''));
+  update('rivals', others.map(p=>rival({...p,activo:state.fase==='TURNO_JUGADOR' && p.activo})).join(''));
   if (!document.getElementById('activity-current')) update('decks', `<div class="deck character-deck">${img('ui/marco_mazo.png','deck-base')}${img('cartas/reverso_personaje.png','deck-back')}<b class="deck-count">${state.roles}</b><span>PERSONAJES</span></div>
     <section class="table-activity" aria-label="Actividad de la mesa"><span class="eyebrow">ÚLTIMOS MOVIMIENTOS</span><div id="activity-current" role="status" aria-live="polite"><p class="activity-idle">Cada idea deja huella.</p></div><button class="text-button" data-command="history">Ver crónica</button></section>
     <div class="deck idea-deck ${state.ideas === 0 ? 'exhausted' : ''}">${img('ui/marco_mazo.png','deck-base')}${img('cartas/reverso_idea.png','deck-back')}<b class="deck-count">${state.ideas}</b><span>IDEAS${state.ideas === 0 ? ' · AGOTADO' : ''}</span></div>`);

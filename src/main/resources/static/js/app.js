@@ -4,8 +4,11 @@ import {board} from './board.js';
 import {ideaCard, roleCard} from './cards.js';
 import {studies, studyRow} from './players.js';
 import {dialog, closeDialog, phaseDialog} from './dialogs.js';
-import {notify, feedback, resetFeedback, captureTable} from './feedback.js';
+import {notify, feedback, resetFeedback} from './feedback.js';
+import {transition, settled, resetEffects, chooseRole, victory} from './effects.js';
 
+let visualBusy = false;
+let renderQueue=Promise.resolve(), latestRoom=null;
 let state = null, room = null, busy = false, selectedRole = null, pendingAction = null;
 let timer, screen = 'home', generation = 0;
 const app = document.getElementById('app');
@@ -21,13 +24,14 @@ function schedulePoll() {
   timer = setTimeout(async () => {
     try {
       const next = await api.state();
-      if (current === generation) { connectionStatus(); renderRoom(next); }
+      if (current === generation) { connectionStatus(); void renderRoom(next).catch(handleError); }
     } catch (error) { if (current === generation) handleError(error); }
     finally { if (current === generation) schedulePoll(); }
   },900);
 }
 function home() {
-  stopPolling(); screen='home'; closeDialog(); resetFeedback(); connectionStatus();
+  stopPolling(); resetEffects(); screen='home'; closeDialog(); resetFeedback(); connectionStatus();
+  state=null; room=null;
   app.innerHTML = `<section class="home-screen"><nav class="home-nav"><span>UNA MESA. MUCHAS IDEAS.</span><button class="text-button" data-command="help">Cómo jugar</button></nav>
     <div class="home-copy">${img('Logo/logo_tesis.png','home-logo','Tesis')}<span class="eyebrow">La diferencia está en la ciencia</span>
     <h1>Construye tu<br><em>legado científico.</em></h1><p>Reúne a tu academia. Cada persona juega desde su dispositivo, con su mano privada y una mesa compartida.</p>
@@ -42,21 +46,41 @@ function home() {
 function lobby() {
   closeDialog();
   app.innerHTML = `<section class="home-screen lobby-screen"><div class="home-copy">${img('Logo/logo_tesis.png','home-logo','Tesis')}<span class="eyebrow">TU ACADEMIA TE ESPERA</span><h1>Una sala.<br><em>Muchas ideas.</em></h1><p>Comparte el código con los demás. Cada persona debe abrir esta misma web en su dispositivo.</p><button class="text-button" data-command="home">Volver al inicio</button></div>
-    <section class="setup-panel lobby-panel"><span class="eyebrow">CÓDIGO DE SALA</span><h2 class="room-code">${esc(room.codigo)}</h2><p>Tu identidad: <strong>${esc(room.yo)}</strong></p><h3>Jugadores · ${room.jugadores.length} / 7</h3><ul class="lobby-players">${room.jugadores.map(n=>`<li>${n===room.anfitrion?'♛ ':''}${esc(n)}${n===room.yo?' · tú':''}<small>${n===room.anfitrion?'Anfitrión':''}</small></li>`).join('')}</ul>
+    <section class="setup-panel lobby-panel"><span class="eyebrow">CÓDIGO DE SALA</span><h2 class="room-code">${esc(room.codigo)}</h2><p>Tu identidad: <strong>${esc(room.yo)}</strong></p><h3>Jugadores · ${room.jugadores.length} / 6</h3><ul class="lobby-players">${room.jugadores.map(n=>`<li>${n===room.anfitrion?'♛ ':''}${esc(n)}${n===room.yo?' · tú':''}<small>${n===room.anfitrion?'Anfitrión':''}</small></li>`).join('')}</ul>
     ${room.soyAnfitrion ? `<button class="gold-button" data-command="start-game" ${room.jugadores.length<2?'disabled':''}>Iniciar partida</button><p class="setup-note">${room.jugadores.length<2?'Esperando jugadores. Se necesitan al menos dos.':'Todo preparado. Puedes iniciar la partida.'}</p>` : `<p class="waiting-copy">Esperando a que ${esc(room.anfitrion)} inicie la partida…</p>`}</section></section>`;
 }
 function renderRoom(next, force=false) {
+  const requestedGeneration=generation;
+  latestRoom=next;
+  const result=renderQueue.then(()=>{
+    if(requestedGeneration!==generation || (latestRoom.codigo===next.codigo && latestRoom.revision>next.revision)) return;
+    return applyRoom(next,force);
+  });
+  renderQueue=result.catch(()=>{});
+  return result;
+}
+async function applyRoom(next, force=false) {
+  if (room?.codigo===next.codigo && room.revision>=next.revision && screen==='game') return;
   if (!force && room?.codigo===next.codigo && room.revision===next.revision) return;
-  const before=state;
-  const positions=captureTable();
+  const before=state, current=generation;
   const sameRoom=room?.codigo===next.codigo;
-  if (!sameRoom) resetFeedback();
-  room=next; screen=room.fase==='LOBBY'?'lobby':'game';
-  if (screen==='lobby') { state=null; lobby(); return; }
-  state={...room.partida, yo:room.yo};
-  selectedRole=null; pendingAction=null;
-  closeDialog();
-  board(state); feedback(sameRoom ? before : null,state,positions);
+  if (!sameRoom) { resetFeedback(); resetEffects(); }
+  const after=next.partida ? {...next.partida, yo:next.yo} : null;
+  visualBusy=true; document.body.classList.add('visual-busy');
+  try {
+    const roleConfirmation=sameRoom && before && after?.eventos.some(e=>e.numero>(before.eventos.at(-1)?.numero || 0) && e.tipo==='accion.seleccionar_personaje' && e.actor===after.yo);
+    if (!roleConfirmation) closeDialog();
+    if (after) {
+      try { await transition(sameRoom ? before : null,after); }
+      catch (error) { console.error('No se pudo representar el efecto visual',error); resetEffects(); }
+    }
+    if (current!==generation) return;
+    room=next; screen=room.fase==='LOBBY'?'lobby':'game';
+    if (screen==='lobby') { state=null; lobby(); return; }
+    state=after; selectedRole=null; pendingAction=null; closeDialog();
+    board(state); feedback(sameRoom ? before : null,state); settled(sameRoom ? before : null,state);
+    if (state.fase==='FIN_PARTIDA' && (!before || before.fase!=='FIN_PARTIDA')) { phaseDialog(state); if(before) victory(); }
+  } finally {visualBusy=false; document.body.classList.remove('visual-busy');}
 }
 function handleError(error) {
   if (error.status) connectionStatus();
@@ -70,11 +94,11 @@ function handleError(error) {
 async function run(task) {
   if (busy) return;
   stopPolling(); busy=true; document.body.classList.add('busy'); connectionStatus('Conectando con la sala…');
-  try { renderRoom(await task(),true); connectionStatus(); }
+  try { await renderRoom(await task(),true); connectionStatus(); }
   catch (error) {
     handleError(error);
     if (error.status===409 && api.identity()) {
-      try { renderRoom(await api.state(),true); connectionStatus(); } catch (next) { handleError(next); }
+      try { await renderRoom(await api.state(),true); connectionStatus(); } catch (next) { handleError(next); }
     }
   } finally { busy=false; document.body.classList.remove('busy'); schedulePoll(); }
 }
@@ -124,8 +148,8 @@ document.addEventListener('submit', e => {
   const fields=new FormData(e.target); const name=String(fields.get('nombre')).trim();
   run(() => e.target.id==='create-room' ? api.create(name) : api.join(String(fields.get('codigo')),name));
 });
-document.addEventListener('click', e => {
-  const button = e.target.closest('[data-command]'); if (!button || button.disabled || busy) return;
+document.addEventListener('click', async e => {
+  const button = e.target.closest('[data-command]'); if (!button || button.disabled || busy || visualBusy) return;
   const index = Number(button.dataset.index);
   switch (button.dataset.command) {
     case 'home': home(); break;
@@ -135,14 +159,16 @@ document.addEventListener('click', e => {
     case 'close': closeDialog(); break;
     case 'phase': phaseDialog(state); break;
     case 'next-round': {
-      const showResults = state.ultimaRonda;
-      act('SIGUIENTE_RONDA').then(() => {
-        if (showResults && screen === 'game' && state.fase === 'FIN_PARTIDA') phaseDialog(state);
-      });
+      act('SIGUIENTE_RONDA');
       break;
     }
     case 'action': chooseAction(button.dataset.action); break;
     case 'role': {
+      const choosingState=state;
+      stopPolling();
+      visualBusy=true;
+      try { await chooseRole(button); } finally { visualBusy=false; schedulePoll(); }
+      if(state!==choosingState) break;
       selectedRole = state.seleccion.find(r => r.indice === index);
       dialog('Representa a tu academia', `<div class="role-confirm">${roleCard(selectedRole,{command:'noop',selected:true})}<div><span class="eyebrow">ORDEN DE TURNO ${selectedRole.orden}</span><h2>${esc(selectedRole.nombre)}</h2><p>${esc(selectedRole.habilidad)}</p><div class="dialog-buttons"><button class="gold-button" data-command="confirm-role">Elegir personaje</button><button class="plain-button" data-command="back-roles">Volver a los personajes</button></div></div></div>`);
       break;
@@ -177,7 +203,7 @@ document.addEventListener('click', e => {
 async function boot() {
   if (!api.identity()) { home(); return; }
   screen='connecting';
-  try { renderRoom(await api.state(),true); connectionStatus(); }
+  try { await renderRoom(await api.state(),true); connectionStatus(); }
   catch (error) {
     handleError(error);
     if (screen!=='home') app.innerHTML='<div class="connection-error"><h1>Recuperando tu academia</h1><p>Volveremos a conectar automáticamente.</p><button class="text-button" data-command="home">Volver al inicio</button></div>';

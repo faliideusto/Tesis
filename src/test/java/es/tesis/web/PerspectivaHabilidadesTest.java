@@ -100,6 +100,47 @@ class PerspectivaHabilidadesTest {
         var m=preparar(6,7); estudio(m.a,2); m.actuar(m.a,"TRABAJAR",0,null);
         assertEquals(2,m.a.estudios().get(0).trabajoAcumulado()); assertEquals(1,m.a.cantidadPublicados());
     }
+    @Test void eventosVisualesSonPublicosEstablesYPrecisosConArticulosDuplicados() {
+        var m=preparar(6,7);
+        estudio(m.a,2); estudio(m.a,2);
+        m.actuar(m.a,"TRABAJAR",1,null);
+        var a=m.ver(m.a); var b=m.ver(m.b);
+        var e=a.eventos().get(a.eventos().size()-1);
+        assertEquals("accion.trabajar",e.tipo()); assertEquals(1,e.estudio());
+        assertEquals(2,e.cantidad()); assertTrue(e.publicacion()); assertFalse(e.robo());
+        assertEquals(a.eventos(),b.eventos());
+        for(int i=0;i<10;i++) assertEquals(b.eventos(),m.ver(m.b).eventos());
+        assertThrows(IllegalArgumentException.class,()->m.actuar(m.a,"TRABAJAR",99,null));
+        assertEquals(a.eventos(),m.ver(m.a).eventos());
+    }
+    @Test void cobrarPensarEIniciarNoIncluyenIndiceDeManoNiCartaRobada() {
+        var m=preparar(2,7);
+        m.actuar(m.a,"COBRAR",null,null);
+        var eventos=m.ver(m.b).eventos(); var cobrar=eventos.get(eventos.size()-1);
+        assertEquals(2,cobrar.cantidad()); assertNull(cobrar.estudio());
+        m.actuar(m.a,"PENSAR",null,null);
+        eventos=m.ver(m.b).eventos(); var pensar=eventos.get(eventos.size()-1);
+        assertTrue(pensar.robo()); assertNull(pensar.estudio()); assertNull(pensar.objetivo());
+        assertEquals(cobrar.numero()+1,pensar.numero());
+        assertEquals(m.ver(m.a).eventos(),eventos);
+        var nueva=preparar(6,7);
+        nueva.a.sumarMonedas(20);
+        nueva.actuar(nueva.a,"INICIAR",1,null);
+        var inicio=nueva.ver(nueva.b).eventos();
+        assertEquals(0,inicio.get(inicio.size()-1).estudio());
+        assertFalse(new Gson().toJson(inicio).contains("mano"));
+    }
+    @Test void revisionIdentificaPropietarioYComiteNuncaResuelveRolAJugador() {
+        var m=preparar(7,6); estudio(m.b,3); estudio(m.b,3); m.b.trabajarEstudio(1,3);
+        m.actuar(m.a,"HABILIDAD",1,m.b.nombre());
+        var eventos=m.ver(m.b).eventos(); var revision=eventos.get(eventos.size()-1);
+        assertEquals(m.b.nombre(),revision.objetivo()); assertEquals(1,revision.estudio());
+        var comite=preparar(1,6);
+        comite.actuar(comite.a,"HABILIDAD",null,"Pre-Doctoral");
+        eventos=comite.ver(comite.b).eventos(); var veto=eventos.get(eventos.size()-1);
+        assertNull(veto.objetivo()); assertNull(veto.estudio()); assertFalse(veto.robo());
+        assertEquals(comite.ver(comite.a).eventos(),eventos);
+    }
     @Test void revisorValidaObjetivoYQuitaTrabajoPublico() {
         var m=preparar(7,6); estudio(m.b,3); m.b.trabajarEstudio(0,1);
         assertThrows(IllegalArgumentException.class,()->m.actuar(m.a,"HABILIDAD",0,"Intruso"));

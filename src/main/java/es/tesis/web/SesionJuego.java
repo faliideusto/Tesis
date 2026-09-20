@@ -14,6 +14,7 @@ public final class SesionJuego {
     private MotorJuego motor;
     private boolean bloqueada = true;
     private long revision;
+    private Vistas.Peticion accionEnCurso;
     private final Set<String> revelados = new HashSet<>();
     private final List<Vistas.Evento> eventos = new ArrayList<>();
 
@@ -69,7 +70,8 @@ public final class SesionJuego {
         if (p.tipo() == null) throw new IllegalArgumentException("Indica una acción.");
         String anterior = motor.partida().jugadorActual().nombre();
         FaseDeTurno fase = motor.partida().faseActual();
-        switch (p.tipo()) {
+        accionEnCurso = p;
+        try { switch (p.tipo()) {
             case "SELECCIONAR" -> motor.ejecutarAccion(new SeleccionarPersonajeAccion(indice(p)));
             case "COBRAR" -> motor.ejecutarAccion(new CobrarAccion());
             case "PENSAR" -> motor.ejecutarAccion(new PensarAccion());
@@ -85,7 +87,7 @@ public final class SesionJuego {
                 motor.avanzarFase();
             }
             default -> throw new IllegalArgumentException("Acción desconocida.");
-        }
+        } } finally { accionEnCurso = null; }
         var partida = motor.partida();
         if (partida.faseActual() == FaseDeTurno.SELECCION_ROLES && fase != partida.faseActual()) revelados.clear();
         if (partida.faseActual() == FaseDeTurno.TURNO_JUGADOR) revelados.add(partida.jugadorActual().nombre());
@@ -234,9 +236,23 @@ public final class SesionJuego {
             default -> null;
         };
         if (texto != null) {
+            // Explicit public metadata only; never forward the engine's arbitrary data map.
+            Integer estudio = null;
+            if ("accion.iniciar_estudio".equals(e.tipo()))
+                estudio = motor.partida().jugadorActual().estudios().size() - 1;
+            else if (Set.of("accion.trabajar", "habilidad.estadistico", "habilidad.revisor_2").contains(e.tipo())
+                    && accionEnCurso != null) estudio = accionEnCurso.indice();
+            Integer cantidad = switch (e.tipo()) {
+                case "accion.cobrar" -> 2;
+                case "accion.trabajar" -> ((Number) d.get("trabajo")).intValue();
+                case "habilidad.editorial.inicio" -> ((Number) d.get("monedasRecibidas")).intValue();
+                case "articulo.ingresos" -> ((Number) d.get("monedas")).intValue();
+                default -> null;
+            };
             eventos.add(new Vistas.Evento(eventos.isEmpty() ? 1 : eventos.get(eventos.size() - 1).numero() + 1,
                     texto, "PUBLICADO".equals(d.get("estado")), e.tipo(), actor,
-                    "habilidad.plagiador".equals(e.tipo()) ? String.valueOf(d.get("objetivo")) : null));
+                    Set.of("habilidad.plagiador", "habilidad.revisor_2").contains(e.tipo()) ? String.valueOf(d.get("objetivo")) : null,
+                    estudio, cantidad, "accion.pensar".equals(e.tipo()) || Boolean.TRUE.equals(d.get("cartaRobada"))));
             if (eventos.size() > 80) eventos.remove(0);
         }
     }

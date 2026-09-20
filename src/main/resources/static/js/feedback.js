@@ -2,7 +2,7 @@ import {img, esc} from './dom.js';
 
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 let queue = [], playbackTimer, playing = false;
-const flights = new Set();
+
 
 export function notify(message, kind = '') {
   const item = document.createElement('div'); item.className = `toast ${kind}`; item.textContent = message;
@@ -46,51 +46,6 @@ export function tableChanges(before, after) {
   return changes;
 }
 
-function playerElement(name, me) {
-  return name === me ? document.getElementById('local') : [...document.querySelectorAll('.rival')].find(e => e.dataset.player === name);
-}
-function studyElement(change) {
-  return [...document.querySelectorAll('#board .study-row, #board .table-study')]
-    .find(e => e.dataset.player === change.player && Number(e.dataset.index) === change.study.indice);
-}
-export function captureTable() {
-  return {hand:document.getElementById('hand')?.getBoundingClientRect(),
-    rivals:new Map([...document.querySelectorAll('.rival')].map(e => [e.dataset.player,e.getBoundingClientRect()]))};
-}
-function pulse(element, publication = false) {
-  if (!element || reducedMotion()) return;
-  element.animate([{boxShadow:`0 0 0 2px ${publication ? '#ffe3a0' : '#a9d7e8'}, 0 0 28px #e5bd7088`},
-    {boxShadow:'0 0 0 0 transparent'}], {duration:1400, easing:'ease-out'});
-}
-function resourceChange(resources, target) {
-  if (!resources?.length || !target || reducedMotion() || document.hidden) return;
-  const rect = target.getBoundingClientRect();
-  if (rect.bottom < 0 || rect.top > innerHeight) return;
-  const badge = document.createElement('div');
-  badge.className = 'resource-change'; badge.setAttribute('aria-hidden','true');
-  badge.innerHTML = resources.map(r => `<span>${img(r.icon === 'idea' ? 'cartas/reverso_idea.png' : `recursos/${r.icon}.png`)}${r.value > 0 ? '+' : '−'}${Math.abs(r.value)}</span>`).join('');
-  badge.style.left = `${Math.max(70,Math.min(innerWidth-70,rect.left+rect.width/2))}px`;
-  badge.style.top = `${Math.max(12,rect.top+rect.height/2)}px`;
-  document.body.append(badge); flights.add(badge);
-  const remove = () => {badge.remove(); flights.delete(badge);};
-  badge.animate([{opacity:0,transform:'translate(-50%,8px)'},{opacity:1,offset:.2},
-    {opacity:1,offset:.7},{opacity:0,transform:'translate(-50%,-25px)'}],{duration:1500,easing:'ease-out'}).finished.then(remove,remove);
-}
-function fly(art, from, target) {
-  if (!from || !target || reducedMotion() || document.hidden) return;
-  const to = target.getBoundingClientRect();
-  if (!to.width || to.bottom < 0 || to.top > innerHeight) return;
-  const card = document.createElement('div');
-  card.className = 'flying-card'; card.setAttribute('aria-hidden','true'); card.innerHTML = img(art);
-  card.style.left = `${to.left + to.width / 2 - 30}px`; card.style.top = `${to.top + to.height / 2 - 40}px`;
-  document.body.append(card); flights.add(card);
-  const animation = card.animate([
-    {transform:`translate(${from.left + from.width / 2 - to.left - to.width / 2}px,${from.top + from.height / 2 - to.top - to.height / 2}px) rotate(-12deg) scale(1.25)`,opacity:0},
-    {opacity:1,offset:.15}, {transform:'translate(0,0) rotate(0) scale(1)',opacity:1},
-  ], {duration:750,easing:'cubic-bezier(.2,.7,.25,1)'});
-  const remove = () => {card.remove(); flights.delete(card);};
-  animation.finished.then(remove,remove);
-}
 function showNext() {
   const host = document.getElementById('activity-current');
   if (!host || !queue.length) { playing = false; return; }
@@ -100,14 +55,14 @@ function showNext() {
     ${entry.study ? `<div class="activity-progress">${entry.study.publicado ? `◆ Publicado · ${entry.study.carta.prestigio + entry.study.prestigioExtra} prestigio` : `${entry.previous && entry.previous.trabajo !== entry.study.trabajo ? `${entry.previous.trabajo} → ` : ''}${entry.study.trabajo} / ${entry.study.carta.trabajo} trabajo`}<progress value="${entry.study.trabajo}" max="${entry.study.carta.trabajo}" aria-label="Trabajo del estudio"></progress></div>` : ''}
     <div class="activity-resources">${(entry.resources || []).map(r => `<span>${img(r.icon === 'idea' ? 'cartas/reverso_idea.png' : `recursos/${r.icon}.png`)}${r.value > 0 ? '+' : '−'}${Math.abs(r.value)} ${r.label}</span>`).join('')}</div>`;
   if (!reducedMotion()) host.animate([{opacity:.35,transform:'translateY(6px)'},{opacity:1,transform:'translateY(0)'}],{duration:250});
-  playbackTimer = setTimeout(showNext, 1700);
+  playbackTimer = setTimeout(showNext, 2400);
 }
 export function resetFeedback() {
   clearTimeout(playbackTimer); queue = []; playing = false;
-  for (const card of flights) card.remove();
-  flights.clear();
+
+
 }
-export function feedback(before, after, positions = {}) {
+export function feedback(before, after) {
   const changes = tableChanges(before,after);
   const events = after.eventos.filter(e => e.numero > (before?.eventos.at(-1)?.numero || 0));
   if (!before) {
@@ -115,33 +70,6 @@ export function feedback(before, after, positions = {}) {
     // Reconnection shows a summary, never replays old resource gains or card flights.
     queue.push({title:'La mesa está al día',detail:after.eventos.at(-1)?.texto || `Ronda ${after.ronda}`,art:'Logo/logo_tesis.png'});
   } else {
-    for (const change of changes) {
-      const target = change.study ? studyElement(change) : playerElement(change.player,after.yo);
-      pulse(target,change.publication);
-      resourceChange(change.resources,playerElement(change.player,after.yo));
-      if (change.study && !change.previous) fly(change.art,change.player === after.yo ? positions.hand : positions.rivals?.get(change.player),target);
-      if (change.resources?.some(r => r.icon === 'idea' && r.value > 0)
-          && events.some(e => e.actor === change.player && ['accion.pensar','habilidad.investigador_principal'].includes(e.tipo)))
-        fly('cartas/reverso_idea.png',document.querySelector('.idea-deck')?.getBoundingClientRect(),playerElement(change.player,after.yo));
-      if (change.study && change.previous && !reducedMotion()) {
-        const progress = target?.querySelector('progress');
-        if (progress) {
-          const start = performance.now(), from = change.previous.trabajo, to = change.study.trabajo;
-          const frame = now => {
-            if (!progress.isConnected) return;
-            const amount = Math.min(1,(now-start)/650);
-            progress.value = from + (to-from)*amount;
-            if (amount < 1) requestAnimationFrame(frame);
-          };
-          progress.value = from; requestAnimationFrame(frame);
-        }
-      }
-    }
-    for (const event of events.filter(e => e.tipo === 'habilidad.plagiador')) {
-      const actor = playerElement(event.actor,after.yo), other = playerElement(event.objetivo,after.yo);
-      fly('cartas/reverso_idea.png',actor?.getBoundingClientRect(),other);
-      fly('cartas/reverso_idea.png',other?.getBoundingClientRect(),actor);
-    }
     queue.push(...changes);
     if (!changes.length && events.length && before.fase === 'TURNO_JUGADOR' && after.fase === before.fase && before.actual === after.actual)
       queue.push({title:'Habilidad en la mesa',detail:events.map(e => e.texto).join(' '),art:'cartas/reverso_personaje.png'});

@@ -41,6 +41,7 @@
 .ethics-grid .veto-selected{transform:translateY(-10px) scale(1.025);z-index:3}
 .ethics-grid.reviewing{pointer-events:none}
 .ethics-stamp{position:absolute;z-index:8;left:6%;top:35%;width:88%;box-sizing:border-box;border:5px double #9d202b;border-radius:5px;padding:12px 2px;color:#9d202b;background:#f3dfb7df;font:900 clamp(28px,4vw,52px)/1.1 Georgia,serif;letter-spacing:.06em;text-align:center;transform:rotate(-12deg);box-shadow:0 0 20px #9d202b33;pointer-events:none}
+.ethics-grid .ethics-stamp{font-size:16cqw;letter-spacing:.04em;white-space:nowrap;padding-inline:4px}
 .ethics-status{min-height:24px;text-align:center;font-style:italic;color:#853b35}
 .fx-veto-veil{background:radial-gradient(ellipse,#641d2844,#030912d9);backdrop-filter:blur(2px)}
 .fx-ethics-file{left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,88vw);box-sizing:border-box;padding:28px;min-height:350px;color:#392819;background:linear-gradient(110deg,#f3e4c4,#d6bd91);border:1px solid #a7804e;box-shadow:8px 8px 0 #ae916d,0 25px 90px #a3273655;}

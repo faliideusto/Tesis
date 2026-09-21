@@ -185,7 +185,7 @@ public final class SesionJuego {
         var opciones = new ArrayList<Vistas.Opcion>();
         if (h instanceof ComiteEticaHabilidad) {
             c.partida().mazoRoles().cartasIniciales().stream().filter(r -> r != j.personaje())
-                    .forEach(r -> opciones.add(new Vistas.Opcion(r.nombre(), null, r.nombre())));
+                    .forEach(r -> opciones.add(new Vistas.Opcion(r.nombre(), null, r.nombre(), CatalogoVisual.rol(r, -1))));
         } else if (h instanceof EstadisticoHabilidad) {
             for (int i = 0; i < j.estudios().size(); i++) {
                 boolean publicado = j.estudios().get(i).estado() == EstadoEstudio.PUBLICADO;
@@ -224,7 +224,7 @@ public final class SesionJuego {
             case "accion.pensar" -> actor + " roba una idea.";
             case "accion.iniciar_estudio" -> actor + " inicia «" + d.get("articulo") + "».";
             case "accion.trabajar", "habilidad.editorial.trabajo" -> actor + ("PUBLICADO".equals(d.get("estado")) ? " publica «" : " trabaja en «") + d.get("articulo") + "».";
-            case "habilidad.comite_etica" -> actor + " nombra «" + d.get("rol") + "» para el veto.";
+            case "habilidad.comite_etica" -> actor + " registra un veto privado ante el Comité de Ética.";
             case "habilidad.estadistico" -> actor + " añade 1 de prestigio a «" + d.get("articulo") + "».";
             case "habilidad.plagiador" -> actor + " intercambia su mano con " + d.get("objetivo") + ".";
             case "habilidad.revisor_2" -> actor + " retira hasta 2 puntos de trabajo de «" + d.get("articulo") + "», que queda en desarrollo.";

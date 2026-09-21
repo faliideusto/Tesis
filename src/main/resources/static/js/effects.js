@@ -5,6 +5,10 @@ const animations = new Set(), nodes = new Set(), hidden = new Map();
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 let epoch = 0;
 const timing={flight:900, label:1800, glow:950, turn:3600, publication:2800, third:3400};
+const turnFrames=[{opacity:0,transform:'translate(-50%,-16px) scale(.96)'},
+  {opacity:1,transform:'translate(-50%,0) scale(1)',offset:.12},
+  {opacity:1,transform:'translate(-50%,0) scale(1)',offset:.88},
+  {opacity:0,transform:'translate(-50%,-6px) scale(1)'}];
 export const freshEvents = (before, after) => before
   ? after.eventos.filter(e => e.numero > (before.eventos.at(-1)?.numero || 0)) : [];
 const player = (name, state) => name === state.yo ? document.getElementById('local')
@@ -128,11 +132,80 @@ export async function chooseRole(element) {
     ...siblings.map(n=>animate(n,[{opacity:1},{opacity:.32}],400))]);
 }
 
+// Private, local ceremony. Only the caller submits the original action afterwards.
+export async function chooseVeto(element) {
+  const current=epoch, grid=element.closest('.ethics-grid');
+  const status=document.querySelector('.ethics-status');
+  grid.classList.add('reviewing'); element.classList.add('veto-selected');
+  status.textContent='Expediente abierto · Revisión en curso…';
+  await animate(element,[{transform:'translateY(0)'},{transform:'translateY(-10px) scale(1.025)'}],650,true);
+  if(current!==epoch) return;
+  const seal=document.createElement('span'); seal.className='ethics-stamp'; seal.textContent='VETADO';
+  element.append(seal);
+  status.textContent='Dictamen emitido · Registrando veto privado';
+  await animate(seal,[{opacity:0,transform:'rotate(-12deg) scale(2.4)'},
+    {opacity:1,transform:'rotate(-12deg) scale(.94)',offset:.7},
+    {opacity:1,transform:'rotate(-12deg) scale(1)'}],420,true);
+  if(current!==epoch) return;
+  await animate(element,[{filter:'drop-shadow(0 0 22px #a72c32)'},
+    {filter:'drop-shadow(0 0 8px #a72c32)',offset:.25},
+    {filter:'drop-shadow(0 0 8px #a72c32)'}],850,true);
+}
+
+async function revealVeto(event, state) {
+  const current=epoch, anchor=player(event.actor,state);
+  const turn=document.querySelector('#turn-panel strong'), previousTurn=turn?.textContent;
+  if(turn) turn.textContent=`Turno de ${event.actor}`;
+  const intro=node('fx-banner',`Comienza el turno de ${event.actor}`);
+  intro.removeAttribute('aria-hidden'); intro.setAttribute('role','status');
+  await ephemeral(intro,turnFrames,timing.turn);
+  if(current!==epoch) { if(turn) turn.textContent=previousTurn; return; }
+  const veil=node('fx-veil fx-veto-veil');
+  const file=node('fx-ethics-file');
+  file.innerHTML='<span class="ethics-classification">COMITÉ DE ÉTICA · RESOLUCIÓN</span><div class="ethics-file-lines" aria-hidden="true"></div><strong class="ethics-review">Expediente en revisión</strong>';
+  try {
+    await animate(file,[{opacity:0,transform:'translate(-50%,-45%) rotate(-4deg)'},
+      {opacity:1,transform:'translate(-50%,-50%) rotate(0)'}],600,true);
+    if(current!==epoch) return;
+    const seal=document.createElement('div'); seal.className='ethics-stamp'; seal.textContent='VETADO';
+    const message=document.createElement('p'); message.className='ethics-verdict';
+    message.textContent=`${event.actor} ha sido vetado por el Comité de Ética`;
+    message.setAttribute('role','status'); file.append(seal,message);
+    file.querySelector('.ethics-review').textContent='DICTAMEN · TURNO DENEGADO';
+    await Promise.all([
+      animate(seal,[{opacity:0,transform:'rotate(-12deg) scale(2.4)'},
+        {opacity:1,transform:'rotate(-12deg) scale(.95)',offset:.7},
+        {opacity:1,transform:'rotate(-12deg) scale(1)'}],400,true),
+      particles(file,false,'review'), glow(anchor,'#af3942'),
+      animate(message,[{opacity:1},{opacity:1}],1800,true)]);
+    if(current!==epoch) return;
+    await animate(file,[{opacity:1},{opacity:1,offset:.85},{opacity:0}],600,true);
+  } finally {
+    if(turn) turn.textContent=previousTurn;
+    file.remove(); veil.remove(); nodes.delete(file); nodes.delete(veil);
+  }
+}
+
 export async function transition(before, after) {
-  const events=freshEvents(before,after), current=epoch;
+  const events=freshEvents(before,after);
+  // A background tab keeps its last painted board until it can show the verdict.
+  // Initial loads still skip history because freshEvents(null, ...) is empty.
+  const visible=()=>document.hidden ? new Promise(resolve=>{
+    const resume=()=>{if(!document.hidden){document.removeEventListener('visibilitychange',resume);resolve();}};
+    document.addEventListener('visibilitychange',resume);
+  }) : Promise.resolve();
+  if(events.some(e=>e.tipo==='turno.vetado')) await visible();
+  let current=epoch;
   if (!events.length || document.hidden) return;
   const tasks=[];
   try {
+    // These numbered server events must precede rendering the next authoritative
+    // snapshot, even when a polling response contains a large burst of events.
+    for (const event of events.filter(e=>e.tipo==='turno.vetado')) {
+      await revealVeto(event,before);
+      while(document.hidden) { await visible(); current=epoch; await revealVeto(event,before); }
+      if(current!==epoch) return;
+    }
     // A reconnect/burst is summarized by the existing activity panel. Do not stage
     // a long historical sequence against a board that no longer represents it.
     if (events.length>16) return;
@@ -200,13 +273,15 @@ export function settled(before, after) {
     const role=after.jugadores.find(p=>p.nombre===after.actual)?.rol?.nombre;
     const n=node(`fx-banner ${after.actual===after.yo?'fx-own-turn':''}`,`${after.actual===after.yo?'TU TURNO':`Turno de ${after.actual}`}${role?` · ${role}`:''}`);
     n.removeAttribute('aria-hidden'); n.setAttribute('role','status');
-    void ephemeral(n,[{opacity:0,transform:'translate(-50%,-16px) scale(.96)'},{opacity:1,transform:'translate(-50%,0) scale(1)',offset:.12},
-      {opacity:1,transform:'translate(-50%,0) scale(1)',offset:.88},{opacity:0,transform:'translate(-50%,-6px) scale(1)'}],timing.turn);
+    void ephemeral(n,turnFrames,timing.turn);
   }
   if (after.habilidadPendiente && !before?.habilidadPendiente) void floating('COMITÉ · Revisión pendiente',document.querySelector('.table-notice'),'ethics');
 }
 export function victory() {
   void animate(document.querySelector('#modal .final-result'),[{opacity:0,transform:'translateY(20px) scale(.94)'},{opacity:1,transform:'translateY(0) scale(1)'}],1200);
 }
-window.addEventListener('resize',resetEffects);
+window.addEventListener('resize',()=>{
+  // The document and card layouts are responsive; resizing must not skip a verdict.
+  if(!document.querySelector('.fx-ethics-file, .ethics-grid.reviewing')) resetEffects();
+});
 document.addEventListener('visibilitychange',()=>{if(document.hidden) resetEffects();});

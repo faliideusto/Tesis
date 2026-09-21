@@ -5,7 +5,7 @@ import {ideaCard, roleCard} from './cards.js';
 import {studies, studyRow} from './players.js';
 import {dialog, closeDialog, phaseDialog} from './dialogs.js';
 import {notify, feedback, resetFeedback} from './feedback.js';
-import {transition, settled, resetEffects, chooseRole, victory} from './effects.js';
+import {transition, settled, resetEffects, chooseRole, chooseVeto, victory} from './effects.js';
 
 let visualBusy = false;
 let renderQueue=Promise.resolve(), latestRoom=null;
@@ -93,12 +93,20 @@ function handleError(error) {
 }
 async function run(task) {
   if (busy) return;
-  stopPolling(); busy=true; document.body.classList.add('busy'); connectionStatus('Conectando con la sala…');
-  try { await renderRoom(await task(),true); connectionStatus(); }
+  stopPolling(); busy=true; document.body.classList.add('busy');
+  try {
+    const next=await task();
+    connectionStatus();
+    await renderRoom(next,true);
+  }
   catch (error) {
     handleError(error);
     if (error.status===409 && api.identity()) {
-      try { await renderRoom(await api.state(),true); connectionStatus(); } catch (next) { handleError(next); }
+      try {
+        const next=await api.state();
+        connectionStatus();
+        await renderRoom(next,true);
+      } catch (next) { handleError(next); }
     }
   } finally { busy=false; document.body.classList.remove('busy'); schedulePoll(); }
 }
@@ -120,13 +128,15 @@ function chooseAction(id) {
   if (!action.opciones.length) { act(id); return; }
   pendingAction = action;
   let content;
-  if (id === 'INICIAR') content = `<div class="idea-selection">${state.mano.map(c => ideaCard(c,{command:'start-choice',disabled:!action.opciones.some(o => o.indice === c.indice)})).join('')}</div>`;
+  const ethics = id === 'HABILIDAD' && action.opciones.every(o => o.rol);
+  if (ethics) content = `<section class="ethics-selection"><p class="ethics-classification">EXPEDIENTE RESERVADO · REVISIÓN ACADÉMICA</p><p>Elige el personaje que deseas vetar. Esta decisión solo la ves tú.</p><div class="ethics-grid">${action.opciones.map((o,i) => roleCard({...o.rol,indice:i},{command:'veto-choice'})).join('')}</div><p class="ethics-status" role="status">Selecciona una carta para registrar el veto.</p></section>`;
+  else if (id === 'INICIAR') content = `<div class="idea-selection">${state.mano.map(c => ideaCard(c,{command:'start-choice',disabled:!action.opciones.some(o => o.indice === c.indice)})).join('')}</div>`;
   else if (id === 'TRABAJAR') {
     const player = state.jugadores.find(p => p.nombre === state.yo);
     const allowed = new Set(action.opciones.map(o => o.indice));
     content = `<div class="study-selector">${player.estudios.filter(e => allowed.has(e.indice)).map(e => studyRow(e, player.nombre, {selection:true})).join('')}</div>`;
   } else content = `<div class="target-list">${action.opciones.map((o,i) => `<button class="target-button" data-command="target" data-index="${i}">${esc(o.etiqueta)}<span>Seleccionar</span></button>`).join('')}</div>`;
-  dialog(action.nombre, `<p class="decision-copy">${esc(action.descripcion)}</p>${content}`, {wide:id === 'INICIAR'});
+  dialog(ethics ? 'Comité de Ética' : action.nombre, `<p class="decision-copy">${esc(action.descripcion)}</p>${content}`, {wide:ethics || id === 'INICIAR'});
 }
 function inspect(c, study = null, player = null) {
   const canStart = !study && state.acciones.find(a => a.id === 'INICIAR')?.opciones.some(o => o.indice === c.indice)
@@ -175,6 +185,16 @@ document.addEventListener('click', async e => {
     }
     case 'back-roles': phaseDialog(state); break;
     case 'confirm-role': act('SELECCIONAR',{indice:selectedRole.indice}); break;
+    case 'veto-choice': {
+      const choosingState=state, option=pendingAction.opciones[index];
+      stopPolling(); visualBusy=true;
+      const modal=document.getElementById('modal'); modal.dataset.locked='true';
+      try { await chooseVeto(button); }
+      finally { visualBusy=false; modal.dataset.locked='false'; }
+      if (state===choosingState) await act('HABILIDAD',{objetivo:option.objetivo});
+      else schedulePoll();
+      break;
+    }
     case 'target': {
       const option = pendingAction.opciones[index];
       const payload = {}; if (option.indice !== undefined) payload.indice = option.indice; if (option.objetivo !== undefined) payload.objetivo = option.objetivo;
@@ -203,7 +223,11 @@ document.addEventListener('click', async e => {
 async function boot() {
   if (!api.identity()) { home(); return; }
   screen='connecting';
-  try { await renderRoom(await api.state(),true); connectionStatus(); }
+  try {
+    const next=await api.state();
+    connectionStatus();
+    await renderRoom(next,true);
+  }
   catch (error) {
     handleError(error);
     if (screen!=='home') app.innerHTML='<div class="connection-error"><h1>Recuperando tu academia</h1><p>Volveremos a conectar automáticamente.</p><button class="text-button" data-command="home">Volver al inicio</button></div>';

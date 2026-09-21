@@ -14,7 +14,8 @@ export async function runEffectsTests(root) {
       constructor(name='') {this.name=name; this.style={visibility:''}; this.dataset={}; this.isConnected=true; this.classList={toggle(){}};}
       setAttribute() {} removeAttribute() {}
       getBoundingClientRect() {return {left:10,top:20,width:100,height:80,bottom:100,right:110};}
-      querySelector(selector) {return selector.includes('resource') ? counter : null;}
+      querySelector(selector) {return selector.includes('resource') || selector==='.ethics-review' ? counter : null;}
+      append(...children) {nodes.push(...children);}
       remove() {this.isConnected=false;}
       animate(frames,options) {
         calls.push({element:this,frames,options});
@@ -28,7 +29,7 @@ export async function runEffectsTests(root) {
     const hand=new Element('hand');
     const document={hidden:false,body:{append(n){nodes.push(n);}},createElement(){return new Element();},
       getElementById(id){return id==='local'?local:id==='hand'?hand:local;},
-      querySelector(){return local;},
+      querySelector(selector){return selector.includes('.fx-ethics-file') ? null : local;},
       querySelectorAll(selector){return selector.includes('[data-player][data-index]')?[card]:[rival];},
       addEventListener(name,fn){listeners[name]=fn;}};
     const context=vm.createContext({document,innerWidth:390,innerHeight:844,matchMedia:()=>({matches:reduce}),
@@ -42,6 +43,16 @@ export async function runEffectsTests(root) {
     jugadores:[{nombre:'Yo',estudios:[]},{nombre:'Rival',publicados:0,estudios:[]}]};
   const event=(tipo,extra={})=>({numero:11,tipo,actor:'Rival',...extra});
   const after=e=>({...before,eventos:[...before.eventos,e]});
+  {
+    const {fx,nodes,calls}=await setup();
+    await fx.transition(before,after(event('turno.vetado')));
+    assert(nodes.some(n=>n.textContent==='Comienza el turno de Rival'));
+    assert(nodes.some(n=>n.textContent==='Rival ha sido vetado por el Comité de Ética'));
+    assert(nodes.some(n=>n.textContent==='VETADO'));
+    assert(calls.some(c=>c.element.textContent==='Comienza el turno de Rival' && c.options.duration===3600));
+    assert(calls.some(c=>c.element.className==='ethics-verdict' && c.options.duration===1800));
+    assert(!nodes.some(n=>n.innerHTML?.includes('role-art'))); count++;
+  }
   {
     const {fx}=await setup();
     assert.equal(fx.freshEvents(null,after(event('accion.pensar'))).length,0);

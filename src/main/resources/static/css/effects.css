@@ -27,3 +27,24 @@
 .victory-publications { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin:20px 0; }
 .victory-publications img { width:clamp(65px,17vw,115px); border-radius:6px; box-shadow:0 0 18px #dfc38b33; }
 @media(prefers-reduced-motion:reduce) { .fx-active { transition:none; } .fx-particle { display:none; } }
+
+/* Committee documents share the existing parchment and full role-card renderer. */
+.ethics-classification{font:700 11px/1.5 var(--ui);letter-spacing:.16em;color:#853b35;border-block:1px solid #9d713877;padding:10px 0}
+.ethics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:28px 22px;padding:24px 12px;align-items:start}
+.ethics-grid .role-card{width:100%;max-width:250px;justify-self:center;transition:transform .25s,filter .25s,opacity .25s}
+.ethics-grid .role-card:hover,.ethics-grid .role-card:focus-visible{transform:translateY(-8px) scale(1.025);filter:drop-shadow(0 0 12px #b78243);z-index:2}
+.ethics-grid.reviewing .role-card:not(.veto-selected){opacity:.42;filter:brightness(.65)}
+.ethics-grid .veto-selected{transform:translateY(-10px) scale(1.025);z-index:3}
+.ethics-grid.reviewing{pointer-events:none}
+.ethics-stamp{position:absolute;z-index:8;left:6%;top:35%;width:88%;box-sizing:border-box;border:5px double #9d202b;border-radius:5px;padding:12px 2px;color:#9d202b;background:#f3dfb7df;font:900 clamp(28px,4vw,52px)/1.1 Georgia,serif;letter-spacing:.06em;text-align:center;transform:rotate(-12deg);box-shadow:0 0 20px #9d202b33;pointer-events:none}
+.ethics-status{min-height:24px;text-align:center;font-style:italic;color:#853b35}
+.fx-veto-veil{background:radial-gradient(ellipse,#641d2844,#030912d9);backdrop-filter:blur(2px)}
+.fx-ethics-file{left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,88vw);box-sizing:border-box;padding:28px;min-height:350px;color:#392819;background:linear-gradient(110deg,#f3e4c4,#d6bd91);border:1px solid #a7804e;box-shadow:8px 8px 0 #ae916d,0 25px 90px #a3273655;}
+.fx-ethics-file .ethics-stamp{top:30%}
+.ethics-file-lines{height:110px;margin:22px 0;background:repeating-linear-gradient(transparent 0 20px,#86634044 21px 22px)}
+.ethics-review{font:12px var(--ui);letter-spacing:.12em}
+.ethics-verdict{font:600 clamp(21px,3vw,28px)/1.3 Georgia,serif;overflow-wrap:anywhere;margin:24px 0 0}
+.ethics-grid .veto-selected::after{content:'';position:absolute;inset:12%;z-index:7;pointer-events:none;background:radial-gradient(circle at 10% 20%,#a33939 0 2px,transparent 3px),radial-gradient(circle at 90% 60%,#ae7432 0 3px,transparent 4px),radial-gradient(circle at 20% 85%,#ae7432 0 2px,transparent 3px);animation:ethics-dust 1.8s both}
+@keyframes ethics-dust{0%,55%{opacity:0;transform:scale(.5)}70%{opacity:1}100%{opacity:0;transform:scale(1.4)}}
+@media(max-width:600px){.ethics-grid{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:24px;padding:22px 12px 30px}.ethics-grid .role-card{width:230px;max-width:78vw;flex:0 0 230px;scroll-snap-align:center}.fx-ethics-file{padding:20px}.ethics-classification{letter-spacing:.08em}}
+@media(prefers-reduced-motion:reduce){.ethics-grid .role-card{transition:none}.ethics-grid .role-card:hover,.ethics-grid .veto-selected{transform:none}.ethics-grid .veto-selected::after{display:none}}

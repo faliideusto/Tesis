@@ -114,7 +114,8 @@ with sync_playwright() as p:
                 else:
                     # Nombrar Decana conserva la inmunidad y evita vetar al rival en esta prueba.
                     chosen=next((i for i,o in enumerate(options) if o.get('objetivo')=='Decana'),0) if state['habilidadPendiente'] else 0
-                    mutation(page,lambda:page.locator(f'[data-command=target][data-index="{chosen}"]').click())
+                    command='veto-choice' if option.get('rol') else 'target'
+                    mutation(page,lambda:page.locator(f'[data-command={command}][data-index="{chosen}"]').click())
             used.add(kind)
         report['steps']=step+1
         if step%10==0: print(f'UI paso {step}, ronda {state["ronda"]}, fase {state["fase"]}',flush=True)

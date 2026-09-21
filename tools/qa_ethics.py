@@ -73,7 +73,7 @@ with sync_playwright() as p:
     assert pages[2].evaluate('window.vetoSeen.length')==0
     pages[2].evaluate("Object.defineProperty(document,'hidden',{configurable:true,get:()=>false}); document.dispatchEvent(new Event('visibilitychange'))")
     for pg in pages:
-        expect(pg.locator('.fx-ethics-file')).to_be_visible(timeout=5000)
+        expect(pg.locator('.fx-ethics-file')).to_be_visible(timeout=10000)
     expect(page.locator('.ethics-verdict')).to_contain_text('Jefe')
     page.screenshot(path=str(out/'public-verdict.png'))
     for pg in pages:

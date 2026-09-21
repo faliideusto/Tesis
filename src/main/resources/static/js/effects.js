@@ -1,5 +1,6 @@
 import {img} from './dom.js';
 import {roleCard} from './cards.js';
+import {showActivity} from './feedback.js';
 
 // One cancellable lifetime for every visual operation. No game state is mutated here.
 const animations = new Set(), nodes = new Set(), hidden = new Map();
@@ -155,6 +156,7 @@ export async function chooseVeto(element) {
 }
 
 async function revealVeto(event, state) {
+  showActivity({player:event.actor,title:'El Comité de Ética está resolviendo el veto',detail:'Se está revisando el expediente.'});
   const current=epoch, anchor=player(event.actor,state);
   const veil=node('fx-veil fx-veto-veil');
   const file=node('fx-ethics-file');
@@ -166,6 +168,7 @@ async function revealVeto(event, state) {
     const seal=document.createElement('div'); seal.className='ethics-stamp'; seal.textContent='VETADO';
     const message=document.createElement('p'); message.className='ethics-verdict';
     message.textContent=`${event.actor} ha sido vetado por el Comité de Ética`;
+    showActivity({player:event.actor,title:'Turno vetado',detail:'La mesa pasa al siguiente turno.'});
     message.setAttribute('role','status'); file.append(seal,message);
     file.querySelector('.ethics-review').textContent='DICTAMEN · TURNO DENEGADO';
     await Promise.all([
@@ -184,7 +187,8 @@ async function revealVeto(event, state) {
 async function revealRole(event, state) {
   // Only the server's explicitly public event payload is eligible, including
   // for the local player: their private role must never authorize a revelation.
-  if (event.tipo!=='fase.turno' || !event.rolPublico) return;
+  if (!['fase.turno','turno.vetado'].includes(event.tipo) || !event.rolPublico) return;
+  showActivity({player:event.actor,title:'Revelando personaje',detail:'La carta se presenta a toda la mesa.'});
   const veil=node('fx-veil fx-role-veil');
   const card=node('fx-role-reveal');
   card.innerHTML=roleCard(event.rolPublico,{command:'noop'});
@@ -218,6 +222,7 @@ async function openTurn(event, state) {
   try {
     if(turn) turn.textContent=`Turno de ${event.actor}`;
     const stages=[()=>{
+      showActivity({player:event.actor,title:'Comienza su turno',detail:'La mesa da paso a su personaje.'});
       const intro=node(`fx-banner ${event.actor===state.yo?'fx-own-turn':''}`,`Comienza el turno de ${event.actor}`);
       intro.removeAttribute('aria-hidden'); intro.setAttribute('role','status');
       return ephemeral(intro,turnFrames,timing.turn);

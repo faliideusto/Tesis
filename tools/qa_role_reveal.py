@@ -100,12 +100,14 @@ with sync_playwright() as p:
         assert card_end['time'] - card_start['time'] >= 3750
         assert not page.evaluate('overlap')
 
-    # Private veto choice remains private; the next normal turn still reveals its card.
+    # The veto choice is secret until resolution; then all clients reveal its card.
     act(a, 'HABILIDAD', objetivo='Estadístico')
     assert not any(e.get('rolPublico', {}).get('orden') == 2 for e in state(a)['partida']['eventos'])
     act(a, 'FIN_TURNO')
     for page in pages:
         expect(page.locator('.fx-banner')).to_contain_text('Jefe', timeout=6000)
+    for page in pages:
+        expect(page.locator('.fx-role-reveal .card-name')).to_have_text('Estadístico', timeout=6000)
     for page in pages:
         expect(page.locator('.ethics-verdict')).to_contain_text('Jefe', timeout=6000)
         assert page.locator('.fx-role-reveal').count() == 0
@@ -115,15 +117,15 @@ with sync_playwright() as p:
         expect(page.locator('body')).not_to_have_class(re.compile('visual-busy'), timeout=12000)
         starts = page.evaluate("sequence.filter(e=>e.kind==='start').map(e=>e.cls)")
         assert ['banner' if 'fx-banner' in x else 'card' if 'fx-role-reveal' in x else 'veto' for x in starts] == [
-            'banner', 'card', 'banner', 'veto', 'banner', 'card']
+            'banner', 'card', 'banner', 'card', 'veto', 'banner', 'card']
         assert not page.evaluate('overlap')
-    assert next(j for j in state(a)['partida']['jugadores'] if j['nombre'] == 'Jefe').get('rol') is None
+    assert next(j for j in state(a)['partida']['jugadores'] if j['nombre'] == 'Jefe')['rol']['orden'] == 2
     pages[0].wait_for_timeout(1800)
     for page in pages:
-        assert len(page.evaluate("sequence.filter(e=>e.kind==='start')")) == 6
+        assert len(page.evaluate("sequence.filter(e=>e.kind==='start')")) == 7
         page.reload()
         expect(page.locator('#board')).to_be_visible()
         assert page.locator('.fx-banner, .fx-role-reveal, .fx-ethics-file').count() == 0
     assert not errors, errors
-    print('PASS: three clients, real cards, desktop/mobile/tablet, ordered turns, private veto, polling/reload')
+    print('PASS: three clients, real cards, desktop/mobile/tablet, ordered turns, veto secret until resolution, polling/reload')
     browser.close()

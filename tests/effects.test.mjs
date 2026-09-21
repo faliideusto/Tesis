@@ -37,7 +37,8 @@ export async function runEffectsTests(root) {
     const mod=new vm.SourceTextModule(source,{context});
     const dom=new vm.SourceTextModule('export const img = path => `<img src="${path}">`; export const esc = value => String(value);', {context});
     const cards=new vm.SourceTextModule(await readFile(`${root}/src/main/resources/static/js/cards.js`,'utf8'), {context});
-    await mod.link(specifier=>specifier==='./cards.js' ? cards : dom);
+    const feedback=new vm.SourceTextModule('export function showActivity() {}', {context});
+    await mod.link(specifier=>specifier==='./cards.js' ? cards : specifier==='./feedback.js' ? feedback : dom);
     await mod.evaluate();
     return {fx:mod.namespace,nodes,calls,pending,document,listeners,card};
   }
@@ -47,6 +48,14 @@ export async function runEffectsTests(root) {
   const after=e=>({...before,eventos:[...before.eventos,e]});
   const role={indice:-1,nombre:'Estadístico',orden:2,habilidad:'Añade 1 de prestigio. Una vez por turno.',arte:'personajes/02_estadistico.png'};
   const tick=async()=>{for(let i=0;i<30;i++) await Promise.resolve();};
+  {
+    const {fx,calls}=await setup();
+    await fx.transition(before,after(event('turno.vetado',{rolPublico:role})));
+    assert(calls[0].element.className.includes('fx-banner'));
+    assert(calls[1].element.className.includes('fx-role-reveal'));
+    assert.equal(calls[1].options.duration,3850);
+    assert(calls[2].element.className.includes('fx-ethics-file')); count++;
+  }
   {
     const {fx,calls}=await setup();
     await fx.transition(before,{...before,eventos:[...before.eventos,

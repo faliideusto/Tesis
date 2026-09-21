@@ -100,7 +100,7 @@ class PerspectivaHabilidadesTest {
         var m=preparar(6,7); estudio(m.a,2); m.actuar(m.a,"TRABAJAR",0,null);
         assertEquals(2,m.a.estudios().get(0).trabajoAcumulado()); assertEquals(1,m.a.cantidadPublicados());
     }
-    @Test void vetoPrivadoUsaCatalogoYRevelaSoloJugadorAlResolver() {
+    @Test void vetoPrivadoUsaCatalogoYRevelaPersonajeSoloAlResolver() {
         var m=preparar(1,6);
         var opciones=m.ver(m.a).acciones().stream().filter(a->a.id().equals("HABILIDAD")).findFirst().orElseThrow().opciones();
         assertEquals(6,opciones.size());
@@ -120,8 +120,8 @@ class PerspectivaHabilidadesTest {
         var veto=despues.stream().filter(e->e.tipo().equals("turno.vetado")).toList();
         assertEquals(1,veto.size()); assertEquals(m.b.nombre(),veto.get(0).actor());
         assertTrue(veto.get(0).numero()>antes.get(antes.size()-1).numero());
-        assertNull(veto.get(0).rolPublico());
-        assertNull(m.ver(m.a).jugadores().get(1).rol());
+        assertEquals(CatalogoVisual.rol(m.b.personaje(),-1),veto.get(0).rolPublico());
+        assertEquals(veto.get(0).rolPublico(),m.ver(m.a).jugadores().get(1).rol());
         for(int i=0;i<10;i++) assertEquals(despues,m.ver(m.b).eventos());
         assertEquals("FIN_RONDA",m.ver(m.a).fase());
     }

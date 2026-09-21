@@ -1,7 +1,7 @@
-import {img, esc} from './dom.js';
+import {img, esc, update} from './dom.js';
 
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-let queue = [], playbackTimer, playing = false;
+
 
 
 export function notify(message, kind = '') {
@@ -46,38 +46,36 @@ export function tableChanges(before, after) {
   return changes;
 }
 
-function showNext() {
-  const host = document.getElementById('activity-current');
-  if (!host || !queue.length) { playing = false; return; }
-  playing = true;
-  const entry = queue.shift();
-  host.innerHTML = `<div class="activity-move ${entry.publication ? 'is-publication' : ''}">${img(entry.art,'activity-art')}<div><span class="activity-player">${esc(entry.player || 'La academia')}</span><strong>${esc(entry.title)}</strong>${entry.detail ? `<p>${esc(entry.detail)}</p>` : ''}</div></div>
-    ${entry.study ? `<div class="activity-progress">${entry.study.publicado ? `◆ Publicado · ${entry.study.carta.prestigio + entry.study.prestigioExtra} prestigio` : `${entry.previous && entry.previous.trabajo !== entry.study.trabajo ? `${entry.previous.trabajo} → ` : ''}${entry.study.trabajo} / ${entry.study.carta.trabajo} trabajo`}<progress value="${entry.study.trabajo}" max="${entry.study.carta.trabajo}" aria-label="Trabajo del estudio"></progress></div>` : ''}
-    <div class="activity-resources">${(entry.resources || []).map(r => `<span>${img(r.icon === 'idea' ? 'cartas/reverso_idea.png' : `recursos/${r.icon}.png`)}${r.value > 0 ? '+' : '−'}${Math.abs(r.value)} ${r.label}</span>`).join('')}</div>`;
-  if (!reducedMotion()) host.animate([{opacity:.35,transform:'translateY(6px)'},{opacity:1,transform:'translateY(0)'}],{duration:250});
-  playbackTimer = setTimeout(showNext, 2400);
+// Current authoritative phase, never a queue of past actions or private choices.
+export function currentActivity(state) {
+  const own=state.actual===state.yo;
+  if(state.fase==='SELECCION_ROLES') return {player:state.actual,
+    title:own?'Elige tu personaje':`${state.actual} est\u00e1 eligiendo personaje`,
+    detail:own?'Abre las cartas para elegir. Tu elecci\u00f3n es privada.':'La elecci\u00f3n es privada. Enseguida contin\u00faa la mesa.',art:'cartas/reverso_personaje.png'};
+  if(state.fase==='FIN_PARTIDA') return {player:'La academia',title:'Partida finalizada',
+    detail:state.ganadores.length ? `Victoria: ${state.ganadores.join(' \u00b7 ')}`:'Consulta los resultados.',art:'recursos/prestigio.png'};
+  if(state.fase==='FIN_RONDA') return {player:`Ronda ${state.ronda}`,title:'Cierre de ronda',
+    detail:own ? (state.ultimaRonda?'Puedes abrir el resultado final.':'Puedes comenzar la siguiente ronda.')
+      : `Esperando a ${state.actual} para continuar.`,art:'cartas/reverso_personaje.png'};
+  if(own && state.habilidadPendiente) return {player:state.actual,title:'Resuelve el Comit\u00e9 de \u00c9tica',
+    detail:'Elige en privado el personaje vetado antes de actuar.',art:'cartas/reverso_personaje.png'};
+  return {player:state.actual,title:own?'Es tu turno':`${state.actual} est\u00e1 jugando su turno`,
+    detail:own ? (state.accionesRestantes>0 ? `${state.accionesRestantes} ${state.accionesRestantes===1?'acci\u00f3n disponible':'acciones disponibles'}. Elige tu siguiente paso.`
+      :'Sin acciones base. Puedes usar tu habilidad si est\u00e1 disponible o terminar el turno.')
+      :'La mesa espera su siguiente acci\u00f3n.',art:'recursos/prestigio.png'};
+}
+export function showActivity({player='',title,detail='',art='cartas/reverso_personaje.png'}) {
+  const host=document.getElementById('activity-current');
+  if(!host) return;
+  const html=`<div class="activity-move activity-now">${img(art,'activity-art')}<div><span class="activity-player">${esc(player)}</span><strong>${esc(title)}</strong><p>${esc(detail)}</p></div></div>`;
+  if(host.innerHTML===html) return;
+  update('activity-current',html);
+  if(!reducedMotion()) host.animate([{opacity:.5},{opacity:1}],{duration:180});
 }
 export function resetFeedback() {
-  clearTimeout(playbackTimer); queue = []; playing = false;
-
-
+  // No timers: the live status always follows the current phase or ceremony.
 }
-export function feedback(before, after) {
-  const changes = tableChanges(before,after);
-  const events = after.eventos.filter(e => e.numero > (before?.eventos.at(-1)?.numero || 0));
-  if (!before) {
-    resetFeedback();
-    // Reconnection shows a summary, never replays old resource gains or card flights.
-    queue.push({title:'La mesa está al día',detail:after.eventos.at(-1)?.texto || `Ronda ${after.ronda}`,art:'Logo/logo_tesis.png'});
-  } else {
-    queue.push(...changes);
-    if (!changes.length && events.length && before.fase === 'TURNO_JUGADOR' && after.fase === before.fase && before.actual === after.actual)
-      queue.push({title:'Habilidad en la mesa',detail:events.map(e => e.texto).join(' '),art:'cartas/reverso_personaje.png'});
-  }
-  // Keep live play responsive after a burst; the full record stays in Crónica.
-  if (queue.length > 4) queue = queue.slice(-4);
-  if (!playing) showNext();
-}
+export function feedback(before, after) { showActivity(currentActivity(after)); }
 const tooltip = document.getElementById('tooltip');
 function show(target) {
   const item = target.closest?.('[data-tip]');

@@ -214,6 +214,9 @@ public final class SesionJuego {
     private void evento(EventoJuego e) {
         var d = e.datos();
         String actor = String.valueOf(d.getOrDefault("jugador", d.getOrDefault("actor", "")));
+        // The chosen veto remains secret until the engine actually resolves it.
+        boolean revelaRol = Set.of("fase.turno", "turno.vetado").contains(e.tipo());
+        if (revelaRol) revelados.add(actor);
         String texto = switch (e.tipo()) {
             case "accion.seleccionar_personaje" -> actor + " ha elegido un personaje.";
             case "fase.turno" -> "Comienza el turno de " + actor + ".";
@@ -255,7 +258,7 @@ public final class SesionJuego {
                     estudio, cantidad, "accion.pensar".equals(e.tipo()) || Boolean.TRUE.equals(d.get("cartaRobada")),
                     // Snapshot at the public turn event, never infer a historical role
                     // from a later round or from a client's private player projection.
-                    "fase.turno".equals(e.tipo()) ? CatalogoVisual.rol(motor.partida().jugadorActual().personaje(), -1) : null));
+                    revelaRol ? CatalogoVisual.rol(motor.partida().jugadorActual().personaje(), -1) : null));
             if (eventos.size() > 80) eventos.remove(0);
         }
     }

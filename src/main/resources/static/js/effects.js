@@ -333,7 +333,6 @@ export function settled(before, after) {
     if (e.cantidad>0 && e.tipo!=='accion.trabajar') void glow(player(e.actor,after)?.querySelector('.resource b'));
     if (e.robo && e.actor===after.yo) void glow(document.querySelector('#hand .game-card:last-child'));
   }
-  if (after.habilidadPendiente && !before?.habilidadPendiente) void floating('COMITÉ · Revisión pendiente',document.querySelector('.table-notice'),'ethics');
 }
 export function victory() {
   void animate(document.querySelector('#modal .final-result'),[{opacity:0,transform:'translateY(20px) scale(.94)'},{opacity:1,transform:'translateY(0) scale(1)'}],1200);

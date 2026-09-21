@@ -15,6 +15,16 @@ de turno completo (3600 ms, la misma animación que los demás turnos), el exped
 (600 ms). No se muestra carta: la proyección actual no revela públicamente el rol
 del jugador saltado. Solo se utiliza el nombre público del actor del evento.
 
+Los turnos normales encadenan el anuncio (3600 ms) con la carta completa de
+`roleCard`: entrada de 600 ms, lectura inmóvil de 3000 ms y salida hacia el jugador de
+250 ms. La línea temporal es lineal y solo los tramos de movimiento llevan aceleración,
+para respetar esos tiempos reales. `fase.turno` incluye `rolPublico`, una copia del catálogo en el momento
+del evento; no se toma el personaje de una vista privada ni de una ronda posterior.
+`turno.vetado` no incluye ese campo y sigue sin revelar la carta, también en el
+navegador del propio afectado. La cola espera cada apertura de turno y evita un
+segundo anuncio al pintar el tablero. Los efectos automáticos del comienzo se
+presentan después de la carta. No se modifica el motor ni sus efectos.
+
 La cola existente espera la secuencia antes de pintar el siguiente estado. Los
 clientes comparten evento y orden, no un reloj ni una barrera de confirmaciones:
 el polling puede desplazar el inicio entre clientes. El servidor sigue avanzando.
@@ -27,3 +37,9 @@ Validación: `mvn test` (134 pruebas), `tests/effects.test.mjs` (11 pruebas) y
 contextos Chrome, selección y sello privados, catálogo, descripciones, hover,
 1920/1366/768/390 px, anuncio compartido, siguiente turno, polling, recarga y
 el ciclo de visibilidad simulado. Capturas: `target/qa-ethics/`.
+
+Validación de la revelación: `mvn test` (135 pruebas), `tests/effects.test.mjs`
+(15 pruebas) y `py tools/qa_role_reveal.py`. Esta última comprueba tres navegadores
+aislados a 1440/390/768 px, cartas y descripciones completas, tiempos, ausencia
+de solapamientos, veto privado, siguiente turno, polling y recarga.
+Capturas: `target/qa-role-reveal/`.

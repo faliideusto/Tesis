@@ -252,7 +252,10 @@ public final class SesionJuego {
             eventos.add(new Vistas.Evento(eventos.isEmpty() ? 1 : eventos.get(eventos.size() - 1).numero() + 1,
                     texto, "PUBLICADO".equals(d.get("estado")), e.tipo(), actor,
                     Set.of("habilidad.plagiador", "habilidad.revisor_2").contains(e.tipo()) ? String.valueOf(d.get("objetivo")) : null,
-                    estudio, cantidad, "accion.pensar".equals(e.tipo()) || Boolean.TRUE.equals(d.get("cartaRobada"))));
+                    estudio, cantidad, "accion.pensar".equals(e.tipo()) || Boolean.TRUE.equals(d.get("cartaRobada")),
+                    // Snapshot at the public turn event, never infer a historical role
+                    // from a later round or from a client's private player projection.
+                    "fase.turno".equals(e.tipo()) ? CatalogoVisual.rol(motor.partida().jugadorActual().personaje(), -1) : null));
             if (eventos.size() > 80) eventos.remove(0);
         }
     }

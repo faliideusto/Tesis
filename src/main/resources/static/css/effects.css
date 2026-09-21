@@ -18,6 +18,10 @@
 .fx-own-turn { letter-spacing:.07em; border-color:#ecd096; color:#ffe6ad; text-shadow:0 0 22px #edc47788; }
 .fx-active { outline:1px solid #d4b57988; box-shadow:0 0 24px #d4b57928,inset 0 0 15px #d4b57912; transition:box-shadow .25s; }
 .fx-veil { inset:0; background:#050c18aa; z-index:85; }
+.fx-role-veil{background:radial-gradient(ellipse at center,#b68a3022,#050c18ce);backdrop-filter:blur(2px)}
+.fx-role-reveal{left:50%;top:50%;width:min(380px,78vw,48svh);transform:translate(-50%,-50%);z-index:94;filter:drop-shadow(0 0 32px #e3bd7777) drop-shadow(0 18px 35px #0009)}
+.fx-role-reveal .role-card{width:100%;margin:0;pointer-events:none}
+.fx-role-reveal .role-cadence{color:#f0dbb1;text-shadow:0 2px 4px #000;font-size:13px}
 .fx-ceremonial { width:clamp(130px,min(20vw,25svh),220px); z-index:94; filter:drop-shadow(0 0 26px #f4cf80bb) drop-shadow(0 14px 30px #000a); }
 .fx-publication-halo { width:min(76vw,52svh,520px); aspect-ratio:1; border:2px solid #f4d998; outline:1px solid #ccac69aa; outline-offset:14px; border-radius:50%; background:radial-gradient(circle,#f7d89433,transparent 65%); box-shadow:0 0 75px #e8c16a77,inset 0 0 60px #e8c16a55; transform:translate(-50%,-50%); z-index:89; }
 .fx-publication-halo::after { content:''; position:absolute; inset:12%; border:1px dashed #f4d998aa; border-radius:50%; }

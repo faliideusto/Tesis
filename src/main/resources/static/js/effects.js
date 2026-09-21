@@ -1,9 +1,11 @@
 import {img} from './dom.js';
+import {roleCard} from './cards.js';
 
 // One cancellable lifetime for every visual operation. No game state is mutated here.
 const animations = new Set(), nodes = new Set(), hidden = new Map();
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 let epoch = 0;
+let turnSequences = 0;
 const timing={flight:900, label:1800, glow:950, turn:3600, publication:2800, third:3400};
 const turnFrames=[{opacity:0,transform:'translate(-50%,-16px) scale(.96)'},
   {opacity:1,transform:'translate(-50%,0) scale(1)',offset:.12},
@@ -29,10 +31,10 @@ function node(cls, text, anchor) {
   if (anchor) {const p = rect(anchor); n.style.left=`${p.x}px`; n.style.top=`${p.y}px`;}
   document.body.append(n); nodes.add(n); return n;
 }
-async function animate(element, frames, duration=800, readable=false) {
+async function animate(element, frames, duration=800, readable=false, easing='cubic-bezier(.2,.7,.25,1)') {
   if (!element?.isConnected || document.hidden) return;
   const a = element.animate(reduced() ? (readable ? [{opacity:0},{opacity:1,offset:.08},{opacity:1,offset:.92},{opacity:0}] : [{opacity:.45},{opacity:1}]) : frames,
-    {duration:reduced() && !readable ? Math.min(duration,180) : duration, easing:'cubic-bezier(.2,.7,.25,1)'});
+    {duration:reduced() && !readable ? Math.min(duration,180) : duration, easing});
   animations.add(a);
   try {await a.finished;} catch { /* Cancelled on navigation, resize or backgrounding. */ }
   finally {animations.delete(a);}
@@ -154,12 +156,6 @@ export async function chooseVeto(element) {
 
 async function revealVeto(event, state) {
   const current=epoch, anchor=player(event.actor,state);
-  const turn=document.querySelector('#turn-panel strong'), previousTurn=turn?.textContent;
-  if(turn) turn.textContent=`Turno de ${event.actor}`;
-  const intro=node('fx-banner',`Comienza el turno de ${event.actor}`);
-  intro.removeAttribute('aria-hidden'); intro.setAttribute('role','status');
-  await ephemeral(intro,turnFrames,timing.turn);
-  if(current!==epoch) { if(turn) turn.textContent=previousTurn; return; }
   const veil=node('fx-veil fx-veto-veil');
   const file=node('fx-ethics-file');
   file.innerHTML='<span class="ethics-classification">COMITÉ DE ÉTICA · RESOLUCIÓN</span><div class="ethics-file-lines" aria-hidden="true"></div><strong class="ethics-review">Expediente en revisión</strong>';
@@ -181,8 +177,64 @@ async function revealVeto(event, state) {
     if(current!==epoch) return;
     await animate(file,[{opacity:1},{opacity:1,offset:.85},{opacity:0}],600,true);
   } finally {
-    if(turn) turn.textContent=previousTurn;
     file.remove(); veil.remove(); nodes.delete(file); nodes.delete(veil);
+  }
+}
+
+async function revealRole(event, state) {
+  // Only the server's explicitly public event payload is eligible, including
+  // for the local player: their private role must never authorize a revelation.
+  if (event.tipo!=='fase.turno' || !event.rolPublico) return;
+  const veil=node('fx-veil fx-role-veil');
+  const card=node('fx-role-reveal');
+  card.innerHTML=roleCard(event.rolPublico,{command:'noop'});
+  card.removeAttribute('aria-hidden'); card.setAttribute('role','status');
+  card.setAttribute('aria-label',`${event.actor}: ${event.rolPublico.nombre}. ${event.rolPublico.habilidad}`);
+  card.querySelector('button').tabIndex=-1;
+  const destination=rect(player(event.actor,state));
+  const dx=destination.x-innerWidth/2, dy=destination.y-innerHeight/2;
+  try {
+    // Linear timeline preserves the actual reading time; easing only on movement.
+    // 600 ms entrance, 3000 ms stationary, then a quick 250 ms exit to the table.
+    await animate(card,[
+      {opacity:0,transform:'translate(-50%,-44%) perspective(900px) rotateY(-24deg) scale(.82)',easing:'ease-out'},
+      {opacity:1,transform:'translate(-50%,-50%) perspective(900px) rotateY(0) scale(1)',offset:600/3850},
+      {opacity:1,transform:'translate(-50%,-50%) perspective(900px) rotateY(0) scale(1)',offset:3600/3850,easing:'ease-in'},
+      {opacity:0,transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.25)`}
+    ],3850,true,'linear');
+  } finally {
+    card.remove(); veil.remove(); nodes.delete(card); nodes.delete(veil);
+  }
+}
+
+const whenVisible=()=>document.hidden ? new Promise(resolve=>{
+  const resume=()=>{if(!document.hidden){document.removeEventListener('visibilitychange',resume);resolve();}};
+  document.addEventListener('visibilitychange',resume);
+}) : Promise.resolve();
+
+async function openTurn(event, state) {
+  turnSequences++;
+  const turn=document.querySelector('#turn-panel strong'), previousTurn=turn?.textContent;
+  try {
+    if(turn) turn.textContent=`Turno de ${event.actor}`;
+    const stages=[()=>{
+      const intro=node(`fx-banner ${event.actor===state.yo?'fx-own-turn':''}`,`Comienza el turno de ${event.actor}`);
+      intro.removeAttribute('aria-hidden'); intro.setAttribute('role','status');
+      return ephemeral(intro,turnFrames,timing.turn);
+    },()=>revealRole(event,state)];
+    if(event.tipo==='turno.vetado') stages.push(()=>revealVeto(event,state));
+    for(const stage of stages) {
+      do {
+        await whenVisible();
+        const current=epoch;
+        await stage();
+        if(current!==epoch && !document.hidden) return false;
+      } while(document.hidden);
+    }
+    return true;
+  } finally {
+    if(turn) turn.textContent=previousTurn;
+    turnSequences--;
   }
 }
 
@@ -190,28 +242,36 @@ export async function transition(before, after) {
   const events=freshEvents(before,after);
   // A background tab keeps its last painted board until it can show the verdict.
   // Initial loads still skip history because freshEvents(null, ...) is empty.
-  const visible=()=>document.hidden ? new Promise(resolve=>{
-    const resume=()=>{if(!document.hidden){document.removeEventListener('visibilitychange',resume);resolve();}};
-    document.addEventListener('visibilitychange',resume);
-  }) : Promise.resolve();
-  if(events.some(e=>e.tipo==='turno.vetado')) await visible();
+  if(events.some(e=>['fase.turno','turno.vetado'].includes(e.tipo))) await whenVisible();
   let current=epoch;
   if (!events.length || document.hidden) return;
   const tasks=[];
   try {
-    // These numbered server events must precede rendering the next authoritative
-    // snapshot, even when a polling response contains a large burst of events.
-    for (const event of events.filter(e=>e.tipo==='turno.vetado')) {
-      await revealVeto(event,before);
-      while(document.hidden) { await visible(); current=epoch; await revealVeto(event,before); }
-      if(current!==epoch) return;
-    }
     // A reconnect/burst is summarized by the existing activity panel. Do not stage
-    // a long historical sequence against a board that no longer represents it.
-    if (events.length>16) return;
-    const visibleEvents=events.filter((e,i)=>e.estudio==null || !events.slice(i+1).some(later=>
+    // ordinary effects against stale studies; public turn ceremonies stay ordered.
+    // The engine emits automatic income/ability events before fase.turno. Present
+    // those effects after its banner and card, without changing server order/state.
+    const ordered=[], openingEffects=[];
+    const automatic=new Set(['articulo.ingresos','habilidad.editorial.inicio',
+      'habilidad.investigador_principal','habilidad.decana']);
+    for(const event of events) {
+      if(automatic.has(event.tipo)) { openingEffects.push(event); continue; }
+      if(event.tipo==='fase.turno' && openingEffects.every(e=>e.actor===event.actor)) {
+        ordered.push(event,...openingEffects.splice(0));
+      } else ordered.push(...openingEffects.splice(0),event);
+    }
+    ordered.push(...openingEffects);
+    const visibleEvents=ordered.filter((e,i)=>e.estudio==null || !ordered.slice(i+1).some(later=>
       later.estudio===e.estudio && (later.objetivo || later.actor)===(e.objetivo || e.actor)));
     for (const e of visibleEvents) {
+      if (['fase.turno','turno.vetado'].includes(e.tipo)) {
+        await Promise.all(tasks.splice(0));
+        if(current!==epoch) return;
+        if(!await openTurn(e,before)) return;
+        current=epoch;
+        continue;
+      }
+      if(events.length>16) continue;
       const actor=player(e.actor,before), owner=e.objetivo || e.actor;
       const target=e.estudio != null ? study(owner,e.estudio) || player(owner,before) : actor;
       const nextPlayer=after.jugadores.find(p=>p.nombre===owner);
@@ -268,13 +328,6 @@ export function settled(before, after) {
     if (e.cantidad>0 && e.tipo!=='accion.trabajar') void glow(player(e.actor,after)?.querySelector('.resource b'));
     if (e.robo && e.actor===after.yo) void glow(document.querySelector('#hand .game-card:last-child'));
   }
-  if (active && before && (before.fase!==after.fase || before.ronda!==after.ronda || before.actual!==after.actual)) {
-    for(const old of nodes) if(old.className.includes('fx-banner')) old.remove();
-    const role=after.jugadores.find(p=>p.nombre===after.actual)?.rol?.nombre;
-    const n=node(`fx-banner ${after.actual===after.yo?'fx-own-turn':''}`,`${after.actual===after.yo?'TU TURNO':`Turno de ${after.actual}`}${role?` · ${role}`:''}`);
-    n.removeAttribute('aria-hidden'); n.setAttribute('role','status');
-    void ephemeral(n,turnFrames,timing.turn);
-  }
   if (after.habilidadPendiente && !before?.habilidadPendiente) void floating('COMITÉ · Revisión pendiente',document.querySelector('.table-notice'),'ethics');
 }
 export function victory() {
@@ -282,6 +335,6 @@ export function victory() {
 }
 window.addEventListener('resize',()=>{
   // The document and card layouts are responsive; resizing must not skip a verdict.
-  if(!document.querySelector('.fx-ethics-file, .ethics-grid.reviewing')) resetEffects();
+  if(!turnSequences && !document.querySelector('.ethics-grid.reviewing')) resetEffects();
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden) resetEffects();});

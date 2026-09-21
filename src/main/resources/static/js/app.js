@@ -69,7 +69,9 @@ async function applyRoom(next, force=false) {
   visualBusy=true; document.body.classList.add('visual-busy');
   try {
     const roleConfirmation=sameRoom && before && after?.eventos.some(e=>e.numero>(before.eventos.at(-1)?.numero || 0) && e.tipo==='accion.seleccionar_personaje' && e.actor===after.yo);
-    if (!roleConfirmation) closeDialog();
+    const turnOpening=sameRoom && before && after?.eventos.some(e=>e.numero>(before.eventos.at(-1)?.numero || 0)
+      && ['fase.turno','turno.vetado'].includes(e.tipo));
+    if (!roleConfirmation || turnOpening) closeDialog();
     if (after) {
       try { await transition(sameRoom ? before : null,after); }
       catch (error) { console.error('No se pudo representar el efecto visual',error); resetEffects(); }

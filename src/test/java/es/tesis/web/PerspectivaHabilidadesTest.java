@@ -120,9 +120,25 @@ class PerspectivaHabilidadesTest {
         var veto=despues.stream().filter(e->e.tipo().equals("turno.vetado")).toList();
         assertEquals(1,veto.size()); assertEquals(m.b.nombre(),veto.get(0).actor());
         assertTrue(veto.get(0).numero()>antes.get(antes.size()-1).numero());
+        assertNull(veto.get(0).rolPublico());
         assertNull(m.ver(m.a).jugadores().get(1).rol());
         for(int i=0;i<10;i++) assertEquals(despues,m.ver(m.b).eventos());
         assertEquals("FIN_RONDA",m.ver(m.a).fase());
+    }
+    @Test void eventoDeTurnoConservaSuCartaPublicaAunqueCambieLaRonda() {
+        var m=preparar(2,7);
+        var inicio=m.ver(m.a).eventos().stream().filter(e->e.tipo().equals("fase.turno")).findFirst().orElseThrow();
+        assertEquals(CatalogoVisual.rol(m.a.personaje(),-1),inicio.rolPublico());
+        assertNull(m.ver(m.a).jugadores().get(1).rol());
+        assertTrue(m.ver(m.a).eventos().stream().filter(e->!e.tipo().equals("fase.turno")).allMatch(e->e.rolPublico()==null));
+        m.actuar(m.a,"FIN_TURNO",null,null);
+        var siguiente=m.ver(m.b).eventos().stream().filter(e->e.tipo().equals("fase.turno")).reduce((a,b)->b).orElseThrow();
+        assertEquals(CatalogoVisual.rol(m.b.personaje(),-1),siguiente.rolPublico());
+        m.actuar(m.b,"FIN_TURNO",null,null);
+        m.actuar(m.b,"SIGUIENTE_RONDA",null,null);
+        assertTrue(m.ver(m.a).eventos().contains(inicio));
+        assertTrue(m.ver(m.a).eventos().contains(siguiente));
+        assertEquals(m.ver(m.a).eventos(),m.ver(m.b).eventos());
     }
     @Test void eventosVisualesSonPublicosEstablesYPrecisosConArticulosDuplicados() {
         var m=preparar(6,7);

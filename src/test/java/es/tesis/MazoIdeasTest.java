@@ -54,13 +54,13 @@ class MazoIdeasTest {
 
     @Test void guardadoAntiguoSinModalidadSigueSiendoCompatible() {
         var motor = new MotorJuegoImpl(new ReglasAcademicas(), new BusEventosSimple());
-        motor.iniciarPartida(new Partida(List.of(new Jugador("Ana")), FabricaMazos.crearRoles(),
+        motor.iniciarPartida(new Partida(List.of(new Jugador("Ana"), new Jugador("Bruno"), new Jugador("Clara")), FabricaMazos.crearRoles(),
                 new Mazo<>(FabricaMazos.crearIdeas().cartas())));
         var serializador = new SerializadorPartidaJson();
         var datos = com.google.gson.JsonParser.parseString(serializador.serializar(motor.guardarPartida())).getAsJsonObject();
         datos.getAsJsonObject("partida").remove("ideasInagotables");
         var restaurada = Partida.restaurar(serializador.deserializar(datos.toString()).partida());
         assertFalse(restaurada.mazoIdeas().esInagotable());
-        assertEquals(6, restaurada.mazoIdeas().cartas().size());
+        assertEquals(2, restaurada.mazoIdeas().cartas().size());
     }
 }

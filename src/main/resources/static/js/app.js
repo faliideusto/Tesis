@@ -35,7 +35,7 @@ function home() {
   app.innerHTML = `<section class="home-screen"><nav class="home-nav"><span>UNA MESA. MUCHAS IDEAS.</span><button class="text-button" data-command="help">Cómo jugar</button></nav>
     <div class="home-copy">${img('Logo/logo_tesis.png','home-logo','Tesis')}<span class="eyebrow">La diferencia está en la ciencia</span>
     <h1>Construye tu<br><em>legado científico.</em></h1><p>Reúne a tu academia. Cada persona juega desde su dispositivo, con su mano privada y una mesa compartida.</p>
-    <div class="home-features"><span>7 personajes</span><span>8 tipos de idea</span><span>2–6 jugadores</span></div></div>
+    <div class="home-features"><span>7 personajes</span><span>8 tipos de idea</span><span>3–5 jugadores</span></div></div>
     <section class="setup-panel"><span class="eyebrow">LAS PUERTAS ESTÁN ABIERTAS</span><h2>Reúne a tu academia</h2><p>Solo necesitas tu nombre y un código de sala.</p>
       <form id="create-room" class="room-form"><label>Tu nombre<input name="nombre" maxlength="24" required autocomplete="nickname" placeholder="Fali"></label><button class="gold-button" type="submit">Crear sala</button></form>
       <div class="room-divider">O ENTRA EN UNA SALA</div>
@@ -46,8 +46,8 @@ function home() {
 function lobby() {
   closeDialog();
   app.innerHTML = `<section class="home-screen lobby-screen"><div class="home-copy">${img('Logo/logo_tesis.png','home-logo','Tesis')}<span class="eyebrow">TU ACADEMIA TE ESPERA</span><h1>Una sala.<br><em>Muchas ideas.</em></h1><p>Comparte el código con los demás. Cada persona debe abrir esta misma web en su dispositivo.</p><button class="text-button" data-command="home">Volver al inicio</button></div>
-    <section class="setup-panel lobby-panel"><span class="eyebrow">CÓDIGO DE SALA</span><h2 class="room-code">${esc(room.codigo)}</h2><p>Tu identidad: <strong>${esc(room.yo)}</strong></p><h3>Jugadores · ${room.jugadores.length} / 6</h3><ul class="lobby-players">${room.jugadores.map(n=>`<li>${n===room.anfitrion?'♛ ':''}${esc(n)}${n===room.yo?' · tú':''}<small>${n===room.anfitrion?'Anfitrión':''}</small></li>`).join('')}</ul>
-    ${room.soyAnfitrion ? `<button class="gold-button" data-command="start-game" ${room.jugadores.length<2?'disabled':''}>Iniciar partida</button><p class="setup-note">${room.jugadores.length<2?'Esperando jugadores. Se necesitan al menos dos.':'Todo preparado. Puedes iniciar la partida.'}</p>` : `<p class="waiting-copy">Esperando a que ${esc(room.anfitrion)} inicie la partida…</p>`}</section></section>`;
+    <section class="setup-panel lobby-panel"><span class="eyebrow">CÓDIGO DE SALA</span><h2 class="room-code">${esc(room.codigo)}</h2><p>Tu identidad: <strong>${esc(room.yo)}</strong></p><h3>Jugadores · ${room.jugadores.length} / 5</h3><ul class="lobby-players">${room.jugadores.map(n=>`<li>${n===room.anfitrion?'♛ ':''}${esc(n)}${n===room.yo?' · tú':''}<small>${n===room.anfitrion?'Anfitrión':''}</small></li>`).join('')}</ul>
+    ${room.soyAnfitrion ? `<button class="gold-button" data-command="start-game" ${(room.jugadores.length<3 || room.jugadores.length>5)?'disabled':''}>Iniciar partida</button><p class="setup-note">${(room.jugadores.length<3 || room.jugadores.length>5)?'Esperando jugadores. Se necesitan entre 3 y 5.':'Todo preparado. Puedes iniciar la partida.'}</p>` : `<p class="waiting-copy">Esperando a que ${esc(room.anfitrion)} inicie la partida…</p>`}</section></section>`;
 }
 function renderRoom(next, force=false) {
   const requestedGeneration=generation;
@@ -115,14 +115,14 @@ async function run(task) {
 const act = (type, option = {}) => run(() => api.action(room.revision,type,option));
 
 function help() {
-  dialog('El conocimiento se convierte en prestigio', `<div class="rules-copy"><p><strong>1. Elige un personaje.</strong> Se descarta un rol al azar. Cada persona elige entre los restantes. Se juega en orden de personaje, de menor a mayor.</p>
+  dialog('El conocimiento se convierte en prestigio', `<div class="rules-copy"><p><strong>1. Elige un personaje.</strong> Se descartan dos roles al azar con 3 jugadores y uno con 4 o 5. Cada persona elige entre los restantes. Se juega en orden de personaje, de menor a mayor.</p>
     <p><strong>2. Decide cómo avanzar.</strong> En tu turno puedes realizar hasta dos acciones: cobrar 2 monedas, pensar para robar una idea, pagar una idea para iniciar un estudio o trabajar en un estudio propio.</p>
     <p><strong>3. Aprovecha tu habilidad.</strong> No consume acciones base. Las habilidades activas se usan una vez por turno. El Comité debe nombrar un rol antes de actuar. Editorial recibe una moneda por cada artículo publicado en la mesa al iniciar su turno.</p>
-    <p><strong>Revisor 2.</strong> Puede pagar una moneda para retirar hasta dos puntos de trabajo de cualquier artículo. Si estaba publicado, vuelve a desarrollo y recuperará su prestigio cuando se publique otra vez. Decana tiene inmunidad frente a habilidades rivales durante toda la ronda.</p>
+    <p><strong>Revisor 2.</strong> Puede pagar una moneda para retirar hasta dos puntos de trabajo de un artículo rival en desarrollo. Decana tiene inmunidad frente a habilidades rivales durante toda la ronda.</p>
     <p><strong>4. Publica y deja tu huella.</strong> Al completar el trabajo, publicas automáticamente y ganas el prestigio de la carta. Cuando alguien publica su tercer artículo, se termina la ronda. Gana quien tenga más prestigio; los empates comparten victoria.</p>
     <p><strong>Una sala, varios dispositivos.</strong> Comparte el código y juega desde tu navegador. Solo tú ves tu mano. Al recargar recuperas tu identidad en esta pestaña. Las salas caducan tras 24 horas sin consultas válidas y se pierden al reiniciar el servidor.</p>
     <p><strong>Mazo inagotable.</strong> Cada reparto y robo usa estas probabilidades, con reposición: Ecológico 20%, Transversal 20%, Casos y Controles 17%, Cohortes 13%, Revisión Sistemática 10%, Ensayo Clínico Aleatorizado 10%, Ensayo Comunitario 6% y Patente 4%.</p>
-    <p><strong>Patente · Legendaria.</strong> Cuesta 3 monedas y 5 de trabajo; da 5 de prestigio. Mientras esté publicada, genera 2 monedas al inicio de tu turno. Si se revisa, deja de generar ingresos hasta republicarse.</p></div>`, {wide:false});
+    <p><strong>Patente · Legendaria.</strong> Cuesta 3 monedas y 5 de trabajo; da 5 de prestigio. Mientras esté publicada, genera 2 monedas al inicio de tu turno.</p></div>`, {wide:false});
 }
 function chooseAction(id) {
   const action = state.acciones.find(a => a.id === id);

@@ -25,10 +25,11 @@ class ConsolaJuegoTest {
         var roles = new ArrayList<Personaje>();
         var jugadores = new ArrayList<Jugador>();
         var ideas = new ArrayList<IdeaCarta>();
-        for (int i = 0; i < habilidades.length; i++) {
-            roles.add(new Personaje("Personaje " + i, i + 1, habilidades[i]));
+        for (int i = 0; i < Math.max(3, habilidades.length); i++) {
+            roles.add(new Personaje("Personaje " + i, i + 1, i < habilidades.length ? habilidades[i] : new PreDoctoralHabilidad()));
             jugadores.add(new Jugador("Persona " + i));
         }
+        roles.add(new Personaje("Otro descarte", 98, new PreDoctoralHabilidad()));
         roles.add(new Personaje("Descartado", 99, new PreDoctoralHabilidad()));
         for (int i = 0; i < 8; i++) ideas.add(new IdeaCarta("Artículo " + i, 1, 2, 5));
         var mazo = new Mazo<Personaje>(roles) {
@@ -36,7 +37,7 @@ class ConsolaJuegoTest {
         };
         MotorJuego motor = new MotorJuegoImpl(new ReglasAcademicas(), new BusEventosSimple());
         motor.iniciarPartida(new Partida(jugadores, mazo, new Mazo<>(ideas)));
-        if (seleccionar) for (int i = 0; i < habilidades.length; i++) motor.ejecutarAccion(new SeleccionarPersonajeAccion(0));
+        if (seleccionar) for (int i = 0; i < Math.max(3, habilidades.length); i++) motor.ejecutarAccion(new SeleccionarPersonajeAccion(0));
         return motor;
     }
 
@@ -55,8 +56,8 @@ class ConsolaJuegoTest {
 
     @Test void seleccionValidaEntradaCancelacionYLimiteDeAcciones() {
         var motor = preparar(false, new PreDoctoralHabilidad());
-        String salida = ejecutar(motor, "abc\n-1\n99\n1\n3\n0\n1\n2\n1\nsalir\n");
-        assertTrue(salida.contains("Introduce un número entre 1 y 1"));
+        String salida = ejecutar(motor, "abc\n-1\n99\n1\n1\n1\n3\n0\n1\n2\n1\nsalir\n");
+        assertTrue(salida.contains("Introduce un número entre 1 y 3"));
         assertTrue(salida.contains("Selección cancelada"));
         assertTrue(salida.contains("ha elegido personaje"));
         assertTrue(salida.contains("roba una carta de idea"));
@@ -84,7 +85,7 @@ class ConsolaJuegoTest {
 
     @Test void iniciarYTrabajarMuestranLaPublicacionYElPrestigio() {
         var motor = preparar(true, new PreDoctoralHabilidad());
-        String salida = ejecutar(motor, "3\n1\n4\n1\n6\nsalir\n");
+        String salida = ejecutar(motor, "3\n1\n4\n1\n5\n1\n6\nsalir\n");
         assertTrue(salida.contains("pagando su coste"));
         assertTrue(salida.contains("¡Artículo publicado! Gana 5 de prestigio"));
         assertTrue(salida.contains("trabajo: 2/2 | prestigio: 5 | Publicado"));
@@ -95,7 +96,7 @@ class ConsolaJuegoTest {
     @Test void filtraEstudiosPeroConservaElIndiceReal() {
         var motor = preparar(true, new PreDoctoralHabilidad());
         estudio(actor(motor), "Ya publicado", 1, 1);
-        estudio(actor(motor), "Pendiente", 0, 2);
+        estudio(actor(motor), "Pendiente", 1, 2);
         String salida = ejecutar(motor, "4\n1\n2\nsalir\n");
         assertTrue(salida.contains("Elige uno de los estudios que aparecen en la lista"));
         assertTrue(salida.contains("«Pendiente»"));
@@ -123,7 +124,7 @@ class ConsolaJuegoTest {
         var revisor = preparar(true, new Revisor2Habilidad(), new PreDoctoralHabilidad());
         Jugador objetivo = revisor.partida().jugadores().stream().filter(j -> j != actor(revisor)).findFirst().orElseThrow();
         estudio(objetivo, "Estudio revisable", 1, 3);
-        int numero = revisor.partida().jugadores().indexOf(objetivo) + 1;
+        int numero = revisor.partida().jugadores().stream().filter(j -> j != actor(revisor)).toList().indexOf(objetivo) + 1;
         String avisoRevision = ejecutar(revisor, "5\n" + numero + "\n1\nsalir\n");
         assertTrue(avisoRevision.contains("paga 1 moneda y retira hasta 2 puntos de trabajo"));
         assertEquals(0, objetivo.estudios().get(0).trabajoAcumulado());
@@ -132,7 +133,7 @@ class ConsolaJuegoTest {
 
     @Test void comiteNotificaVetoYTransicionDeRonda() {
         var motor = preparar(true, new ComiteEticaHabilidad(), new PreDoctoralHabilidad());
-        String salida = ejecutar(motor, "cancelar\nguardar\ncargar\n2\n7\nsalir\n");
+        String salida = ejecutar(motor, "cancelar\nguardar\ncargar\n2\n7\n7\nsalir\n");
         assertTrue(salida.contains("Primero debes nombrar un rol"));
         assertTrue(salida.indexOf("Rol que pierde el turno") < salida.indexOf("1. Cobrar"));
         assertTrue(salida.contains("nombra el rol «Personaje 1»"));
@@ -146,7 +147,7 @@ class ConsolaJuegoTest {
         var motor = preparar(true, new PreDoctoralHabilidad());
         for (int i = 0; i < 3; i++) estudio(actor(motor), "Publicación " + i, 1, 1);
         Path archivo = temporal.resolve("resultado.json");
-        String salida = ejecutar(motor, "7\nhistorial\nexportar " + archivo + "\nsalir\n");
+        String salida = ejecutar(motor, "7\n7\n7\nhistorial\nexportar " + archivo + "\nsalir\n");
         assertTrue(salida.contains("RESULTADO FINAL"));
         assertTrue(salida.contains("Ganador(es):"));
         assertTrue(salida.contains("partida.fin"));
@@ -160,7 +161,7 @@ class ConsolaJuegoTest {
         new ConsolaJuego(motor, new Scanner("4\n5\n3\n"), salida).ejecutar();
         String texto = buffer.toString(StandardCharsets.UTF_8);
         assertTrue(texto.contains("No hay estudios válidos"));
-        assertTrue(texto.contains("Esta habilidad se aplica automáticamente"));
+        assertFalse(texto.contains("Esta habilidad se aplica automáticamente"));
         assertEquals(0, motor.partida().accionesBaseRealizadas());
         int longitud = buffer.size();
         motor.ejecutarAccion(new CobrarAccion());

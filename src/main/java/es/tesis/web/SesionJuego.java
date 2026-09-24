@@ -19,14 +19,14 @@ public final class SesionJuego {
     private final List<Vistas.Evento> eventos = new ArrayList<>();
 
     public static Vistas.Configuracion configuracion() {
-        int maximo = FabricaMazos.crearRoles().cartas().size() - 1;
-        return new Vistas.Configuracion(1, Math.min(6, maximo), 8,
-                "El mazo mantiene siempre los 8 tipos de idea. El reparto y los robos usan las probabilidades de cada artículo, con reposición. Admite hasta 6 jugadores. No hay IA.");
+        int maximo = ReglasAcademicas.MAX_JUGADORES;
+        return new Vistas.Configuracion(ReglasAcademicas.MIN_JUGADORES, maximo, 8,
+                "El mazo mantiene siempre los 8 tipos de idea. El reparto y los robos usan las probabilidades de cada artículo, con reposición. Admite entre 3 y 5 jugadores. No hay IA.");
     }
 
     public synchronized Vistas.Estado crear(List<String> nombres) {
         if (nombres == null || nombres.size() < configuracion().minimo() || nombres.size() > configuracion().maximo())
-            throw new IllegalArgumentException("Elige entre 1 y " + configuracion().maximo() + " jugadores.");
+            throw new IllegalArgumentException("Elige entre " + configuracion().minimo() + " y " + configuracion().maximo() + " jugadores.");
         if (nombres.stream().anyMatch(n -> n == null || n.isBlank() || n.length() > 24 || n.chars().anyMatch(Character::isISOControl)))
             throw new IllegalArgumentException("Cada nombre debe tener entre 1 y 24 caracteres sin saltos de línea.");
         return crearJugadores(nombres.stream().map(String::trim).map(Jugador::new).toList());
@@ -186,10 +186,10 @@ public final class SesionJuego {
         if (h instanceof ComiteEticaHabilidad) {
             c.partida().mazoRoles().cartasIniciales().stream().filter(r -> r != j.personaje())
                     .forEach(r -> opciones.add(new Vistas.Opcion(r.nombre(), null, r.nombre(), CatalogoVisual.rol(r, -1))));
-        } else if (h instanceof EstadisticoHabilidad) {
+        } else if (h instanceof EstadisticoHabilidad || h instanceof PreDoctoralHabilidad) {
             for (int i = 0; i < j.estudios().size(); i++) {
                 boolean publicado = j.estudios().get(i).estado() == EstadoEstudio.PUBLICADO;
-                if (publicado)
+                if (h instanceof EstadisticoHabilidad ? publicado : !publicado)
                     opciones.add(new Vistas.Opcion(j.estudios().get(i).carta().nombre(), i, null));
             }
         } else if (h instanceof PlagiadorHabilidad) {
@@ -197,10 +197,10 @@ public final class SesionJuego {
                     .forEach(otro -> opciones.add(new Vistas.Opcion(otro.nombre(), null, otro.nombre())));
         } else if (h instanceof Revisor2Habilidad && j.monedas() >= 1) {
             for (var otro : c.partida().jugadores()) {
-                if (otro != j && c.estaProtegido(otro.nombre())) continue;
+                if (otro == j || c.estaProtegido(otro.nombre())) continue;
                 for (int i = 0; i < otro.estudios().size(); i++) {
                     var e = otro.estudios().get(i);
-                    if (e.trabajoAcumulado() > 0)
+                    if (e.estado() == EstadoEstudio.EN_DESARROLLO && e.trabajoAcumulado() > 0)
                         opciones.add(new Vistas.Opcion(otro.nombre() + " · " + e.carta().nombre(), i, otro.nombre()));
                 }
             }
@@ -231,6 +231,7 @@ public final class SesionJuego {
             case "habilidad.estadistico" -> actor + " añade 1 de prestigio a «" + d.get("articulo") + "».";
             case "habilidad.plagiador" -> actor + " intercambia su mano con " + d.get("objetivo") + ".";
             case "habilidad.revisor_2" -> actor + " retira hasta 2 puntos de trabajo de «" + d.get("articulo") + "», que queda en desarrollo.";
+            case "habilidad.pre_doctoral" -> actor + " añade 1 punto de trabajo a «" + d.get("articulo") + "».";
             case "habilidad.editorial.inicio" -> actor + " recibe " + d.get("monedasRecibidas") + " monedas de Editorial.";
             case "articulo.ingresos" -> actor + " recibe " + d.get("monedas") + " monedas de sus patentes publicadas.";
             case "habilidad.investigador_principal" -> actor + " elegirá primero la próxima ronda" + (Boolean.TRUE.equals(d.get("cartaRobada")) ? " y roba una idea extra." : ".");
@@ -243,11 +244,11 @@ public final class SesionJuego {
             Integer estudio = null;
             if ("accion.iniciar_estudio".equals(e.tipo()))
                 estudio = motor.partida().jugadorActual().estudios().size() - 1;
-            else if (Set.of("accion.trabajar", "habilidad.estadistico", "habilidad.revisor_2").contains(e.tipo())
+            else if (Set.of("accion.trabajar", "habilidad.estadistico", "habilidad.revisor_2", "habilidad.pre_doctoral").contains(e.tipo())
                     && accionEnCurso != null) estudio = accionEnCurso.indice();
             Integer cantidad = switch (e.tipo()) {
                 case "accion.cobrar" -> 2;
-                case "accion.trabajar" -> ((Number) d.get("trabajo")).intValue();
+                case "accion.trabajar", "habilidad.pre_doctoral" -> ((Number) d.get("trabajo")).intValue();
                 case "habilidad.editorial.inicio" -> ((Number) d.get("monedasRecibidas")).intValue();
                 case "articulo.ingresos" -> ((Number) d.get("monedas")).intValue();
                 default -> null;

@@ -21,16 +21,17 @@ class AccionesBaseTest {
         var roles = new Mazo<>(List.of(
                 new Personaje("Uno", 1, habilidad),
                 new Personaje("Dos", 2, habilidad),
-                new Personaje("Tres", 3, habilidad)));
+                new Personaje("Tres", 3, habilidad), new Personaje("Cuatro", 4, habilidad), new Personaje("Cinco", 5, habilidad)));
         var ideas = new ArrayList<IdeaCarta>();
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 8; i++) {
             ideas.add(new IdeaCarta("Idea " + i, 1, 2, 3));
         }
-        var partida = new Partida(List.of(new Jugador("Ana"), new Jugador("Bruno")),
+        var partida = new Partida(List.of(new Jugador("Ana"), new Jugador("Bruno"), new Jugador("Clara")),
                 roles, new Mazo<>(ideas));
         var motor = new MotorJuegoImpl(new ReglasAcademicas(), new BusEventosSimple());
         motor.iniciarPartida(partida);
         if (seleccionar) {
+            motor.ejecutarAccion(new SeleccionarPersonajeAccion(0));
             motor.ejecutarAccion(new SeleccionarPersonajeAccion(0));
             motor.ejecutarAccion(new SeleccionarPersonajeAccion(0));
         }
@@ -95,7 +96,7 @@ class AccionesBaseTest {
                     jugador.trabajarEstudio(i, 1);
                 }
             }
-            if (fase != FaseDeTurno.SELECCION_ROLES) { motor.avanzarFase(); motor.avanzarFase(); }
+            if (fase != FaseDeTurno.SELECCION_ROLES) { motor.avanzarFase(); motor.avanzarFase(); motor.avanzarFase(); }
             if (fase == FaseDeTurno.FIN_PARTIDA) motor.avanzarFase();
             assertEquals(fase, motor.partida().faseActual());
             for (var accion : List.of(new CobrarAccion(), new PensarAccion(),
@@ -137,13 +138,13 @@ class AccionesBaseTest {
     }
 
     @Test
-    void preDoctoralAportaDosPuntosYPublicaAunqueSupereElRequisito() {
+    void preDoctoralTrabajaSinBonoPasivo() {
         var motor = crearMotor();
         var jugador = motor.contexto().jugadorActual();
         jugador.asignarPersonaje(new Personaje("Pre-Doctoral", 7, new PreDoctoralHabilidad()));
         jugador.iniciarEstudio(new IdeaCarta("Artículo", 1, 1, 5));
         motor.ejecutarAccion(new TrabajarAccion(0));
-        assertEquals(2, jugador.estudios().get(0).trabajoAcumulado());
+        assertEquals(1, jugador.estudios().get(0).trabajoAcumulado());
         assertEquals(1, jugador.cantidadPublicados());
         assertEquals(5, jugador.prestigio());
     }
@@ -171,6 +172,6 @@ class AccionesBaseTest {
         }
         var actor = motor.contexto().jugadorActual();
         new EditorialHabilidad().alInicioDeTurno(motor.contexto(), actor);
-        assertEquals(4, actor.monedas());
+        assertEquals(5, actor.monedas());
     }
 }

@@ -39,9 +39,9 @@ final class CatalogoVisual {
         } else if (h instanceof EditorialHabilidad) {
             arte = "06_editorial"; texto = "Al iniciar tu turno, recibe 1 Moneda por cada artículo publicado en la mesa."; automatica = true;
         } else if (h instanceof PreDoctoralHabilidad) {
-            arte = "07_pre_doctoral"; texto = "La acción de trabajar te aporta 2 puntos de trabajo durante toda la ronda."; automatica = true;
+            arte = "07_pre_doctoral"; texto = "Una vez por turno, añade 1 punto de trabajo a uno de tus artículos en desarrollo.";
         } else {
-            arte = "08_revisor_2"; texto = "Una vez por turno, podrás pagar 1 Moneda para retirar 2 Puntos de Trabajo de cualquier artículo.";
+            arte = "08_revisor_2"; texto = "Una vez por turno, podrás pagar 1 Moneda para retirar 2 Puntos de Trabajo de un artículo rival en desarrollo.";
         }
         return new Vistas.Rol(indice, p.nombre(), p.ordenTurno(), texto, "personajes/" + arte + ".png", automatica);
     }

@@ -7,7 +7,7 @@ import java.util.stream.IntStream;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CatalogoPersonajesTest {
-    @Test void sietePersonajesConsecutivosConLosTextosSolicitadosYSeisPlazas() {
+    @Test void sietePersonajesConsecutivosConLosTextosSolicitadosYCincoPlazas() {
         var roles = FabricaMazos.crearRoles().cartas();
         assertEquals(List.of("Comité de Ética", "Estadístico", "Investigador Principal", "Decana", "Editorial", "Pre-Doctoral", "Revisor 2"),
                 roles.stream().map(r -> r.nombre()).toList());
@@ -18,14 +18,15 @@ class CatalogoPersonajesTest {
                 "Al iniciar tu turno, recibe 1 idea extra. Comenzarás la elección de rol la próxima ronda.",
                 "Obtienes inmunidad frente a cualquier habilidad rival durante toda la ronda.",
                 "Al iniciar tu turno, recibe 1 Moneda por cada artículo publicado en la mesa.",
-                "La acción de trabajar te aporta 2 puntos de trabajo durante toda la ronda.",
-                "Una vez por turno, podrás pagar 1 Moneda para retirar 2 Puntos de Trabajo de cualquier artículo.");
+                "Una vez por turno, añade 1 punto de trabajo a uno de tus artículos en desarrollo.",
+                "Una vez por turno, podrás pagar 1 Moneda para retirar 2 Puntos de Trabajo de un artículo rival en desarrollo.");
         for(int i=0; i<roles.size(); i++) {
             var dto = CatalogoVisual.rol(roles.get(i),i);
             assertEquals(i+1,dto.orden());
             assertEquals(textos.get(i),dto.habilidad());
-            assertEquals(i>=2 && i<=5,dto.automatica());
+            assertEquals(i>=2 && i<=4,dto.automatica());
         }
-        assertEquals(6,SesionJuego.configuracion().maximo());
+        assertEquals(3,SesionJuego.configuracion().minimo());
+        assertEquals(5,SesionJuego.configuracion().maximo());
     }
 }

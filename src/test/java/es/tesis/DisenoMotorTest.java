@@ -19,7 +19,7 @@ class DisenoMotorTest {
     }
 
     private void seleccionar(MotorJuego motor) {
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 3; i++) {
             var roles = motor.partida().mazoRoles().cartas();
             int indice = 0;
             while (roles.get(indice).habilidad().requiereResolucionAlInicio()) indice++;
@@ -71,6 +71,7 @@ class DisenoMotorTest {
         assertEquals(2, partida.accionesBaseRealizadas());
         motor.avanzarFase();
         assertEquals(0, partida.accionesBaseRealizadas());
+        motor.avanzarFase();
         motor.avanzarFase();
         assertThrows(IllegalArgumentException.class, () -> partida.iniciarSiguienteRonda("Nadie"));
         assertEquals(FaseDeTurno.FIN_RONDA, partida.faseActual());

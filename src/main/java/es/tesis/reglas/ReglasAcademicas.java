@@ -7,6 +7,14 @@ import java.util.HashSet;
 import es.tesis.motor.ContextoJuego;
 
 public class ReglasAcademicas implements ReglasJuego {
+    public static final int MIN_JUGADORES = 3;
+    public static final int MAX_JUGADORES = 5;
+
+    public static void validarNumeroJugadores(int cantidad) {
+        if (cantidad < MIN_JUGADORES || cantidad > MAX_JUGADORES) {
+            throw new IllegalArgumentException("La partida debe tener entre 3 y 5 jugadores");
+        }
+    }
 
     @Override
     public void prepararPartida(ContextoJuego contexto) {
@@ -43,6 +51,7 @@ public class ReglasAcademicas implements ReglasJuego {
         if (candidata == null || candidata.jugadores().isEmpty()) {
             throw new IllegalArgumentException("La partida debe tener jugadores");
         }
+        validarNumeroJugadores(candidata.jugadores().size());
         var nombres = new HashSet<String>();
         for (Jugador jugador : candidata.jugadores()) {
             if (jugador == null || jugador.nombre() == null || jugador.nombre().isBlank()
@@ -54,8 +63,9 @@ public class ReglasAcademicas implements ReglasJuego {
                 throw new IllegalArgumentException("Los jugadores deben empezar sin recursos ni personaje");
             }
         }
-        if (candidata.mazoRoles() == null || candidata.mazoRoles().cartas().size() <= candidata.jugadores().size()) {
-            throw new IllegalArgumentException("Debe haber un rol por jugador y otro para descartar");
+        if (candidata.mazoRoles() == null || candidata.mazoRoles().cartas().size()
+                < candidata.jugadores().size() + Partida.numeroDescartes(candidata.jugadores().size())) {
+            throw new IllegalArgumentException("Debe haber un rol por jugador y suficientes roles para descartar");
         }
         var ordenes = new HashSet<Integer>();
         var roles = new HashSet<String>();

@@ -60,10 +60,15 @@ public class Partida {
     public boolean prepararSeleccion() {
         exigirFase(FaseDeTurno.SELECCION_ROLES);
         if (rondaPreparada == ronda) return false;
-        if (mazoRoles.cartas().size() <= jugadores.size()) throw new IllegalStateException("No hay roles suficientes para descartar");
-        mazoRoles.robarAleatoria();
+        int descartes = numeroDescartes(jugadores.size());
+        if (mazoRoles.cartas().size() < jugadores.size() + descartes) throw new IllegalStateException("No hay roles suficientes para descartar");
+        for (int i = 0; i < descartes; i++) mazoRoles.robarAleatoria();
         rondaPreparada = ronda;
         return true;
+    }
+
+    public static int numeroDescartes(int jugadores) {
+        return jugadores == 3 ? 2 : 1;
     }
 
     public boolean seleccionCompleta() {
@@ -170,6 +175,7 @@ public class Partida {
     /** Reconstruye datos ya jugados sin ejecutar reparto, descarte ni efectos de turno. */
     public static Partida restaurar(InstantaneaPartida datos) {
         Objects.requireNonNull(datos);
+        es.tesis.reglas.ReglasAcademicas.validarNumeroJugadores(datos.jugadores().size());
         Map<Integer, Personaje> roles = new LinkedHashMap<>();
         Set<String> nombresRoles = new HashSet<>();
         for (var rol : datos.rolesIniciales()) {
@@ -178,7 +184,8 @@ public class Partida {
                 throw new IllegalArgumentException("Roles duplicados en el guardado");
             }
         }
-        if (roles.size() <= datos.jugadores().size()) throw new IllegalArgumentException("Faltan roles en el guardado");
+        int descartes = numeroDescartes(datos.jugadores().size());
+        if (roles.size() < datos.jugadores().size() + descartes) throw new IllegalArgumentException("Faltan roles en el guardado");
         Set<Integer> usados = new HashSet<>();
         List<Personaje> disponibles = new ArrayList<>();
         for (int orden : datos.rolesDisponibles()) {
@@ -193,7 +200,7 @@ public class Partida {
             if (rol != null && (!roles.containsKey(rol) || !usados.add(rol))) throw new IllegalArgumentException("Rol asignado no válido");
             jugadores.add(Jugador.restaurar(jugador, rol == null ? null : roles.get(rol)));
         }
-        if (usados.size() != roles.size() - 1) throw new IllegalArgumentException("El guardado debe conservar un rol descartado");
+        if (usados.size() != roles.size() - descartes) throw new IllegalArgumentException("El guardado debe conservar " + descartes + " roles descartados");
         boolean completos = jugadores.stream().allMatch(j -> j.personaje() != null);
         if (datos.fase() == FaseDeTurno.SELECCION_ROLES) {
             if (completos || jugadores.get(datos.jugadorActual()).personaje() != null

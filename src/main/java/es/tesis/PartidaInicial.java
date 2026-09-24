@@ -7,7 +7,7 @@ public final class PartidaInicial {
     private PartidaInicial() {}
 
     public static Partida crear() {
-        return new Partida(List.of(new Jugador("Ana"), new Jugador("Bruno")),
+        return new Partida(List.of(new Jugador("Ana"), new Jugador("Bruno"), new Jugador("Clara")),
                 FabricaMazos.crearRoles(), FabricaMazos.crearIdeas());
     }
 }

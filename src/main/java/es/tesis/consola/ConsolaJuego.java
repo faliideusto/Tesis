@@ -127,13 +127,16 @@ public final class ConsolaJuego {
 
     private void usarHabilidad(Jugador jugador) {
         var habilidad = jugador.personaje().habilidad();
-        if (habilidad instanceof PreDoctoralHabilidad || habilidad instanceof InvestigadorPrincipalHabilidad
+        if (habilidad instanceof InvestigadorPrincipalHabilidad
                 || habilidad instanceof DecanaHabilidad || habilidad instanceof EditorialHabilidad) {
             salida.println("Esta habilidad se aplica automáticamente: " + describirHabilidad(habilidad));
             return;
         }
         motor.contexto().reglas().validarHabilidad(motor.contexto());
-        if (habilidad instanceof EstadisticoHabilidad) {
+        if (habilidad instanceof PreDoctoralHabilidad) {
+            int indice = elegirEstudio(jugador, e -> e.estado() == EstadoEstudio.EN_DESARROLLO, "Artículo propio en desarrollo");
+            if (indice >= 0) motor.ejecutarAccion(new UsarHabilidadAccion(indice));
+        } else if (habilidad instanceof EstadisticoHabilidad) {
             int indice = elegirEstudio(jugador, e -> e.estado() == EstadoEstudio.PUBLICADO, "Artículo propio publicado");
             if (indice >= 0) motor.ejecutarAccion(new UsarHabilidadAccion(indice));
         } else if (habilidad instanceof ComiteEticaHabilidad) {
@@ -143,7 +146,7 @@ public final class ConsolaJuego {
             motor.ejecutarAccion(new UsarHabilidadAccion(roles.get(indice).nombre()));
         } else {
             var candidatos = motor.partida().jugadores().stream()
-                    .filter(j -> habilidad instanceof Revisor2Habilidad || j != jugador).toList();
+                    .filter(j -> j != jugador).toList();
             if (candidatos.isEmpty()) { salida.println("No hay jugadores objetivo disponibles."); return; }
             for (int i = 0; i < candidatos.size(); i++) {
                 salida.println((i + 1) + ". " + candidatos.get(i).nombre());
@@ -158,7 +161,7 @@ public final class ConsolaJuego {
             }
             if (objetivo == null) throw new IllegalArgumentException("Elige un jugador de la lista");
             if (habilidad instanceof Revisor2Habilidad) {
-                int indice = elegirEstudio(objetivo, e -> e.trabajoAcumulado() > 0, "Artículo para revisar (1 moneda, retira 2 puntos)");
+                int indice = elegirEstudio(objetivo, e -> e.estado() == EstadoEstudio.EN_DESARROLLO && e.trabajoAcumulado() > 0, "Artículo para revisar (1 moneda, retira 2 puntos)");
                 if (indice >= 0) motor.ejecutarAccion(new UsarHabilidadAccion(objetivo.nombre(), indice));
             } else {
                 motor.ejecutarAccion(new UsarHabilidadAccion(objetivo.nombre()));
@@ -203,8 +206,8 @@ public final class ConsolaJuego {
         if (habilidad instanceof InvestigadorPrincipalHabilidad) return "Al iniciar tu turno, recibe 1 idea extra. Comenzarás la elección de rol la próxima ronda.";
         if (habilidad instanceof DecanaHabilidad) return "Obtienes inmunidad frente a cualquier habilidad rival durante toda la ronda.";
         if (habilidad instanceof EditorialHabilidad) return "Al iniciar tu turno, recibe 1 Moneda por cada artículo publicado en la mesa.";
-        if (habilidad instanceof PreDoctoralHabilidad) return "La acción de trabajar te aporta 2 puntos de trabajo durante toda la ronda.";
-        if (habilidad instanceof Revisor2Habilidad) return "Una vez por turno, podrás pagar 1 Moneda para retirar 2 Puntos de Trabajo de cualquier artículo.";
+        if (habilidad instanceof PreDoctoralHabilidad) return "Una vez por turno, añade 1 punto de trabajo a uno de tus artículos en desarrollo.";
+        if (habilidad instanceof Revisor2Habilidad) return "Una vez por turno, podrás pagar 1 Moneda para retirar 2 Puntos de Trabajo de un artículo rival en desarrollo.";
         return "Consulta las reglas de este personaje.";
     }
 

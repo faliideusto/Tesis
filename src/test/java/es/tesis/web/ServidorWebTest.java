@@ -27,7 +27,7 @@ class ServidorWebTest {
             assertEquals(200,png.statusCode()); assertEquals("image/png",png.headers().firstValue("Content-Type").orElseThrow());
             assertEquals(404,get(c,base+"/no-existe").statusCode());
             assertEquals(404,get(c,base+"/../pom.xml").statusCode());
-            var creacion=post(c,base+"/api/game","{\"nombres\":[\"Ángela\",\"Bruno\"]}");
+            var creacion=post(c,base+"/api/game","{\"nombres\":[\"Ángela\",\"Bruno\",\"Clara\"]}");
             assertEquals(200,creacion.statusCode()); assertTrue(creacion.body().contains("Ángela"));
             assertEquals("no-store",creacion.headers().firstValue("Cache-Control").orElseThrow());
             assertEquals("null",get(cliente(),base+"/api/game/state").body());

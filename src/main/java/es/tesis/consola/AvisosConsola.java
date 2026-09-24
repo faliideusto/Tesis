@@ -21,6 +21,7 @@ public final class AvisosConsola implements ObservadorJuego {
             case "accion.cobrar" -> d.get("jugador") + " cobra 2 monedas. Total: " + d.get("monedas") + ".";
             case "accion.pensar" -> d.get("jugador") + " roba una carta de idea. Cartas en mano: " + d.get("mano") + ".";
             case "accion.iniciar_estudio" -> d.get("jugador") + " inicia «" + d.get("articulo") + "» pagando su coste.";
+            case "habilidad.pre_doctoral" -> trabajo(d.get("actor"), d, "1 punto de trabajo");
             case "accion.trabajar" -> trabajo(d.get("jugador"), d, d.get("trabajo") + " punto(s) de trabajo");
             case "articulo.ingresos" -> d.get("actor") + " recibe " + d.get("monedas") + " monedas de sus patentes publicadas.";
             case "habilidad.editorial.inicio" -> d.get("actor") + " recibe " + d.get("monedasRecibidas") + " moneda(s) de Editorial.";

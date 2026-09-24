@@ -51,7 +51,7 @@ class SalasTest {
         for(String nombre:List.of("", " ", "a".repeat(25), "a\nb")) assertThrows(IllegalArgumentException.class,()->gestor.crear(nombre));
         assertThrows(IllegalArgumentException.class,()->gestor.buscar(""));
         assertEquals(404,assertThrows(ErrorSala.class,()->gestor.buscar("ZZZZZ")).estado);
-        var m=mesa(2); assertEquals(409,assertThrows(ErrorSala.class,()->m.sala.unirse(" fALI ")).estado);
+        var m=mesa(3); assertEquals(409,assertThrows(ErrorSala.class,()->m.sala.unirse(" fALI ")).estado);
         iniciar(m); assertEquals(409,assertThrows(ErrorSala.class,()->m.sala.unirse("Tercero")).estado);
         assertEquals(409,assertThrows(ErrorSala.class,()->m.sala.iniciar(m.tokens.get(m.host),m.ver().revision())).estado);
     }
@@ -60,16 +60,18 @@ class SalasTest {
         assertEquals(409,assertThrows(ErrorSala.class,()->m.sala.iniciar(m.tokens.get(m.host),m.ver().revision())).estado);
         var otro=m.sala.unirse("Jefe");
         assertEquals(403,assertThrows(ErrorSala.class,()->m.sala.iniciar(otro.playerToken(),otro.sala().revision())).estado);
+        assertEquals(409,assertThrows(ErrorSala.class,()->m.sala.iniciar(m.tokens.get(m.host),m.ver().revision())).estado);
+        m.sala.unirse("Clara");
         iniciar(m); assertEquals("EN_PARTIDA",m.ver().fase());
     }
-    @ParameterizedTest @ValueSource(ints={2,3,4,5,6})
+    @ParameterizedTest @ValueSource(ints={3,4,5})
     void repartoYSeleccionPrivadaParaTodosLosTamanyos(int cantidad) {
-        var m=mesa(cantidad); if(cantidad==6) assertThrows(ErrorSala.class,()->m.sala.unirse("Extra"));
+        var m=mesa(cantidad); if(cantidad==5) assertThrows(ErrorSala.class,()->m.sala.unirse("Extra"));
         iniciar(m);
         for(String nombre:m.tokens.keySet()) {
             var s=m.ver(nombre); assertEquals(nombre,s.yo()); assertEquals(2,s.partida().mano().size());
             assertEquals(8,s.partida().ideas());
-            assertEquals(s.partida().actual().equals(nombre)?6:0,s.partida().seleccion().size());
+            assertEquals(s.partida().actual().equals(nombre)?(cantidad==3?5:6):0,s.partida().seleccion().size());
             assertTrue(s.partida().jugadores().stream().allMatch(j->j.rol()==null));
         }
         seleccionar(m); assertEquals("TURNO_JUGADOR",m.ver().partida().fase());
@@ -88,7 +90,7 @@ class SalasTest {
         }
     }
     @Test void turnoIndicesVersionYRecursosSiemprePertenecenAlActor() {
-        var m=mesa(2); iniciar(m); var primero=m.actual();
+        var m=mesa(3); iniciar(m); var primero=m.actual();
         String otro=m.tokens.keySet().stream().filter(n->!n.equals(primero.yo())).findFirst().orElseThrow();
         assertEquals(403,assertThrows(ErrorSala.class,()->m.actuar(otro,"SELECCIONAR",0,null)).estado);
         var previo=m.ver(); assertThrows(IllegalArgumentException.class,()->m.actuar(primero.yo(),"SELECCIONAR",99,null)); assertEquals(previo,m.ver());
@@ -108,7 +110,7 @@ class SalasTest {
         assertEquals(8,m.actual().partida().ideas());
     }
     @Test void dosSolicitudesSimultaneasNoDuplicanCobro() throws Exception {
-        var m=mesa(2); iniciar(m); seleccionar(m); var actual=m.actual();
+        var m=mesa(3); iniciar(m); seleccionar(m); var actual=m.actual();
         var solicitud=new Vistas.Peticion(actual.revision(),"COBRAR",null,null,null);
         var salida=new CountDownLatch(1); var pool=Executors.newFixedThreadPool(2);
         try {
@@ -120,7 +122,7 @@ class SalasTest {
         } finally { pool.shutdownNow(); }
     }
     @Test void salasNoCompartenPartidaYConsultasNoMutanRevision() {
-        var a=mesa(2); var b=mesa(2); iniciar(a); iniciar(b);
+        var a=mesa(3); var b=mesa(3); iniciar(a); iniciar(b);
         var antes=b.ver(); seleccionar(a); mCobrar(a);
         assertEquals(antes,b.ver()); assertEquals(a.ver(),a.ver());
     }
@@ -137,7 +139,7 @@ class SalasTest {
         reloj.instante=reloj.instante.plus(Duration.ofHours(2)); registro.limpiar();
         assertNotNull(registro.buscar(a.codigo())); assertEquals(404,assertThrows(ErrorSala.class,()->registro.buscar(b.codigo())).estado);
     }
-    @ParameterizedTest @ValueSource(ints={2,6})
+    @ParameterizedTest @ValueSource(ints={3,5})
     void partidaCompletaConVariasRondasDesdeTodasLasIdentidades(int cantidad) {
         var m=mesa(cantidad); iniciar(m); var usados=new HashSet<String>();
         for(int paso=0;paso<3000&&!m.ver().fase().equals("FINALIZADA");paso++) {

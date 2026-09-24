@@ -27,7 +27,7 @@ public final class SalaJuego {
         vigente();
         nombre = validarNombre(nombre);
         if (iniciada) throw new ErrorSala(409, "La partida ya ha comenzado.");
-        if (miembros.size() >= 6) throw new ErrorSala(409, "La sala está llena (máximo 6 personas).");
+        if (miembros.size() >= es.tesis.reglas.ReglasAcademicas.MAX_JUGADORES) throw new ErrorSala(409, "La sala está llena (máximo 5 personas).");
         String elegido = nombre;
         if (miembros.values().stream().anyMatch(j -> j.nombre().equalsIgnoreCase(elegido)))
             throw new ErrorSala(409, "Ese nombre ya está en la sala.");
@@ -55,7 +55,7 @@ public final class SalaJuego {
         if (jugador != anfitrion) throw new ErrorSala(403, "Solo el anfitrión puede iniciar la partida.");
         comprobarVersion(version);
         if (iniciada) throw new ErrorSala(409, "La partida ya ha comenzado.");
-        if (miembros.size() < 2) throw new ErrorSala(409, "Se necesitan al menos dos jugadores.");
+        if (miembros.size() < es.tesis.reglas.ReglasAcademicas.MIN_JUGADORES || miembros.size() > es.tesis.reglas.ReglasAcademicas.MAX_JUGADORES) throw new ErrorSala(409, "Se necesitan entre 3 y 5 jugadores.");
         juego.crearJugadores(List.copyOf(miembros.values()));
         iniciada = true; revision++;
         return vista(jugador);

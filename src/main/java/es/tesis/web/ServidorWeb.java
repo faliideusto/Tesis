@@ -53,7 +53,7 @@ public final class ServidorWeb implements AutoCloseable {
                 json(x, 403, Map.of("error", "Solicitud de otro origen rechazada.")); return;
             }
             if (ruta.equals("/api/config") && metodo.equals("GET")) {
-                json(x, 200, new Vistas.Configuracion(2, 6, 8, "Salas de 2 a 6 jugadores. Ocho tipos de idea siempre disponibles.")); return;
+                json(x, 200, SesionJuego.configuracion()); return;
             }
             if (ruta.equals("/api/salas") || ruta.startsWith("/api/salas/")) { salas(x, ruta, metodo); return; }
             // Compatibilidad del servidor local de pruebas, nunca conectada al registro de salas.

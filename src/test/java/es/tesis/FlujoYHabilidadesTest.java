@@ -22,12 +22,13 @@ class FlujoYHabilidadesTest {
         var roles = new ArrayList<Personaje>();
         var jugadores = new ArrayList<Jugador>();
         var ideas = new ArrayList<IdeaCarta>();
-        for (int i = 0; i < habilidades.length; i++) {
-            roles.add(new Personaje("Rol " + i, i + 1, habilidades[i]));
+        for (int i = 0; i < Math.max(3, habilidades.length); i++) {
+            roles.add(new Personaje("Rol " + i, i + 1, i < habilidades.length ? habilidades[i] : new PreDoctoralHabilidad()));
             jugadores.add(new Jugador("Jugador " + i));
             ideas.add(new IdeaCarta("Idea A " + i, 1, 3, 4));
             ideas.add(new IdeaCarta("Idea B " + i, 1, 3, 4));
         }
+        roles.add(new Personaje("Otro descarte", 98, new PreDoctoralHabilidad()));
         roles.add(new Personaje("Descartado", 99, new PreDoctoralHabilidad()));
         // El descarte determinista permite probar roles específicos sin depender del azar.
         var mazo = new Mazo<Personaje>(roles) {
@@ -72,6 +73,7 @@ class FlujoYHabilidadesTest {
         motor.contexto().jugadorActual().asignarPersonaje(null);
         motor.ejecutarAccion(new SeleccionarPersonajeAccion(0));
         assertThrows(IllegalStateException.class, motor::avanzarFase);
+        motor.ejecutarAccion(new SeleccionarPersonajeAccion(0));
         motor.ejecutarAccion(new SeleccionarPersonajeAccion(0));
         assertThrows(IllegalStateException.class, () -> motor.ejecutarAccion(new SeleccionarPersonajeAccion(0)));
     }
@@ -120,8 +122,8 @@ class FlujoYHabilidadesTest {
     @Test void empateEnPrestigioComparteVictoria() {
         var motor = comenzar(new PreDoctoralHabilidad(), new PreDoctoralHabilidad());
         for (Jugador jugador : motor.partida().jugadores()) for (int i = 0; i < 3; i++) estudio(jugador, 1, true);
-        motor.avanzarFase(); motor.avanzarFase(); motor.avanzarFase();
-        assertEquals(2, motor.partida().ganadores().size());
+        motor.avanzarFase(); motor.avanzarFase(); motor.avanzarFase(); motor.avanzarFase();
+        assertEquals(3, motor.partida().ganadores().size());
     }
 
     @Test void comiteVetaPorRolYSaltaTurnoIncluidaHabilidadAutomatica() {
@@ -163,7 +165,7 @@ class FlujoYHabilidadesTest {
         assertThrows(IllegalStateException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion("Rol 1")));
         assertEquals(1, motor.partida().accionesBaseRealizadas());
         assertEquals(4, actor.monedas());
-        motor.avanzarFase();
+        motor.avanzarFase(); motor.avanzarFase();
         assertEquals(FaseDeTurno.FIN_RONDA, motor.partida().faseActual());
     }
 
@@ -205,7 +207,7 @@ class FlujoYHabilidadesTest {
                 new PreDoctoralHabilidad(), new Revisor2Habilidad())) {
             var motor = comenzar(habilidad);
             motor.ejecutarAccion(new CobrarAccion());
-            motor.avanzarFase();
+            motor.avanzarFase(); motor.avanzarFase(); motor.avanzarFase();
             assertEquals(FaseDeTurno.FIN_RONDA, motor.partida().faseActual());
         }
     }
@@ -219,7 +221,7 @@ class FlujoYHabilidadesTest {
         motor.avanzarFase();
         assertSame(decana, motor.contexto().jugadorActual());
         motor.ejecutarAccion(new CobrarAccion());
-        motor.avanzarFase(); motor.avanzarFase();
+        motor.avanzarFase(); motor.avanzarFase(); motor.avanzarFase();
         assertFalse(motor.contexto().estaProtegido(decana.nombre()));
     }
 
@@ -268,9 +270,10 @@ class FlujoYHabilidadesTest {
         motor.partida().mazoIdeas().añadir(new IdeaCarta("Extra", 1, 1, 1));
         motor.avanzarFase();
         assertEquals(3, investigador.cartasIdea().size());
-        motor.avanzarFase(); motor.avanzarFase();
+        motor.avanzarFase(); motor.avanzarFase(); motor.avanzarFase();
         assertSame(investigador, motor.contexto().jugadorActual());
         motor.ejecutarAccion(new SeleccionarPersonajeAccion(1));
+        motor.ejecutarAccion(new SeleccionarPersonajeAccion(0));
         motor.ejecutarAccion(new SeleccionarPersonajeAccion(0));
         motor.avanzarFase();
         assertSame(investigador, motor.contexto().jugadorActual());
@@ -292,30 +295,19 @@ class FlujoYHabilidadesTest {
         assertThrows(IllegalStateException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion(otro.nombre(), 0)));
     }
 
-    @Test void revisorReabrePublicadosYConservaBonificacionTrasGuardarYRepublicar() {
+    @Test void revisorRechazaPublicadosSinModificarPrestigioTrabajoNiMonedas() {
         var motor = comenzar(new Revisor2Habilidad(), new PreDoctoralHabilidad());
-        Jugador otro = conRol(motor, 2);
+        var otro = conRol(motor, 2);
         otro.iniciarEstudio(new IdeaCarta("Publicado", 1, 3, 4));
         otro.trabajarEstudio(0, 4);
         otro.estudios().get(0).añadirPrestigioExtra(); otro.sumarPrestigio(1);
         motor.partida().tablero().agregarEstudio(otro.estudios().get(0));
-        motor.ejecutarAccion(new UsarHabilidadAccion(otro.nombre(), 0));
-        assertEquals(1, otro.estudios().get(0).trabajoAcumulado());
-        assertEquals(0, otro.cantidadPublicados()); assertEquals(0, otro.prestigio());
-        assertEquals(0, motor.partida().tablero().cantidadEstudiosPublicados());
-        var json = new es.tesis.persistencia.SerializadorPartidaJson();
+        var antes = motor.partida().guardar();
+        assertThrows(IllegalStateException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion(otro.nombre(), 0)));
+        assertEquals(antes, motor.partida().guardar());
         var recuperado = new MotorJuegoImpl(new ReglasAcademicas(), new BusEventosSimple());
-        recuperado.recuperarPartida(json.deserializar(json.serializar(motor.guardarPartida())));
-        Jugador restaurado = conRol(recuperado, 2);
-        assertEquals(1, restaurado.estudios().get(0).prestigioExtra());
-        assertEquals(0, restaurado.prestigio());
-        recuperado.avanzarFase();
-        recuperado.ejecutarAccion(new TrabajarAccion(0));
-        assertEquals(1, restaurado.cantidadPublicados()); assertEquals(5, restaurado.prestigio());
-        assertEquals("5", recuperado.historial().stream().filter(e -> e.tipo().equals("accion.trabajar")).reduce((a,b) -> b).orElseThrow().datos().get("prestigio"));
-        assertEquals(1, recuperado.partida().tablero().cantidadEstudiosPublicados());
-        restaurado.revisarEstudio(0); restaurado.trabajarEstudio(0, 2);
-        assertEquals(5, restaurado.prestigio());
+        recuperado.recuperarPartida(motor.guardarPartida());
+        assertEquals(antes, recuperado.partida().guardar());
     }
 
     @Test void patenteCobraSoloPublicadaAlInicioYNoDuplicaIngresosAlRecuperar() {
@@ -365,7 +357,7 @@ class FlujoYHabilidadesTest {
         assertFalse(motor.partida().habilidadUsada());
         estudio(actor, 1, false);
         actor.gastarMonedas(2);
-        assertThrows(IllegalStateException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion(actor.nombre(), 0)));
+        assertThrows(IllegalArgumentException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion(actor.nombre(), 0)));
         assertEquals(1, actor.estudios().get(0).trabajoAcumulado());
     }
 
@@ -383,9 +375,13 @@ class FlujoYHabilidadesTest {
         var rol = new Personaje("Rol", 1, new PreDoctoralHabilidad());
         var motor = new MotorJuegoImpl(new ReglasAcademicas(), new BusEventosSimple());
         assertThrows(IllegalArgumentException.class, () -> motor.iniciarPartida(new Partida(List.of(), new Mazo<>(List.of(rol)), new Mazo<>(List.of()))));
-        assertThrows(IllegalArgumentException.class, () -> motor.iniciarPartida(new Partida(List.of(new Jugador("A")), new Mazo<>(List.of(rol)), new Mazo<>(List.of()))));
-        var roles = List.of(rol, new Personaje("Otro", 2, new PreDoctoralHabilidad()));
-        assertThrows(IllegalArgumentException.class, () -> motor.iniciarPartida(new Partida(List.of(new Jugador("A")), new Mazo<>(roles), new Mazo<>(List.of()))));
+        var jugadores = List.of(new Jugador("A"), new Jugador("B"), new Jugador("C"));
+        // Cuatro roles ya no bastan para tres jugadores y dos descartes.
+        var pocosRoles = new Mazo<>(FabricaMazos.crearRoles().cartas().subList(0, 4));
+        assertThrows(IllegalArgumentException.class, () -> motor.iniciarPartida(new Partida(jugadores, pocosRoles, FabricaMazos.crearIdeas())));
+        assertThrows(IllegalArgumentException.class, () -> motor.iniciarPartida(new Partida(jugadores, FabricaMazos.crearRoles(), new Mazo<>(List.of()))));
+        assertTrue(jugadores.stream().allMatch(j -> j.monedas() == 0 && j.cartasIdea().isEmpty()));
+        assertEquals(4, pocosRoles.cartas().size());
         assertNull(motor.partida());
     }
 
@@ -400,10 +396,10 @@ class FlujoYHabilidadesTest {
     }
 
     @Test void ultimoTurnoVetadoLlevaAFinRondaSinActivarHabilidad() {
-        var motor = comenzar(new ComiteEticaHabilidad(), new InvestigadorPrincipalHabilidad());
-        Jugador ultimo = conRol(motor, 2);
-        motor.ejecutarAccion(new UsarHabilidadAccion("Rol 1"));
-        motor.avanzarFase();
+        var motor = comenzar(new ComiteEticaHabilidad(), new PreDoctoralHabilidad(), new InvestigadorPrincipalHabilidad());
+        Jugador ultimo = conRol(motor, 3);
+        motor.ejecutarAccion(new UsarHabilidadAccion("Rol 2"));
+        motor.avanzarFase(); motor.avanzarFase();
         assertEquals(FaseDeTurno.FIN_RONDA, motor.partida().faseActual());
         assertEquals(2, ultimo.cartasIdea().size());
         assertThrows(IllegalStateException.class, () -> motor.ejecutarAccion(new CobrarAccion()));
@@ -415,40 +411,47 @@ class FlujoYHabilidadesTest {
         Jugador actor = motor.contexto().jugadorActual();
         estudio(actor, 1, true);
         motor.ejecutarAccion(new UsarHabilidadAccion(0));
-        motor.avanzarFase(); motor.avanzarFase();
-        motor.ejecutarAccion(new SeleccionarPersonajeAccion(0));
+        motor.avanzarFase(); motor.avanzarFase(); motor.avanzarFase(); motor.avanzarFase();
+        while (motor.partida().faseActual() == FaseDeTurno.SELECCION_ROLES) motor.ejecutarAccion(new SeleccionarPersonajeAccion(0));
+        assertSame(actor, motor.contexto().jugadorActual());
         assertFalse(motor.partida().habilidadUsada());
         motor.ejecutarAccion(new UsarHabilidadAccion(0));
         assertEquals(6, actor.prestigio());
         assertEquals(2, actor.estudios().get(0).prestigioExtra());
     }
 
-    @Test void revisorPuedeRevisarUnEstudioPropioYElDominioImpideTrabajoNegativo() {
+    @Test void revisorRechazaEstudioPropioSinConsumirMonedasNiHabilidad() {
         var motor = comenzar(new Revisor2Habilidad());
         Jugador actor = motor.contexto().jugadorActual();
-        Estudio estudio = estudio(actor, 1, false);
-        motor.ejecutarAccion(new UsarHabilidadAccion(actor.nombre(), 0));
-        assertEquals(0, estudio.trabajoAcumulado());
-        assertThrows(IllegalStateException.class, estudio::retirarTrabajo);
-        assertThrows(IllegalArgumentException.class, () -> estudio.agregarTrabajo(-1));
-        assertEquals(0, estudio.trabajoAcumulado());
+        estudio(actor, 1, false);
+        var antes = motor.partida().guardar();
+        assertThrows(IllegalArgumentException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion(actor.nombre(), 0)));
+        assertEquals(antes, motor.partida().guardar());
+    }
+
+    @Test void dominioImpideTrabajoNegativo() {
+        var jugador = new Jugador("Ana");
+        var articulo = estudio(jugador, 1, false);
+        articulo.retirarTrabajo();
+        assertEquals(0, articulo.trabajoAcumulado());
+        assertThrows(IllegalStateException.class, articulo::retirarTrabajo);
+        assertThrows(IllegalArgumentException.class, () -> articulo.agregarTrabajo(-1));
+        assertEquals(0, articulo.trabajoAcumulado());
         assertThrows(IllegalArgumentException.class, () -> new IdeaCarta("Inválida", -1, 1, 1));
         assertThrows(IllegalArgumentException.class, () -> new IdeaCarta("Inválida", 1, 0, 1));
-        assertThrows(IllegalArgumentException.class, () -> actor.gastarMonedas(-1));
-        assertEquals(1, actor.monedas());
+        assertThrows(IllegalArgumentException.class, () -> jugador.gastarMonedas(-1));
     }
 
     @Test void rechazaNombresYOrdenesDuplicadosAntesDeRepartir() {
         var habilidad = new PreDoctoralHabilidad();
-        var roles = List.of(new Personaje("Uno", 1, habilidad), new Personaje("Dos", 2, habilidad), new Personaje("Tres", 3, habilidad));
-        var ideas = List.of(new IdeaCarta("Idea", 1, 1, 1), new IdeaCarta("Idea", 1, 1, 1),
-                new IdeaCarta("Idea", 1, 1, 1), new IdeaCarta("Idea", 1, 1, 1));
+        var roles = FabricaMazos.crearRoles().cartas();
         var motor = new MotorJuegoImpl(new ReglasAcademicas(), new BusEventosSimple());
         assertThrows(IllegalArgumentException.class, () -> motor.iniciarPartida(new Partida(
-                List.of(new Jugador("Ana"), new Jugador("ANA")), new Mazo<>(roles), new Mazo<>(ideas))));
-        var duplicados = List.of(new Personaje("Uno", 1, habilidad), new Personaje("Dos", 1, habilidad));
+                List.of(new Jugador("Ana"), new Jugador("ANA"), new Jugador("Clara")), new Mazo<>(roles), FabricaMazos.crearIdeas())));
+        var duplicados = new ArrayList<>(roles);
+        duplicados.set(1, new Personaje("Otro", 1, habilidad));
         assertThrows(IllegalArgumentException.class, () -> motor.iniciarPartida(new Partida(
-                List.of(new Jugador("Ana")), new Mazo<>(duplicados), new Mazo<>(ideas))));
+                List.of(new Jugador("Ana"), new Jugador("Bruno"), new Jugador("Clara")), new Mazo<>(duplicados), FabricaMazos.crearIdeas())));
         assertNull(motor.partida());
     }
 }

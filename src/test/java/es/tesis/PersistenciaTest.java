@@ -27,10 +27,11 @@ class PersistenciaTest {
         var roles = new ArrayList<Personaje>();
         var jugadores = new ArrayList<Jugador>();
         var ideas = new ArrayList<IdeaCarta>();
-        for (int i = 0; i < habilidades.length; i++) {
-            roles.add(new Personaje("Rol " + i, i + 1, habilidades[i]));
+        for (int i = 0; i < Math.max(3, habilidades.length); i++) {
+            roles.add(new Personaje("Rol " + i, i + 1, i < habilidades.length ? habilidades[i] : new PreDoctoralHabilidad()));
             jugadores.add(new Jugador("Investigación " + i));
         }
+        roles.add(new Personaje("Otro descarte", 98, new PreDoctoralHabilidad()));
         roles.add(new Personaje("Descartado", 99, new PreDoctoralHabilidad()));
         for (int i = 0; i < 12; i++) ideas.add(new IdeaCarta("Artículo \"ecológico\" " + i, 1, 2, 4));
         var mazo = new Mazo<Personaje>(roles) {
@@ -79,7 +80,7 @@ class PersistenciaTest {
         assertThrows(IllegalArgumentException.class, () -> almacen.cargar("inexistente"));
     }
 
-    @Test void seleccionParcialMantieneRolesJugadorYUnSoloDescarte() {
+    @Test void seleccionParcialMantieneRolesJugadorYDosDescartes() {
         var motor = preparar(new PreDoctoralHabilidad(), new EditorialHabilidad(), new DecanaHabilidad());
         motor.ejecutarAccion(new SeleccionarPersonajeAccion(1));
         var guardada = motor.guardarPartida();
@@ -102,10 +103,10 @@ class PersistenciaTest {
         assertEquals(3, actor(recuperado).cartasIdea().size());
         assertEquals(guardada.partida().ideasDisponibles().size(), recuperado.partida().mazoIdeas().cartas().size());
         assertEquals(1, recuperado.historial().stream().filter(e -> e.tipo().equals("habilidad.investigador_principal")).count());
-        recuperado.avanzarFase(); recuperado.avanzarFase(); recuperado.avanzarFase();
+        recuperado.avanzarFase(); recuperado.avanzarFase(); recuperado.avanzarFase(); recuperado.avanzarFase();
         assertEquals(investigador, actor(recuperado).nombre());
         assertEquals(2, recuperado.partida().ronda());
-        assertEquals(2, recuperado.partida().mazoRoles().cartas().size());
+        assertEquals(3, recuperado.partida().mazoRoles().cartas().size());
     }
 
     @Test void estadisticoConservaBonificacionYNoPuedeRepetirHabilidad() {
@@ -167,7 +168,7 @@ class PersistenciaTest {
         var recuperado = vacio();
         recuperado.recuperarPartida(motor.guardarPartida());
         recuperado.ejecutarAccion(new UsarHabilidadAccion("Rol 1"));
-        recuperado.avanzarFase();
+        recuperado.avanzarFase(); recuperado.avanzarFase();
         assertEquals(FaseDeTurno.FIN_RONDA, recuperado.partida().faseActual());
     }
 
@@ -177,7 +178,7 @@ class PersistenciaTest {
             actor(motor).iniciarEstudio(new IdeaCarta("Publicado " + i, 1, 1, 5));
             actor(motor).trabajarEstudio(i, 1);
         }
-        motor.avanzarFase();
+        motor.avanzarFase(); motor.avanzarFase(); motor.avanzarFase();
         var recuperado = vacio();
         recuperado.recuperarPartida(motor.guardarPartida());
         assertEquals(FaseDeTurno.FIN_RONDA, recuperado.partida().faseActual());
@@ -225,7 +226,7 @@ class PersistenciaTest {
                 original.replace("\"accionesRealizadas\": 0", "\"accionesRealizadas\": 3"),
                 original.replace("\"accionesRealizadas\": 0,", ""),
                 original.replace("\"habilidadUsada\": false", "\"habilidadUsada\": null"),
-                original.replace("\"jugadorActual\": 0", "\"jugadorActual\": 99"),
+                original.replace("\"jugadorActual\": " + guardada.partida().jugadorActual(), "\"jugadorActual\": 99"),
                 original.replace("\"PREDOCTORAL\"", "\"DESCONOCIDA\""))) {
             assertThrows(IllegalArgumentException.class, () -> motor.recuperarPartida(json.deserializar(invalido)));
             assertSame(estado, motor.partida());

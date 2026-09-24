@@ -30,6 +30,8 @@ class SalasHttpTest {
     @Test void apiAutenticaRechazaSuplantacionesYNoPublicaRutasLocales() throws Exception {
         try(var servidor=new ServidorWeb("127.0.0.1",0)) {
             servidor.iniciar(); String base="http://localhost:"+servidor.puerto(); var cliente=HttpClient.newHttpClient();
+            var configuracion=gson.fromJson(enviar(cliente,base+"/api/config",null,null).body(),Vistas.Configuracion.class);
+            assertEquals(3,configuracion.minimo()); assertEquals(5,configuracion.maximo());
             for(String ruta:List.of("state","reveal","lock","action","select-role"))
                 assertEquals(404,enviar(cliente,base+"/api/game/"+ruta,null,ruta.equals("state")?null:Map.of()).statusCode());
             assertEquals(404,enviar(cliente,base+"/api/game",null,Map.of("nombres",List.of("A","B"))).statusCode());
@@ -48,12 +50,14 @@ class SalasHttpTest {
             var reunion=enviar(cliente,sala+"/unirse",null,Map.of("nombre","Jefe"));
             var jefe=gson.fromJson(reunion.body(),Vistas.AccesoSala.class);
             assertEquals(403,enviar(cliente,sala+"/iniciar",jefe.playerToken(),Map.of("revision",jefe.sala().revision())).statusCode());
-            var inicio=enviar(cliente,sala+"/iniciar",acceso.playerToken(),Map.of("revision",jefe.sala().revision())); assertEquals(200,inicio.statusCode());
+            assertEquals(409,enviar(cliente,sala+"/iniciar",acceso.playerToken(),Map.of("revision",jefe.sala().revision())).statusCode());
+            var tercera=gson.fromJson(enviar(cliente,sala+"/unirse",null,Map.of("nombre","Clara")).body(),Vistas.AccesoSala.class);
+            var inicio=enviar(cliente,sala+"/iniciar",acceso.playerToken(),Map.of("revision",tercera.sala().revision())); assertEquals(200,inicio.statusCode());
             assertEquals(409,enviar(cliente,sala+"/unirse",null,Map.of("nombre","Tercero")).statusCode());
         }
     }
 
-    @Test void dosClientesIndependientesJueganPartidaEnteraPorHttpYReconectan() throws Exception {
+    @Test void tresClientesIndependientesJueganPartidaEnteraPorHttpYReconectan() throws Exception {
         try(var servidor=new ServidorWeb("127.0.0.1",0)) {
             servidor.iniciar(); String base="http://localhost:"+servidor.puerto()+"/api/salas";
             var httpA=HttpClient.newHttpClient(); var httpB=HttpClient.newHttpClient();
@@ -61,15 +65,18 @@ class SalasHttpTest {
             base+="/"+acceso.codigo();
             var union=gson.fromJson(enviar(httpB,base+"/unirse",null,Map.of("nombre","Jefe")).body(),Vistas.AccesoSala.class);
             var a=new Cliente(httpA,acceso.playerToken(),"Fali"); var b=new Cliente(httpB,union.playerToken(),"Jefe");
-            assertEquals(List.of("Fali","Jefe"),estado(a,base).jugadores()); assertFalse(estado(b,base).soyAnfitrion());
+            var httpC=HttpClient.newHttpClient();
+            var tercera=gson.fromJson(enviar(httpC,base+"/unirse",null,Map.of("nombre","Clara")).body(),Vistas.AccesoSala.class);
+            var c=new Cliente(httpC,tercera.playerToken(),"Clara");
+            assertEquals(List.of("Fali","Jefe","Clara"),estado(a,base).jugadores()); assertFalse(estado(b,base).soyAnfitrion());
             assertEquals(200,enviar(httpA,base+"/iniciar",a.token,Map.of("revision",estado(a,base).revision())).statusCode());
             var usados=new HashSet<String>();
             for(int paso=0;paso<1500;paso++) {
                 var vistaA=estado(a,base); var vistaB=estado(b,base);
                 assertEquals(vistaA.revision(),vistaB.revision()); assertEquals(vistaA.partida().actual(),vistaB.partida().actual());
                 if(vistaA.fase().equals("FINALIZADA")) break;
-                var actor=vistaA.partida().actual().equals("Fali")?a:b;
-                var inactivo=actor==a?b:a; var s=actor==a?vistaA:vistaB;
+                var actor=vistaA.partida().actual().equals("Fali")?a:vistaA.partida().actual().equals("Jefe")?b:c;
+                var inactivo=actor==a?b:a; var s=estado(actor,base);
                 assertTrue((actor==a?vistaB:vistaA).partida().seleccion().isEmpty());
                 assertTrue((actor==a?vistaB:vistaA).partida().acciones().isEmpty());
                 assertEquals(403,enviar(inactivo.http,base+"/accion",inactivo.token,new Vistas.Peticion(s.revision(),"COBRAR",null,null,null)).statusCode());

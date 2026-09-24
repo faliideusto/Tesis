@@ -49,6 +49,21 @@ body:has(.hand .game-card:is(:hover,:focus-visible)) #tooltip{display:none}
 .board .action-hint{display:none}
 .board footer:has(.actions:empty){display:none}
 
+/* Derived from the current snapshot, with no accumulated polling effects. */
+.board .rival.active,.board .local-panel.active,.board .local-panel.active.fx-active{animation:none;filter:drop-shadow(0 0 3px #82c7a8) drop-shadow(0 0 9px #489a7777)}
+.action-bolts{position:absolute;right:16%;top:30%;display:flex;gap:3px;pointer-events:none}
+.local-panel:has(.action-bolts) .rival-body h2,.rival:has(.action-bolts) .rival-body strong{padding-right:34px}
+.action-bolt{width:clamp(10px,3.5cqw,14px);height:clamp(14px,4.5cqw,18px);stroke:#b9a273;stroke-width:1.5;fill:#132337}
+.action-bolt.available{fill:#e6c578;stroke:#ffe1a0}
+.action-bolt.spent{opacity:.55}
+.player-role-preview{display:none;position:absolute;top:0;left:0;width:240px;max-height:calc(100svh - 16px);overflow:auto;padding:14px;background:#0b192af7;border:1px solid #a48148;border-radius:6px;box-shadow:0 12px 24px #0009;z-index:30;pointer-events:auto;text-align:center}
+.player-role-preview .role-card{width:180px;margin:0 auto 28px}
+.player-role-preview .role-cadence{color:#dbc695}
+.player-role-preview p{font:13px/1.4 var(--ui);color:#eadfc9;margin:8px 0 0}
+.board .rival-seat:has(>.rival:is(:hover,:focus-visible)),.board .rival-seat:has(>.player-role-preview:hover){z-index:30}
+.rival:is(:hover,:focus-visible)+.player-role-preview,.player-role-preview:hover,.local-panel:has(.local-role-button:is(:hover,:focus-visible))>.player-role-preview{display:block}
+.board .local-panel:has(.local-role-button:is(:hover,:focus-visible)),.board .local-panel:has(.player-role-preview:hover){z-index:30}
+
 @media(min-width:1000px) and (min-height:650px){
  .board,.board[data-players]{display:block;height:100svh;min-height:0;max-height:100svh;overflow:hidden;padding:0 3vw;background-size:100% 100%;--table-card-width:clamp(65px,9.8svh,116px)}
  .board .board-header{height:65px;position:relative;z-index:2;pointer-events:none}.board .board-header button{pointer-events:auto}.board .brand{position:absolute;left:50%;top:-8px;transform:translateX(-50%);width:145px;height:90px}.board .turn-panel{left:0;transform:none;width:265px;min-height:62px;height:62px}.board .utility{margin-left:auto}

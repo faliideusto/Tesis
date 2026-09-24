@@ -2,7 +2,7 @@ import {api} from './api.js';
 import {img, esc} from './dom.js';
 import {board} from './board.js';
 import {ideaCard, roleCard} from './cards.js';
-import {studies, studyRow} from './players.js';
+import {studies, articleChoices} from './players.js';
 import {dialog, closeDialog, phaseDialog} from './dialogs.js';
 import {notify, feedback, resetFeedback} from './feedback.js';
 import {transition, settled, resetEffects, chooseRole, chooseVeto, victory} from './effects.js';
@@ -133,12 +133,9 @@ function chooseAction(id) {
   const ethics = id === 'HABILIDAD' && action.opciones.every(o => o.rol);
   if (ethics) content = `<section class="ethics-selection"><p class="ethics-classification">EXPEDIENTE RESERVADO · REVISIÓN ACADÉMICA</p><p>Elige el personaje que deseas vetar. Esta decisión solo la ves tú.</p><div class="ethics-grid">${action.opciones.map((o,i) => roleCard({...o.rol,indice:i},{command:'veto-choice'})).join('')}</div><p class="ethics-status" role="status">Selecciona una carta para registrar el veto.</p></section>`;
   else if (id === 'INICIAR') content = `<div class="idea-selection">${state.mano.map(c => ideaCard(c,{command:'start-choice',disabled:!action.opciones.some(o => o.indice === c.indice)})).join('')}</div>`;
-  else if (id === 'TRABAJAR') {
-    const player = state.jugadores.find(p => p.nombre === state.yo);
-    const allowed = new Set(action.opciones.map(o => o.indice));
-    content = `<div class="study-selector">${player.estudios.filter(e => allowed.has(e.indice)).map(e => studyRow(e, player.nombre, {selection:true})).join('')}</div>`;
-  } else content = `<div class="target-list">${action.opciones.map((o,i) => `<button class="target-button" data-command="target" data-index="${i}">${esc(o.etiqueta)}<span>Seleccionar</span></button>`).join('')}</div>`;
-  dialog(ethics ? 'Comité de Ética' : action.nombre, `<p class="decision-copy">${esc(action.descripcion)}</p>${content}`, {wide:ethics || id === 'INICIAR'});
+  else if (action.opciones.every(o => Number.isInteger(o.indice))) content = articleChoices(action,state);
+  else content = `<div class="target-list">${action.opciones.map((o,i) => `<button class="target-button" data-command="target" data-index="${i}">${esc(o.etiqueta)}<span>Seleccionar</span></button>`).join('')}</div>`;
+  dialog(ethics ? 'Comité de Ética' : action.nombre, `<p class="decision-copy">${esc(action.descripcion)}</p>${content}`, {wide:ethics || action.opciones.some(o => Number.isInteger(o.indice))});
 }
 function inspect(c, study = null, player = null) {
   const canStart = !study && state.acciones.find(a => a.id === 'INICIAR')?.opciones.some(o => o.indice === c.indice)
@@ -175,6 +172,12 @@ document.addEventListener('click', async e => {
       break;
     }
     case 'action': chooseAction(button.dataset.action); break;
+    case 'unavailable-role': {
+      const r = state.catalogoSeleccion.find(r => r.orden === Number(button.dataset.order));
+      if (!r) break;
+      dialog('No disponible', `<div class="role-confirm">${roleCard(r,{command:'noop'})}<div><h2>${esc(r.nombre)}</h2><p>${esc(r.habilidad)}</p><button class="plain-button" data-command="back-roles">Volver a los personajes</button></div></div>`);
+      break;
+    }
     case 'role': {
       const choosingState=state;
       stopPolling();
@@ -186,7 +189,7 @@ document.addEventListener('click', async e => {
       break;
     }
     case 'back-roles': phaseDialog(state); break;
-    case 'confirm-role': act('SELECCIONAR',{indice:selectedRole.indice}); break;
+    case 'confirm-role': if (selectedRole && state.seleccion.some(r => r.indice === selectedRole.indice && r.nombre === selectedRole.nombre)) act('SELECCIONAR',{indice:selectedRole.indice}); break;
     case 'veto-choice': {
       const choosingState=state, option=pendingAction.opciones[index];
       stopPolling(); visualBusy=true;

@@ -13,6 +13,7 @@ export async function runEffectsTests(root) {
     class Element {
       constructor(name='') {this.name=name; this.style={visibility:''}; this.dataset={}; this.isConnected=true; this.classList={toggle(){}};}
       setAttribute() {} removeAttribute() {}
+      closest() {return null;}
       getBoundingClientRect() {return {left:10,top:20,width:100,height:80,bottom:100,right:110};}
       querySelector(selector) {return selector.includes('resource') || selector==='.ethics-review' || selector==='button' ? counter : null;}
       append(...children) {nodes.push(...children);}

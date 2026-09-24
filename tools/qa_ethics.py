@@ -42,7 +42,8 @@ with sync_playwright() as p:
         pages.append(page)
     page=pages[0]
     page.locator('[data-action=HABILIDAD]').click()
-    cards=page.locator('.ethics-grid .role-card');expect(cards).to_have_count(6)
+    cards=page.locator('.ethics-grid .role-card');expect(cards).to_have_count(5)
+    assert not cards.filter(has_text='Decana').count()
     for _ in range(50):
         if cards.locator('img').evaluate_all('(xs)=>xs.every(x=>x.complete && x.naturalWidth>0)'): break
         page.wait_for_timeout(100)

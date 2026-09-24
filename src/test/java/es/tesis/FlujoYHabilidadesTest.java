@@ -216,8 +216,10 @@ class FlujoYHabilidadesTest {
         var motor = comenzar(new ComiteEticaHabilidad(), new DecanaHabilidad());
         Jugador decana = conRol(motor, 2);
         assertTrue(motor.contexto().estaProtegido(decana.nombre()));
-        motor.ejecutarAccion(new UsarHabilidadAccion("Rol 1"));
+        assertThrows(IllegalArgumentException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion("Rol 1")));
+        assertFalse(motor.partida().habilidadUsada());
         assertFalse(motor.contexto().estaVetado(decana.nombre()));
+        motor.ejecutarAccion(new UsarHabilidadAccion("Descartado"));
         motor.avanzarFase();
         assertSame(decana, motor.contexto().jugadorActual());
         motor.ejecutarAccion(new CobrarAccion());

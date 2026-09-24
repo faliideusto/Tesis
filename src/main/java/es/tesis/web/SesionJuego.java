@@ -142,13 +142,16 @@ public final class SesionJuego {
         var mano = privada ? IntStream.range(0, propio.cartasIdea().size()).mapToObj(i -> CatalogoVisual.carta(propio.cartasIdea().get(i), i)).toList() : List.<Vistas.Carta>of();
         var roles = puedeActuar && p.faseActual() == FaseDeTurno.SELECCION_ROLES
                 ? IntStream.range(0, p.mazoRoles().cartas().size()).mapToObj(i -> CatalogoVisual.rol(p.mazoRoles().cartas().get(i), i)).toList() : List.<Vistas.Rol>of();
+        // A single sentinel covers both discarded and chosen roles; never expose the reason or owner.
+        var catalogoSeleccion = roles.isEmpty() ? List.<Vistas.Rol>of() : p.mazoRoles().cartasIniciales().stream()
+                .map(r -> CatalogoVisual.rol(r, p.mazoRoles().cartas().indexOf(r))).toList();
         boolean pendiente = p.faseActual() == FaseDeTurno.TURNO_JUGADOR && actual.personaje().habilidad().requiereResolucionAlInicio() && !p.habilidadUsada();
         boolean agotada = p.mazoIdeas().estaVacio() && p.jugadores().stream().allMatch(j -> j.cartasIdea().isEmpty()
                 && j.estudios().stream().allMatch(e -> e.estado() == EstadoEstudio.PUBLICADO))
                 && !motor.contexto().reglas().debeFinalizarPartida(motor.contexto());
         return new Vistas.Estado(revision, p.faseActual().name(), p.ronda(), actual.nombre(), local && bloqueada,
-                p.mazoIdeas().cartas().size(), p.mazoRoles().cartas().size(), (local || puedeActuar) && p.faseActual() == FaseDeTurno.TURNO_JUGADOR ? 2 - p.accionesBaseRealizadas() : 0,
-                puedeActuar && pendiente, jugadores, mano, roles, (local ? bloqueada : !puedeActuar) ? List.of() : acciones(), List.copyOf(eventos),
+                p.mazoIdeas().cartas().size(), p.mazoRoles().cartas().size(), p.faseActual() == FaseDeTurno.TURNO_JUGADOR ? 2 - p.accionesBaseRealizadas() : 0,
+                puedeActuar && pendiente, jugadores, mano, roles, catalogoSeleccion, (local ? bloqueada : !puedeActuar) ? List.of() : acciones(), List.copyOf(eventos),
                 p.ganadores().stream().map(Jugador::nombre).toList(), motor.contexto().reglas().debeFinalizarPartida(motor.contexto()),
                 agotada ? "No quedan ideas ni estudios por completar y nadie ha publicado tres artículos. El motor no define un cierre para esta situación; podéis consultar el resultado actual o empezar otra partida." : "");
     }
@@ -184,7 +187,7 @@ public final class SesionJuego {
         String motivo = validar(() -> c.reglas().validarHabilidad(c));
         var opciones = new ArrayList<Vistas.Opcion>();
         if (h instanceof ComiteEticaHabilidad) {
-            c.partida().mazoRoles().cartasIniciales().stream().filter(r -> r != j.personaje())
+            c.partida().mazoRoles().cartasIniciales().stream().filter(r -> r != j.personaje() && !(r.habilidad() instanceof DecanaHabilidad))
                     .forEach(r -> opciones.add(new Vistas.Opcion(r.nombre(), null, r.nombre(), CatalogoVisual.rol(r, -1))));
         } else if (h instanceof EstadisticoHabilidad || h instanceof PreDoctoralHabilidad) {
             for (int i = 0; i < j.estudios().size(); i++) {

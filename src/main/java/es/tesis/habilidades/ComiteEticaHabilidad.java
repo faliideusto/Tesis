@@ -17,6 +17,7 @@ public class ComiteEticaHabilidad implements HabilidadPersonaje {
                 .filter(r -> r.nombre().equalsIgnoreCase(objetivo)).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No existe ese rol"));
         if (rol == actor.personaje()) throw new IllegalArgumentException("El Comité no puede vetarse a sí mismo");
+        if (rol.habilidad() instanceof DecanaHabilidad) throw new IllegalArgumentException("El Comité no puede vetar a la Decana");
         // Nombrar un rol descartado o no elegido consume la habilidad sin revelar quién lo tiene.
         contexto.partida().jugadores().stream()
                 .filter(j -> j.personaje() == rol)

@@ -1,5 +1,5 @@
 import {img, esc, resource} from './dom.js';
-import {ideaCardContents} from './cards.js';
+import {ideaCardContents, roleCard} from './cards.js';
 
 function playerBadge(p, local = false) {
   const name = local ? `<h2>${esc(p.nombre)}</h2>` : `<strong>${esc(p.nombre)}</strong>`;
@@ -7,8 +7,8 @@ function playerBadge(p, local = false) {
     <span class="rival-body">${name}<span class="rival-role">${p.rol ? esc(p.rol.nombre) : 'Personaje reservado'}</span>
     <span class="resources">${resource('moneda', p.monedas, 'Monedas')}${resource('prestigio', p.prestigio, 'Prestigio')}<span class="hand-count" aria-label="${p.cartas} ideas en mano">${img('cartas/reverso_idea.png')} ${p.cartas}</span></span></span>`;
 }
-export function rival(p) {
-  return `<section class="rival-seat" aria-label="Academia de ${esc(p.nombre)}"><button class="rival ${p.activo ? 'active' : ''}" data-command="rival" data-player="${esc(p.nombre)}" aria-label="Ver estudios de ${esc(p.nombre)}">${playerBadge(p)}</button>${tableStudies(p)}</section>`;
+export function rival(p, state = {}) {
+  return `<section class="rival-seat" aria-label="Academia de ${esc(p.nombre)}"><button class="rival ${p.activo ? 'active' : ''}" data-command="rival" data-player="${esc(p.nombre)}" aria-label="Ver estudios de ${esc(p.nombre)}">${playerBadge(p)}${actionBolts(p,state)}</button>${rolePreview(p)}${tableStudies(p)}</section>`;
 }
 // Shared tabletop presentation; modal lists retain their existing renderer below.
 export function tableStudies(p, own = false) {
@@ -18,9 +18,50 @@ export function tableStudies(p, own = false) {
   };
   return `<div class="rival-studies academy-tray">${group(false, 'En desarrollo')}${group(true, 'Publicados')}<div class="academy-hand" aria-label="${p.cartas} ideas en mano">${img('cartas/reverso_mesa.png')}<span>${p.cartas} ${p.cartas === 1 ? 'idea' : 'ideas'}</span></div></div>`;
 }
+export function rolePreview(p) {
+  return p.rol ? `<div class="player-role-preview" aria-label="Personaje de ${esc(p.nombre)}">${roleCard(p.rol,{command:'noop'})}<p>${esc(p.rol.habilidad)}</p></div>` : '';
+}
+export function positionRolePreview(anchor) {
+  const parent = anchor.parentElement;
+  const preview = parent.querySelector('.player-role-preview');
+  if (!preview) return;
+  const frame = (anchor.matches('.local-role-button') ? parent : anchor).getBoundingClientRect(), bounds = parent.getBoundingClientRect();
+  const width = preview.offsetWidth, height = preview.offsetHeight, gap = 8;
+  if (!height) return;
+  let x = frame.left + (frame.width - width) / 2, y = frame.bottom + gap;
+  if (y + height > innerHeight - gap) {
+    y = frame.top - height - gap;
+    if (y < gap) {
+      x = frame.right + gap + width <= innerWidth ? frame.right + gap : frame.left - width - gap;
+      y = frame.top;
+    }
+  }
+  x = Math.max(gap, Math.min(x, innerWidth - width - gap));
+  y = Math.max(gap, Math.min(y, innerHeight - height - gap));
+  // Position relative to the plaque's parent, never to the height of its article tray.
+  preview.style.left = `${x - bounds.left}px`;
+  preview.style.top = `${y - bounds.top}px`;
+}
+export function actionBolts(p, state) {
+  const active = state.fase === 'TURNO_JUGADOR' && p.activo;
+  const remaining = active ? state.accionesRestantes : 0;
+  return `<span class="action-bolts" role="img" aria-label="${active ? `${remaining} acciones restantes` : 'Fuera de turno'}">${[1,2].map(n => `<svg class="action-bolt ${n <= remaining ? 'available' : 'spent'}" viewBox="0 0 20 28" aria-hidden="true"><path d="M11 2 3 15h6l-1 11 9-15h-6z"/></svg>`).join('')}</span>`;
+}
 export function localPlayer(p, state) {
-  return `${playerBadge(p, true)}<span class="sr-only">Tu academia. ${state.accionesRestantes} acciones restantes.</span>
+  return `${playerBadge(p, true)}${actionBolts(p,state)}${rolePreview(p)}<span class="sr-only">Tu academia.</span>
     ${p.rol ? `<button class="local-role-button" data-command="ability-detail" aria-label="Ver personaje de ${esc(p.nombre)}: ${esc(p.rol.nombre)}"></button>` : ''}`;
+}
+
+// Public study data plus the option index preserve ownership even for duplicate cards.
+export function studyChoice(e, owner, optionIndex) {
+  return `<div class="article-choice"><strong class="article-owner">${esc(owner)}</strong><button class="game-card idea-card" data-command="target" data-index="${optionIndex}" aria-label="${esc(e.carta.nombre)} de ${esc(owner)}, ${e.trabajo} de ${e.carta.trabajo} trabajo">${ideaCardContents(e.carta)}</button><strong>${esc(e.carta.nombre)}</strong><span>${e.trabajo} / ${e.carta.trabajo} trabajo · ${e.carta.prestigio + (e.prestigioExtra || 0)} prestigio</span><progress value="${e.trabajo}" max="${e.carta.trabajo}" aria-label="Progreso de ${esc(e.carta.nombre)} de ${esc(owner)}"></progress><small>${e.publicado ? 'Publicado' : 'En desarrollo'}</small></div>`;
+}
+export function articleChoices(action, state) {
+  return `<div class="article-selector">${action.opciones.map((o,i) => {
+    const owner = state.jugadores.find(p => p.nombre === (o.objetivo || state.yo));
+    const study = owner?.estudios.find(e => e.indice === o.indice);
+    return study ? studyChoice(study,owner.nombre,i) : '';
+  }).join('')}</div>`;
 }
 export function studies(p, interactive = true) {
   const development = p.estudios.filter(e => !e.publicado), published = p.estudios.filter(e => e.publicado);

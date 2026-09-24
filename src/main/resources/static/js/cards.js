@@ -12,10 +12,11 @@ export function ideaCardContents(c) {
     <span class="card-stats" aria-hidden="true">${[c.coste,c.trabajo,c.prestigio].map(value => `<span class="card-stat"><b>${value}</b></span>`).join('')}</span>
     ${c.ingresoPorTurno ? `<span class="card-income">+${c.ingresoPorTurno} monedas / turno</span>` : ''}`;
 }
-export function roleCard(r, {command = 'role', selected = false} = {}) {
+export function roleCard(r, {command = 'role', selected = false, unavailable = false} = {}) {
   const cadence = r.habilidad.match(/(?:Una vez por turno\.|Automática\.|sin límite de usos\.)$/i)?.[0] || '';
   const ability = r.habilidad.replace(/\s*(Una vez por turno\.|Automática\.)$/i, '').replace(/, sin límite de usos\.$/i, '.');
-  return `<button class="game-card role-card ${selected ? 'selected' : ''}" data-command="${command}" data-index="${r.indice}" aria-label="${esc(r.nombre)}, orden ${r.orden}. ${esc(r.habilidad)}">
+  return `<button class="game-card role-card ${selected ? 'selected' : ''} ${unavailable ? 'unavailable' : ''}" data-command="${command}" data-index="${r.indice}" data-order="${r.orden}" aria-label="${unavailable ? 'No disponible. ' : ''}${esc(r.nombre)}, orden ${r.orden}. ${esc(r.habilidad)}">
+    ${unavailable ? '<span class="role-unavailable">No disponible</span>' : ''}
     ${img(r.arte, 'role-art')}${img('cartas/marco_personaje.png', 'card-frame')}
     <span class="role-order"><b>${r.orden}</b></span><span class="card-name">${esc(r.nombre)}</span>
     <span class="role-ability">${esc(ability)}</span><span class="role-cadence">${esc(cadence)}</span>

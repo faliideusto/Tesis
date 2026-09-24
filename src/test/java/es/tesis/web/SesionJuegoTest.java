@@ -106,7 +106,7 @@ class SesionJuegoTest {
         var mesa = conRol(1); var juego = mesa.juego(); var s = mesa.estado();
         assertTrue(s.habilidadPendiente());
         assertTrue(s.acciones().stream().filter(a -> !a.id().equals("HABILIDAD")).noneMatch(Vistas.Accion::disponible));
-        s = action(juego,s,"HABILIDAD",null,"Decana");
+        s = action(juego,s,"HABILIDAD",null,"Pre-Doctoral");
         assertFalse(s.habilidadPendiente()); assertEquals(2,s.accionesRestantes());
         assertTrue(s.acciones().stream().filter(a -> a.id().equals("COBRAR")).findFirst().orElseThrow().disponible());
     }

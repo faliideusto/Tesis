@@ -1,9 +1,13 @@
 import {img, esc, update} from './dom.js';
 import {ideaCard} from './cards.js';
-import {rival, localPlayer, tableStudies} from './players.js';
+import {rival, localPlayer, tableStudies, positionRolePreview} from './players.js';
 
 const icons = {COBRAR:'cobrar', PENSAR:'pensar', INICIAR:'iniciar_estudio', TRABAJAR:'trabajar', FIN_TURNO:'finalizar_turno'};
 const renderedHands = new WeakMap();
+const previewBoards = new WeakSet();
+window.addEventListener('resize', () => {
+  for (const anchor of document.querySelectorAll('.rival:is(:hover,:focus-visible), .local-role-button:is(:hover,:focus-visible)')) positionRolePreview(anchor);
+});
 export function board(state) {
   if (!document.getElementById('board')) document.getElementById('app').innerHTML = `
     <section id="board" class="board" aria-label="Mesa de Tesis">
@@ -14,19 +18,25 @@ export function board(state) {
       <section class="player-zone"><div class="local-academy"><aside id="local" class="local-panel"></aside><section id="studies" class="studies-panel" aria-label="Tus artículos en mesa"></section></div><section class="hand-zone" aria-label="Tu mano"><span class="hand-caption">TU MANO · IDEAS POR EXPLORAR</span><div id="hand" class="hand"></div></section></section>
       <footer><p id="action-hint" class="action-hint"></p><div id="actions" class="actions"></div></footer>
     </section>`;
+  const table = document.getElementById('board');
+  if (!previewBoards.has(table)) {
+    previewBoards.add(table);
+    for (const type of ['pointerover','focusin']) table.addEventListener(type, event => {
+      const anchor = event.target.closest('.rival, .local-role-button');
+      if (anchor) positionRolePreview(anchor);
+    });
+  }
   const me = state.jugadores.find(p => p.nombre === state.yo);
   const others = state.jugadores.filter(p => p !== me);
   document.getElementById('board').dataset.players = state.jugadores.length;
   document.getElementById('board').classList.toggle('privacy', state.bloqueada);
   update('turn-panel', `<span>RONDA ${state.ronda}${state.ultimaRonda ? ' · ÚLTIMA' : ''}</span><strong>${state.fase === 'SELECCION_ROLES' ? 'Elige ' : state.fase === 'FIN_PARTIDA' ? 'Partida finalizada' : state.fase === 'FIN_RONDA' ? 'Cierre de ronda' : 'Turno de '}${['SELECCION_ROLES','TURNO_JUGADOR'].includes(state.fase) ? esc(state.actual) : ''}</strong>`);
   document.getElementById('rivals').dataset.count = others.length;
-  update('rivals', others.map(p=>rival({...p,activo:state.fase==='TURNO_JUGADOR' && p.activo})).join(''));
-  if (!document.getElementById('activity-current')) update('decks', `<div class="deck character-deck">${img('ui/marco_mazo.png','deck-base')}${img('cartas/reverso_personaje.png','deck-back')}<b class="deck-count">${state.roles}</b><span>PERSONAJES</span></div>
-    <section class="table-activity" aria-label="Estado actual de la mesa"><span class="eyebrow">AHORA EN LA MESA</span><div id="activity-current" role="status" aria-live="polite" aria-atomic="true"></div><button class="text-button" data-command="history">Ver crónica</button></section>
-    <div class="deck idea-deck ${state.ideas === 0 ? 'exhausted' : ''}">${img('ui/marco_mazo.png','deck-base')}${img('cartas/reverso_idea.png','deck-back')}<b class="deck-count">${state.ideas}</b><span>IDEAS${state.ideas === 0 ? ' · AGOTADO' : ''}</span></div>`);
-  document.querySelector('.character-deck .deck-count').textContent = state.roles;
-  document.querySelector('.idea-deck .deck-count').textContent = state.ideas;
+  update('rivals', others.map(p=>rival({...p,activo:state.fase==='TURNO_JUGADOR' && p.activo},state)).join(''));
+  if (!document.getElementById('activity-current')) update('decks', `<section class="table-activity" aria-label="Estado actual de la mesa"><span class="eyebrow">AHORA EN LA MESA</span><div id="activity-current" role="status" aria-live="polite" aria-atomic="true"></div><button class="text-button" data-command="history">Ver crónica</button></section>`);
+  document.getElementById('local').classList.toggle('active', state.fase === 'TURNO_JUGADOR' && me.activo);
   update('local', localPlayer(me, state)); update('studies', tableStudies(me, true));
+  for (const anchor of table.querySelectorAll('.rival:is(:hover,:focus-visible), .local-role-button:is(:hover,:focus-visible)')) positionRolePreview(anchor);
   document.getElementById('studies').classList.toggle('no-studies', !me.estudios.length);
   document.getElementById('hand').style.setProperty('--hand-count', Math.max(1,state.mano.length));
   const hand = document.getElementById('hand');

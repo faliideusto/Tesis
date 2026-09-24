@@ -59,7 +59,7 @@ with sync_playwright() as p:
     }""")
     expect(page.locator('.flying-card img')).to_have_attribute('src', '/assets/Tesis-assets/cartas/reverso_idea.png')
     expect(page.locator('#activity-current')).to_contain_text('+1 ideas')
-    assert page.locator('.idea-deck .deck-count').inner_text() == '7'
+    assert page.locator('.idea-deck, .character-deck').count() == 0
     assert page.locator('.rival-portrait img').get_attribute('src').endswith('reverso_personaje.png')
 
     # Work, review and publication use the public study identity, including duplicates.

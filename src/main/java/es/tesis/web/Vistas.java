@@ -23,7 +23,7 @@ public final class Vistas {
                          Integer estudio, Integer cantidad, boolean robo, Rol rolPublico) {}
     public record Estado(long revision, String fase, int ronda, String actual, boolean bloqueada,
                          int ideas, int roles, int accionesRestantes, boolean habilidadPendiente,
-                         List<Jugador> jugadores, List<Carta> mano, List<Rol> seleccion,
+                         List<Jugador> jugadores, List<Carta> mano, List<Rol> seleccion, List<Rol> catalogoSeleccion,
                          List<Accion> acciones, List<Evento> eventos, List<String> ganadores,
                          boolean ultimaRonda, String aviso) {}
     public record Peticion(Long revision, String tipo, Integer indice, String objetivo, List<String> nombres) {}

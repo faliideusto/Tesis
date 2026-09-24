@@ -19,7 +19,7 @@ modal.addEventListener('cancel', e => { if (modal.dataset.locked === 'true') e.p
 
 export function phaseDialog(state) {
   if (state.fase === 'SELECCION_ROLES' && state.seleccion.length) {
-    dialog('Elige tu personaje', `<div class="role-selection">${state.seleccion.map(r => roleCard(r)).join('')}</div><p class="selection-caption">Selecciona una carta para leer su habilidad y confirmar tu elección. Puedes cerrar esta ventana para mirar la mesa.</p>`, {wide:true, subtitle:`${state.actual} · el orden del personaje determina cuándo jugarás.`});
+    dialog('Elige tu personaje', `<div class="role-selection">${(state.catalogoSeleccion || state.seleccion).map(r => roleCard(r, {unavailable:r.indice < 0, command:r.indice < 0 ? 'unavailable-role' : 'role'})).join('')}</div><p class="selection-caption">Selecciona una carta para leer su habilidad y confirmar tu elección. Puedes cerrar esta ventana para mirar la mesa.</p>`, {wide:true, subtitle:`${state.actual} · el orden del personaje determina cuándo jugarás.`});
   } else if (state.fase === 'FIN_RONDA') {
     dialog(`La ronda ${state.ronda} ha terminado`, `<div class="round-summary">${ranking(state)}<p>${state.ultimaRonda ? 'Se ha alcanzado la tercera publicación. Es hora de reconocer el legado de cada academia.' : 'Los personajes regresan al mazo. Una nueva ronda trae nuevas posibilidades.'}</p>${state.acciones.some(a=>a.id==='SIGUIENTE_RONDA') ? `<button class="gold-button" data-command="next-round">${state.ultimaRonda ? 'Descubrir el resultado' : 'Comenzar siguiente ronda'}</button>` : `<p>Esperando a ${esc(state.actual)} para continuar.</p>`}</div>`, {locked:true});
   } else if (state.fase === 'FIN_PARTIDA') {

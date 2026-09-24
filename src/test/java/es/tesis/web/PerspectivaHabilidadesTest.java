@@ -85,7 +85,14 @@ class PerspectivaHabilidadesTest {
     }
     @Test void decanaProtegeAntesDeSuTurnoSinEnviarSuRol() {
         var m=preparar(1,4); assertNull(m.ver(m.a).jugadores().get(1).rol());
-        m.actuar(m.a,"HABILIDAD",null,m.b.personaje().nombre());
+        var antes = m.ver(m.a);
+        var opciones = antes.acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow().opciones();
+        assertTrue(opciones.stream().noneMatch(o -> o.objetivo().equals("Decana")));
+        for (String nombre : List.of("Decana", "DECANA", "decana"))
+            assertThrows(IllegalArgumentException.class, () -> m.actuar(m.a,"HABILIDAD",null,nombre));
+        assertEquals(antes, m.ver(m.a));
+        assertNull(m.ver(m.a).jugadores().get(1).rol());
+        m.actuar(m.a,"HABILIDAD",null,"Estadístico");
         m.actuar(m.a,"FIN_TURNO",null,null); terminarHasta(m, m.b);
         assertEquals(m.b.nombre(),m.ver(m.b).actual());
         assertEquals("TURNO_JUGADOR",m.ver(m.b).fase());
@@ -143,7 +150,7 @@ class PerspectivaHabilidadesTest {
     @Test void vetoPrivadoUsaCatalogoYRevelaPersonajeSoloAlResolver() {
         var m=preparar(1,6);
         var opciones=m.ver(m.a).acciones().stream().filter(a->a.id().equals("HABILIDAD")).findFirst().orElseThrow().opciones();
-        assertEquals(6,opciones.size());
+        assertEquals(5,opciones.size());
         for(var opcion:opciones) {
             var original=FabricaMazos.crearRoles().cartas().stream().filter(r->r.nombre().equals(opcion.objetivo())).findFirst().orElseThrow();
             assertEquals(CatalogoVisual.rol(original,-1),opcion.rol());
@@ -226,5 +233,46 @@ class PerspectivaHabilidadesTest {
         assertThrows(IllegalArgumentException.class,()->m.actuar(m.a,"HABILIDAD",0,"Intruso"));
         m.actuar(m.a,"HABILIDAD",0,m.b.nombre()); assertEquals(0,m.b.estudios().get(0).trabajoAcumulado());
         assertEquals(1,m.a.monedas()); assertEquals(0,m.ver(m.b).jugadores().get(1).estudios().get(0).trabajo());
+    }
+
+    @Test void catalogoSeleccionNoDistingueElegidosYDescartadosNiSeEnviaAOtros() {
+        var s = new SesionJuego();
+        var jugadores = List.of(new Jugador("Ana"), new Jugador("Bruno"), new Jugador("Clara"));
+        s.crearJugadores(jugadores);
+        var actual = jugadores.stream().filter(j -> j.nombre().equals(s.estado().actual())).findFirst().orElseThrow();
+        var antes = s.estado(actual);
+        assertEquals(7, antes.catalogoSeleccion().size());
+        assertEquals(2, antes.catalogoSeleccion().stream().filter(r -> r.indice() == -1).count());
+        var elegido = antes.seleccion().get(0);
+        s.actuar(actual, new Vistas.Peticion(antes.revision(),"SELECCIONAR",elegido.indice(),null,null));
+        var siguiente = jugadores.stream().filter(j -> j.nombre().equals(s.estado().actual())).findFirst().orElseThrow();
+        var despues = s.estado(siguiente);
+        assertEquals(7, despues.catalogoSeleccion().size());
+        assertEquals(3, despues.catalogoSeleccion().stream().filter(r -> r.indice() == -1).count());
+        assertTrue(despues.catalogoSeleccion().stream().anyMatch(r -> r.nombre().equals(elegido.nombre()) && r.indice() == -1));
+        assertNull(despues.jugadores().stream().filter(j -> j.nombre().equals(actual.nombre())).findFirst().orElseThrow().rol());
+        assertTrue(s.estado(actual).catalogoSeleccion().isEmpty());
+        for (var r : antes.catalogoSeleccion()) if (r.indice() == -1) assertTrue(despues.catalogoSeleccion().contains(r));
+        assertThrows(IllegalArgumentException.class, () -> s.actuar(siguiente, new Vistas.Peticion(despues.revision(),"SELECCIONAR",-1,null,null)));
+        for (int i=0;i<10;i++) assertEquals(despues,s.estado(siguiente));
+    }
+
+    @Test void accionesRestantesSeDerivanDelMotorYCambianDePerspectivaAlPasarTurno() {
+        var m = preparar(2,7);
+        assertEquals(2,m.ver(m.a).accionesRestantes());
+        assertEquals(2,m.ver(m.b).accionesRestantes());
+        m.actuar(m.a,"COBRAR",null,null);
+        assertEquals(1,m.ver(m.a).accionesRestantes());
+        assertEquals(1,m.ver(m.b).accionesRestantes());
+        m.actuar(m.a,"PENSAR",null,null);
+        assertEquals(0,m.ver(m.a).accionesRestantes());
+        assertEquals(0,m.ver(m.b).accionesRestantes());
+        m.actuar(m.a,"FIN_TURNO",null,null);
+        var actual = m.ver(m.b).actual().equals(m.b.nombre()) ? m.b : m.c;
+        for (int i=0;i<10;i++) {
+            assertEquals(2,m.ver(actual).accionesRestantes());
+            assertEquals(2,m.ver(m.a).accionesRestantes());
+            assertEquals(1,m.ver(actual).jugadores().stream().filter(Vistas.Jugador::activo).count());
+        }
     }
 }

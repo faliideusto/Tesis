@@ -299,14 +299,14 @@ export async function transition(before, after) {
       if (e.tipo==='accion.trabajar') {
         const predoc=before.jugadores.find(p=>p.nombre===e.actor)?.rol?.nombre==='Pre-Doctoral';
         tasks.push(floating(`+${e.cantidad} trabajo${predoc?' · Pre-Doctoral':''}`,target,predoc?'research':'gold'),glow(target));
-        const progress=target?.querySelector('progress');
+        const progress=target?.querySelector('progress') || target?.closest('.table-study-slot')?.querySelector('progress');
         if (progress) tasks.push(progressTo(progress,nextStudy?.trabajo));
       }
       if (e.publicacion && nextStudy) {
         const third=nextPlayer.publicados>=3 && before.jugadores.find(p=>p.nombre===owner)?.publicados<3
           && visibleEvents.filter(item=>item.publicacion && item.actor===e.actor).at(-1)===e;
         const destination=third ? document.querySelector('.table-activity') : owner===after.yo
-          ? document.querySelector('#studies .study-scroll h3:last-of-type') : actor;
+          ? document.querySelector('#studies .publications h3') : actor;
         tasks.push(publication(nextStudy.carta.arte,study(owner,e.estudio),destination,third));
       }
       if (identities[e.tipo]) {

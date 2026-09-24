@@ -1,8 +1,9 @@
 import {img, esc, update} from './dom.js';
 import {ideaCard} from './cards.js';
-import {rival, localPlayer, studies} from './players.js';
+import {rival, localPlayer, tableStudies} from './players.js';
 
 const icons = {COBRAR:'cobrar', PENSAR:'pensar', INICIAR:'iniciar_estudio', TRABAJAR:'trabajar', FIN_TURNO:'finalizar_turno'};
+const renderedHands = new WeakMap();
 export function board(state) {
   if (!document.getElementById('board')) document.getElementById('app').innerHTML = `
     <section id="board" class="board" aria-label="Mesa de Tesis">
@@ -10,7 +11,7 @@ export function board(state) {
       <div id="turn-panel" class="turn-panel" aria-live="polite"></div><nav class="utility"><button data-command="history">Crónica</button><button data-command="help">Reglas</button></nav></header>
       <div id="rivals" class="rivals"></div><section id="decks" class="decks" aria-label="Mazos de la mesa"></section>
       <div id="phase-message" class="phase-message"></div>
-      <section class="player-zone"><aside id="local" class="local-panel"></aside><section class="hand-zone" aria-label="Tu mano"><div id="hand" class="hand"></div></section><aside id="studies" class="studies-panel"></aside></section>
+      <section class="player-zone"><div class="local-academy"><aside id="local" class="local-panel"></aside><section id="studies" class="studies-panel" aria-label="Tus artículos en mesa"></section></div><section class="hand-zone" aria-label="Tu mano"><span class="hand-caption">TU MANO · IDEAS POR EXPLORAR</span><div id="hand" class="hand"></div></section></section>
       <footer><p id="action-hint" class="action-hint"></p><div id="actions" class="actions"></div></footer>
     </section>`;
   const me = state.jugadores.find(p => p.nombre === state.yo);
@@ -25,10 +26,16 @@ export function board(state) {
     <div class="deck idea-deck ${state.ideas === 0 ? 'exhausted' : ''}">${img('ui/marco_mazo.png','deck-base')}${img('cartas/reverso_idea.png','deck-back')}<b class="deck-count">${state.ideas}</b><span>IDEAS${state.ideas === 0 ? ' · AGOTADO' : ''}</span></div>`);
   document.querySelector('.character-deck .deck-count').textContent = state.roles;
   document.querySelector('.idea-deck .deck-count').textContent = state.ideas;
-  update('local', localPlayer(me, state)); update('studies', studies(me));
+  update('local', localPlayer(me, state)); update('studies', tableStudies(me, true));
   document.getElementById('studies').classList.toggle('no-studies', !me.estudios.length);
   document.getElementById('hand').style.setProperty('--hand-count', Math.max(1,state.mano.length));
-  update('hand', state.mano.map(c => ideaCard(c)).join('') || '<p class="empty-hand">Sin ideas en la mano<br><small>Consulta las acciones disponibles.</small></p>');
+  const hand = document.getElementById('hand');
+  const handHtml = state.mano.map(c => ideaCard(c)).join('') || '<p class="empty-hand">Sin ideas en la mano<br><small>Consulta las acciones disponibles.</small></p>';
+  // Keep the focused/hovered card alive when a public update leaves our hand unchanged.
+  if (renderedHands.get(hand) !== handHtml) {
+    hand.innerHTML = handHtml;
+    renderedHands.set(hand, handHtml);
+  }
   update('phase-message', state.aviso ? `<div class="table-notice">${esc(state.aviso)}</div>` : '');
   update('action-hint', state.actual !== state.yo && state.fase !== 'FIN_PARTIDA' ? `Esperando a ${esc(state.actual)}` : state.fase === 'TURNO_JUGADOR' ? state.habilidadPendiente ? 'Resuelve tu habilidad inicial' : state.accionesRestantes ? 'Elige tu próximo paso' : 'Acciones agotadas · puedes usar tu habilidad o terminar' : 'INVESTIGA · PUBLICA · TRASCIENDE');
   const phaseAction = state.fase === 'SELECCION_ROLES' && state.seleccion.length

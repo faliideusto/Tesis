@@ -32,6 +32,20 @@ with sync_playwright() as p:
     }""")
     page.wait_for_function('() => Array.from(document.images).every(i=>i.complete && i.naturalWidth>0)')
     page.screenshot(path=str(out/'mesa-5.png'))
+    # The raised card remains fully visible and lifts above its decorative lip.
+    study = page.locator('#studies .table-study').first
+    rest = study.bounding_box()
+    study.hover()
+    page.wait_for_timeout(250)
+    raised = study.bounding_box()
+    assert raised['y'] < rest['y'] - 5 and raised['width'] > rest['width']
+    assert study.evaluate('''e => {
+      const r=e.getBoundingClientRect();
+      return [[.1,.1],[.9,.1],[.1,.9],[.9,.9]].every(([x,y]) =>
+        e.contains(document.elementFromPoint(r.x+r.width*x,r.y+r.height*y)));
+    }'''), 'raised article is clipped or covered'
+    page.screenshot(path=str(out/'articulo-elevado.png'))
+    page.mouse.move(0,0)
     hand = page.locator('#hand .game-card').first
     before = hand.bounding_box()
     hand.hover(position={'x':30,'y':20})
@@ -68,7 +82,7 @@ with sync_playwright() as p:
                         assert a['x']+a['width']<=b['x']+1 or b['x']+b['width']<=a['x']+1 or a['y']+a['height']<=b['y']+1 or b['y']+b['height']<=a['y']+1,(count,width,'seat overlap',a,b)
                 assert local['y']+local['height']<height-70,(count,width,'local cards covered')
             # Both article lanes allow access to their last card, even in a crowded game.
-            track=page.locator('#studies .article-track').first
+            track=page.locator('#studies .article-scroll').first
             track.evaluate('(e)=>e.scrollLeft=e.scrollWidth')
             assert track.evaluate('(e)=>e.scrollLeft>0')
             if count==6:
@@ -97,6 +111,17 @@ with sync_playwright() as p:
             })'''),(count,width,'action blocked')
             page.screenshot(path=str(out/f'turno-{count}-{width}.png'))
             page.mouse.move(0,0)
+    # Regression: the local identity must clear the notice on wide, short windows.
+    for count in range(2,7):
+        for width,height in [(1920,900),(1920,800),(1536,864),(1672,941),(1366,768)]:
+            page.set_viewport_size({'width':width,'height':height})
+            page.evaluate('n=>draw(n)',count)
+            notice=page.locator('.table-activity').bounding_box()
+            identity=page.locator('.local-panel').bounding_box()
+            assert identity['y']>=notice['y']+notice['height']+6, (count,width,height,'identity overlaps notice',identity,notice)
+            if count==3 and width==1920 and height==900:
+                page.mouse.move(0,0)
+                page.screenshot(path=str(out/'aviso-sin-solape-1920-900.png'))
     page.set_viewport_size({'width':1366,'height':768})
     page.evaluate('draw(5)')
     page.evaluate("current.jugadores.forEach(p=>p.estudios=[]);boardModule.board(current)")

@@ -2,22 +2,19 @@
 .board{background-image:url('/assets/Tesis-assets/tablero/mesa_referencia.png')}
 .board .rival-seat{container-type:normal;pointer-events:auto}
 .board .brand img{visibility:hidden}
-.board .rival-studies.academy-tray{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) 15%;gap:10px;width:100%;padding:22px 22px 24px;background:none;border:0;overflow:visible;container-type:normal;pointer-events:auto;align-items:start}
+.board .rival-studies.academy-tray{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) 15%;gap:10px;width:100%;padding:22px 22px 24px;background:none;border:0;overflow:visible;container-type:normal;pointer-events:auto;align-items:stretch}
 .academy-tray:before{content:'';position:absolute;inset:-8px -6% -10px;background:url('/assets/Tesis-assets/ui/bandeja_referencia.png') center/100% 100% no-repeat;z-index:-1;pointer-events:none}
-/* One intrinsic-width support per group. The legend interrupts its top border;
-   the frame grows with the card row, rather than filling the grid column. */
+/* Full-size, aligned article boxes, with a separate plaque above each lane. */
 .board .rival-studies.academy-tray{container-type:inline-size}
-.article-group{min-width:0;position:relative;isolation:isolate;container-type:inline-size;height:calc(var(--table-card-width)*1.5 + 55px);--preferred-card:calc(var(--table-card-width)*1.2);--display-card:min(var(--preferred-card),calc((100cqw - 18px - (var(--article-count) - 1)*8px)/var(--article-count)))}
-.board .local-academy .article-group{--preferred-card:clamp(100px,13svh,140px);height:calc(var(--table-card-width)*1.5 + 71px)}
+.article-group{min-width:0;position:relative;isolation:isolate;container-type:inline-size;min-height:calc(var(--table-card-width)*1.5 + 55px);--preferred-card:calc(var(--table-card-width)*1.2);--display-card:min(var(--preferred-card),calc((100cqw - 18px - (var(--article-count) - 1)*8px)/var(--article-count)))}
+.board .local-academy .article-group{--preferred-card:clamp(100px,13svh,140px);min-height:calc(var(--table-card-width)*1.5 + 71px)}
 .article-group:has(.table-study:is(:hover,:focus-visible)){z-index:10}
 .article-scroll{position:relative;overflow-x:auto;overflow-y:hidden;padding:14px 8px 18px;margin:-14px -8px -18px;scrollbar-width:none;scrollbar-color:#97713e #081323;scroll-padding-inline:8px}
-.article-support{position:relative;isolation:isolate;width:fit-content;max-width:100%;min-width:0;margin:-22px auto 0;padding:3px 6px 4px;border:1px solid #a77e43a6;border-radius:5px;background:linear-gradient(115deg,#16202a85,#050c15a6 65%,#151a2180);box-shadow:inset 0 0 0 2px #030911a6,inset 0 -3px 5px #0009,0 2px 0 #392919,0 4px 6px #0008}
+.article-support{position:relative;isolation:isolate;width:100%;height:100%;min-height:calc(var(--display-card)*1.5 + 42px);min-width:0;margin:0;padding:8px 6px 4px;border:1px solid #8e795280;border-radius:4px;background:linear-gradient(115deg,#101d2bed,#060e18f5 65%,#101a27ed);box-shadow:inset 0 0 0 3px #030911a6,inset 0 0 0 4px #88724a30,0 2px 5px #0008}
 .article-support:after{content:'';position:absolute;left:3px;right:3px;bottom:1px;height:2px;background:linear-gradient(90deg,#5a4023,#c09a5a88 40%,#73542e);border-radius:0 0 3px 3px;pointer-events:none;z-index:3}
-.article-support legend{margin:0 auto;padding:0 5px 5px;max-width:none}
+.article-support legend{position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);margin:0;padding:0;max-width:none}
 .article-group h3{position:relative;display:flex;justify-content:center;align-items:baseline;gap:5px;width:max-content;margin:0;padding:4px 9px;border:1px solid #cba35a;border-radius:3px;background:linear-gradient(135deg,#1b3046,#081626 60%,#102239);box-shadow:inset 0 0 0 2px #07101c,inset 0 0 0 3px #b18a454d,0 2px 0 #493017,0 3px 5px #0009;font:600 clamp(11px,.8vw,13px)/1.3 var(--serif);color:#f5dda6;text-shadow:0 1px 2px #000;white-space:nowrap}
-.article-group h3:before,.article-group h3:after{content:'';position:absolute;top:50%;width:3px;height:3px;border:1px solid #d9b974;transform:translateY(-50%) rotate(45deg);pointer-events:none}
-.article-group h3:before{left:3px}.article-group h3:after{right:3px}
-.article-group h3 span{font:inherit;font-size:.85em;color:#dfbd78;font-variant-numeric:tabular-nums}
+.article-group h3 span{font:inherit;color:#ffe6ac;font-variant-numeric:tabular-nums}
 .article-scroll::-webkit-scrollbar{display:none}
 .article-track{position:relative;display:flex;justify-content:safe center;gap:8px;overflow:visible;width:max-content;min-width:100%;padding:0;border:0;background:none;align-items:flex-start}
 .table-study-slot{flex:0 0 var(--display-card);width:var(--display-card);position:relative;z-index:1;padding-bottom:27px}
@@ -30,10 +27,10 @@
 .table-study-slot progress::-webkit-progress-bar{background:#020810;border-radius:2px}
 .table-study-slot progress::-webkit-progress-value{background:linear-gradient(#ffe6a2,#b78a36);border-radius:2px}
 .table-study-slot progress::-moz-progress-bar{background:linear-gradient(#ffe6a2,#b78a36);border-radius:2px}
-.article-placeholder{width:max(var(--display-card),88px);height:65px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#aa9673;text-align:center;border:0;background:none}
+.article-placeholder{width:100%;min-height:65px;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#c8b48d;text-align:center;border:0;background:none}
 .article-placeholder>span{font-size:17px;opacity:.5}.article-placeholder small{font:10px/1.4 var(--serif);padding:0 4px;opacity:.7}
-.article-support.is-empty{border-color:#9b793850;background:linear-gradient(#08111b20,#08111b40);box-shadow:inset 0 -1px 2px #0005,0 1px 0 #241a10}
-.article-support.is-empty:after{opacity:.3}
+.article-support.is-empty{min-height:0}
+.article-support.is-empty .article-scroll,.article-support.is-empty .article-track{height:100%}
 @media(prefers-reduced-motion:reduce){.board .table-study.game-card{transition:none}}
 .academy-hand{align-self:center;text-align:center;min-width:0}.academy-hand img{display:block;width:100%;max-height:calc(var(--table-card-width)*1.35);filter:drop-shadow(2px 4px 0 #755433)}.academy-hand span{display:block;margin-top:8px;padding:3px 1px;background:#071322f5;border:1px solid #947140;border-radius:3px;font:11px var(--serif);color:#f1d596}
 .board .published-count{display:none}
@@ -91,7 +88,7 @@ body:has(.hand .game-card:is(:hover,:focus-visible)) #tooltip{display:none}
  .board .rivals[data-count]>.rival-seat{position:absolute;top:6svh;left:14%;width:30%;height:auto;max-width:none;min-height:0;display:flex;flex-direction:column;align-items:center;container-type:normal;margin:0;pointer-events:none;transform:none}
  .board .rival-seat .rival{width:68%;max-width:none;aspect-ratio:3;margin:0 0 -18px;flex-shrink:0;pointer-events:auto;z-index:1}
  .board .rival-studies.academy-tray{flex:0 0 auto;min-height:0;--table-card-width:clamp(65px,10svh,115px)}
- .board .local-academy .academy-tray{--table-card-width:clamp(56px,7.2svh,86px)}
+ .board .local-academy .academy-tray{--table-card-width:clamp(56px,7.2svh,86px);padding-bottom:6px}
  .board .rivals[data-count="1"]>.rival-seat{left:36%;top:12svh;width:28%}
  .board .rivals[data-count="2"]>.rival-seat:last-child{left:56%}
  .board .rivals[data-count="3"]>.rival-seat:nth-child(1){left:36%;top:12svh;width:28%}
@@ -116,15 +113,14 @@ body:has(.hand .game-card:is(:hover,:focus-visible)) #tooltip{display:none}
  .board[data-players="2"] .decks,.board[data-players="4"] .decks{top:45svh}
  .board .phase-message{position:absolute;top:47svh;bottom:auto;left:36%;width:28%;max-height:9svh;overflow:auto}
  .board .player-zone{position:static;display:contents}
- /* Reserve the central notice's painted height before sizing the local tray.
-    The academy remains on its existing bottom anchor; its header cannot grow
-    upward into the notice on wide, short windows. */
+ /* Anchor the local academy below the notice so taller article boxes cannot
+    push its identity plaque upward into the current-turn message. */
  .board{--notice-top:max(42svh,calc(21svh + 6.8vw + 98px))}
  .board[data-players="2"],.board[data-players="4"]{--notice-top:45svh}
  .board[data-players="6"]{--notice-top:max(46svh,calc(23svh + 6.57vw + 102px))}
- .board .local-academy{position:absolute;top:auto;bottom:calc(8svh + 50px);left:34%;width:32%}
- .board .local-academy .article-group{height:min(calc(var(--table-card-width)*1.5 + 71px),calc(92svh - var(--notice-top) - 6.4vw - 143px))}
- .board .hand-zone{position:absolute;left:32%;width:36%;bottom:70px;height:10svh;min-height:0;display:block}
+ .board .local-academy{position:absolute;top:calc(var(--notice-top) + 64px);bottom:auto;left:34%;width:32%}
+ .board .local-academy .article-group{min-height:min(calc(var(--table-card-width)*1.5 + 71px),calc(92svh - var(--notice-top) - 6.4vw - 143px))}
+ .board .hand-zone{position:absolute;left:32%;width:36%;bottom:45px;height:10svh;min-height:0;display:block}
  .board .hand-caption{display:none}
  .board footer{position:absolute;bottom:0;left:0;right:0;height:70px;min-height:0;padding:6px 3vw;z-index:11;background:none;border:0;box-shadow:none;pointer-events:none}
  .board .actions{height:48px;min-height:48px;max-width:1150px;pointer-events:auto}.board .actions.single-action{height:48px;min-height:48px;max-width:300px}.board .action-hint{padding:0;font-size:9px}
@@ -147,6 +143,7 @@ body:has(.hand .game-card:is(:hover,:focus-visible)) #tooltip{display:none}
  .board footer{position:fixed;bottom:0;left:0;right:0;z-index:11;width:100%;margin:0;height:110px;min-height:110px;background:none;border:0;padding:8px 10px;pointer-events:none}.board .actions{pointer-events:auto;height:78px;min-height:78px}.board .hand-zone:has(.game-card:hover),.board .hand-zone:has(.game-card:focus-visible){z-index:10}
 }
 @media(min-width:1000px) and (min-height:650px) and (max-height:800px){
+ .board .local-academy{top:calc(var(--notice-top) + 38px)}
  .board .table-activity{padding:6px 10px}
  .board .activity-move p{display:none}
  .board .activity-move strong{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

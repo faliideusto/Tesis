@@ -44,6 +44,9 @@ export function board(state) {
   // Keep the focused/hovered card alive when a public update leaves our hand unchanged.
   if (renderedHands.get(hand) !== handHtml) {
     hand.innerHTML = handHtml;
+    hand.querySelectorAll('.game-card').forEach((card,index)=>{
+      card.style.setProperty('--hand-angle', `${Math.max(-12,Math.min(12,(index-(state.mano.length-1)/2)*5))}deg`);
+    });
     renderedHands.set(hand, handHtml);
   }
   update('phase-message', state.aviso ? `<div class="table-notice">${esc(state.aviso)}</div>` : '');

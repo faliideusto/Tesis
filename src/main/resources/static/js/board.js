@@ -52,8 +52,7 @@ export function board(state) {
   update('phase-message', state.aviso ? `<div class="table-notice">${esc(state.aviso)}</div>` : '');
   update('action-hint', state.fase === 'FIN_RONDA' ? state.ultimaRonda ? 'Preparando resultados' : 'Preparando la siguiente ronda' : state.actual !== state.yo && state.fase !== 'FIN_PARTIDA' ? `Esperando a ${esc(state.actual)}` : state.fase === 'TURNO_JUGADOR' ? state.habilidadPendiente ? 'Resuelve tu habilidad inicial' : state.accionesRestantes ? 'Elige tu próximo paso' : 'Acciones agotadas · usa tu habilidad o termina el turno' : 'INVESTIGA · PUBLICA · TRASCIENDE');
   const phaseAction = state.fase === 'FIN_PARTIDA' ? {command:'phase', label:'Ver resultados'} : null;
-  const tableActions = state.acciones.filter(a => a.id !== 'SIGUIENTE_RONDA'
-    && (state.accionesRestantes > 0 || a.id === 'HABILIDAD' || a.id === 'FIN_TURNO'));
+  const tableActions = state.acciones.filter(a => a.id !== 'SIGUIENTE_RONDA');
   update('activity-controls', state.fase === 'SELECCION_ROLES' && state.seleccion.length
     ? '<button class="narrator-link" data-command="phase">Ver personajes</button>' : '');
   document.getElementById('actions').classList.toggle('single-action', !!phaseAction || tableActions.length === 1);
@@ -61,7 +60,8 @@ export function board(state) {
     ? `<button class="action-button phase-action" data-command="${phaseAction.command}"><span class="action-content"><span class="action-label">${phaseAction.label}</span></span></button>`
     : tableActions.map(a => {
       const label = a.id === 'FIN_TURNO' ? 'Terminar turno' : a.nombre;
-      return `<button class="action-button ${a.id === 'FIN_TURNO' ? 'end-turn' : ''} ${a.id === 'HABILIDAD' ? 'ability-action' : ''}" data-command="action" data-action="${a.id}" aria-disabled="${!a.disponible}" aria-label="${esc(label + (!a.disponible ? '. ' + a.motivo + ' Pulsa para ver el motivo.' : ''))}" data-tip="${esc(a.disponible ? a.descripcion : a.motivo)}">
+      const disabled = state.accionesRestantes === 0 && !a.disponible;
+      return `<button class="action-button ${a.id === 'FIN_TURNO' ? 'end-turn' : ''} ${a.id === 'HABILIDAD' ? 'ability-action' : ''}" data-command="action" data-action="${a.id}" ${disabled ? 'disabled' : ''} aria-disabled="${!a.disponible}" aria-label="${esc(label + (!a.disponible ? '. ' + a.motivo + (disabled ? '' : ' Pulsa para ver el motivo.') : ''))}" data-tip="${esc(a.disponible ? a.descripcion : a.motivo)}">
     <span class="action-content">${img(icons[a.id] ? `acciones/${icons[a.id]}.webp` : 'recursos/prestigio.webp')}<span class="action-label">${esc(label)}</span></span></button>`;
     }).join(''));
 }

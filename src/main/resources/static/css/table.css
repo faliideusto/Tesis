@@ -150,6 +150,7 @@ body:has(.hand .game-card:is(:hover,:focus-visible)) #tooltip{display:none}
 
 /* Decision feedback keeps the existing table geometry. */
 .action-button[aria-disabled="true"]{filter:grayscale(.7);opacity:.55;cursor:help}
+.action-button:disabled{cursor:default}
 .board .game-card.valid-target,.eligible-option>.game-card{outline:3px solid #d8b55f;outline-offset:3px}
 .idea-option{display:flex;flex-direction:column;align-items:center;gap:12px;min-width:0;text-align:center}
 .idea-option small{max-width:200px;line-height:1.4}

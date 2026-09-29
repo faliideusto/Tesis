@@ -61,7 +61,7 @@ export function currentActivity(state) {
     detail:'Elige en privado el personaje vetado antes de actuar.',art:'cartas/reverso_personaje.webp'};
   return {player:state.actual,title:own?'Es tu turno':`${state.actual} est\u00e1 jugando su turno`,
     detail:own ? (state.accionesRestantes>0 ? `${state.accionesRestantes} ${state.accionesRestantes===1?'acci\u00f3n disponible':'acciones disponibles'}. Elige tu siguiente paso.`
-      :'Sin acciones base. Puedes usar tu habilidad si est\u00e1 disponible o terminar el turno.')
+      :'Sin acciones base. Usa tu habilidad o termina el turno.')
       :'La mesa espera su siguiente acci\u00f3n.',art:'recursos/prestigio.webp'};
 }
 export function showActivity({player='',title,detail='',art='cartas/reverso_personaje.webp'}) {

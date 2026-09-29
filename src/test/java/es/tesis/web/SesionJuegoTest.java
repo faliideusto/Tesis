@@ -15,7 +15,7 @@ class SesionJuegoTest {
             var juego = new SesionJuego();
             var s = juego.crear(List.of("Ana","Bruno","Clara")); s = juego.revelar(s.revision());
             var elegido = s.seleccion().stream().filter(r -> r.orden()==orden).findFirst();
-            if(s.actual().equals("Ana") && elegido.isPresent() && s.mano().get(0).nombre().equals(orden == 7 ? "Casos y Controles" : "Artículo Ecológico")) {
+            if(s.actual().equals("Ana") && elegido.isPresent() && s.mano().get(0).nombre().equals("Artículo Ecológico")) {
                 s=action(juego,s,"SELECCIONAR",elegido.get().indice(),null);
                 s = turnos(juego, s);
                 while (!s.actual().equals("Ana")) {
@@ -82,11 +82,9 @@ class SesionJuegoTest {
         assertEquals(1,s.accionesRestantes());
         s = action(juego,s,"COBRAR",null,null);
         final var agotado = s;
-        assertFalse(s.acciones().stream().filter(a -> a.id().equals("COBRAR")).findFirst().orElseThrow().disponible());
+        assertTrue(s.bloqueada()); assertEquals(2,s.accionesRestantes()); assertTrue(s.mano().isEmpty());
         assertThrows(IllegalStateException.class,() -> action(juego,agotado,"COBRAR",null,null));
         assertEquals(agotado,juego.estado());
-        s = action(juego,s,"FIN_TURNO",null,null);
-        assertTrue(s.bloqueada()); assertEquals(2,s.accionesRestantes()); assertTrue(s.mano().isEmpty());
     }
 
     @Test void indicesInvalidosNoConsumenRecursosYNoPublicanSecretos() {
@@ -144,11 +142,9 @@ class SesionJuegoTest {
     @Test void editorialNoCompraTrabajoDespuesDeConsumirAcciones() {
         var mesa=conRol(5); var juego=mesa.juego(); var s=mesa.estado();
         s=action(juego,s,"INICIAR",0,null); s=action(juego,s,"COBRAR",null,null);
-        assertEquals(0,s.accionesRestantes());
-        var habilidad=s.acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow();
-        assertFalse(habilidad.disponible()); assertTrue(habilidad.opciones().isEmpty());
+        assertNotEquals("TURNO_JUGADOR",s.fase());
         final var antes=s;
-        assertThrows(IllegalArgumentException.class,()->action(juego,antes,"HABILIDAD",0,null));
+        assertThrows(IllegalStateException.class,()->action(juego,antes,"HABILIDAD",0,null));
         assertEquals(antes,juego.estado());
     }
 
@@ -156,10 +152,12 @@ class SesionJuegoTest {
         var mesa=conRol(2); var juego=mesa.juego(); var s=mesa.estado();
         assertFalse(s.acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow().disponible());
         s=action(juego,s,"INICIAR",0,null); s=action(juego,s,"TRABAJAR",0,null);
+        assertEquals(0,s.accionesRestantes());
+        assertTrue(s.acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow().disponible());
         s=action(juego,s,"HABILIDAD",0,null);
         assertEquals(2,s.jugadores().get(0).prestigio());
         assertEquals(1,s.jugadores().get(0).estudios().get(0).prestigioExtra());
-        assertFalse(s.acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow().disponible());
+        assertNotEquals("Ana",s.actual());
     }
 
     @Test void automaticasConservanRoboEInmunidadYPreDoctoralEsActiva() {
@@ -178,14 +176,13 @@ class SesionJuegoTest {
     @Test void revisorRechazaArticuloPropioAunqueLaPeticionLoIndique() {
         var mesa=conRol(7); var juego=mesa.juego(); var s=mesa.estado();
         s=action(juego,s,"INICIAR",0,null);
-        s=action(juego,s,"TRABAJAR",0,null);
         var habilidad=s.acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow();
         assertFalse(habilidad.disponible());
         assertTrue(habilidad.opciones().isEmpty());
         final var antes=s;
         assertThrows(IllegalArgumentException.class, () -> action(juego,antes,"HABILIDAD",0,"Ana"));
         assertEquals(antes, juego.estado());
-        assertEquals(1,s.jugadores().get(0).estudios().get(0).trabajo());
+        assertEquals(0,s.jugadores().get(0).estudios().get(0).trabajo());
     }
 
     @Test void catalogoUsaDatosRealesYTodosSusAssetsExisten() {

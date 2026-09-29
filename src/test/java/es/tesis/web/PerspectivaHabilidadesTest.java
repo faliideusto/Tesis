@@ -233,7 +233,7 @@ class PerspectivaHabilidadesTest {
         var eventos=m.ver(m.b).eventos(); var cobrar=eventos.get(eventos.size()-1);
         assertEquals(2,cobrar.cantidad()); assertNull(cobrar.estudio());
         m.actuar(m.a,"PENSAR",null,null);
-        eventos=m.ver(m.b).eventos(); var pensar=eventos.get(eventos.size()-1);
+        eventos=m.ver(m.b).eventos(); var pensar=eventos.stream().filter(e->e.tipo().equals("accion.pensar")).reduce((x,y)->y).orElseThrow();
         assertTrue(pensar.robo()); assertNull(pensar.estudio()); assertNull(pensar.objetivo());
         assertEquals(cobrar.numero()+1,pensar.numero());
         assertEquals(m.ver(m.a).eventos(),eventos);
@@ -292,9 +292,9 @@ class PerspectivaHabilidadesTest {
         assertEquals(1,m.ver(m.a).accionesRestantes());
         assertEquals(1,m.ver(m.b).accionesRestantes());
         m.actuar(m.a,"PENSAR",null,null);
-        assertEquals(0,m.ver(m.a).accionesRestantes());
-        assertEquals(0,m.ver(m.b).accionesRestantes());
-        m.actuar(m.a,"FIN_TURNO",null,null);
+        assertNotEquals(m.a.nombre(),m.ver(m.a).actual());
+        assertEquals(2,m.ver(m.a).accionesRestantes());
+        assertEquals(2,m.ver(m.b).accionesRestantes());
         var actual = m.ver(m.b).actual().equals(m.b.nombre()) ? m.b : m.c;
         for (int i=0;i<10;i++) {
             assertEquals(2,m.ver(actual).accionesRestantes());

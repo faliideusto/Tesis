@@ -15,6 +15,9 @@ let timer, screen = 'home', generation = 0;
 const app = document.getElementById('app');
 const connection = document.createElement('div');
 const homeMessage = 'Reúne a tu academia. Cada persona juega desde su dispositivo, con su mano privada y una mesa compartida.';
+const academyIntro = () => `${img('Logo/logo_tesis.webp','home-logo','Tesis')}<span class="eyebrow">La diferencia está en la ciencia</span>
+    <h1>Construye tu<br><em>legado científico.</em></h1><p>${homeMessage}</p>
+    <div class="home-features"><span>7 personajes</span><span>8 tipos de idea</span><span>3–5 jugadores</span></div>`;
 connection.className='network-status'; connection.setAttribute('role','status'); connection.hidden=true;
 document.body.append(connection);
 function connectionStatus(text='') { connection.textContent=text; connection.hidden=!text; }
@@ -35,9 +38,7 @@ function home() {
   stopPolling(); resetEffects(); screen='home'; closeDialog(); resetFeedback(); connectionStatus();
   state=null; room=null;
   app.innerHTML = `<section class="home-screen"><nav class="home-nav"><span>UNA MESA. MUCHAS IDEAS.</span><button class="text-button" data-command="help">Cómo jugar</button></nav>
-    <div class="home-copy">${img('Logo/logo_tesis.webp','home-logo','Tesis')}<span class="eyebrow">La diferencia está en la ciencia</span>
-    <h1>Construye tu<br><em>legado científico.</em></h1><p>${homeMessage}</p>
-    <div class="home-features"><span>7 personajes</span><span>8 tipos de idea</span><span>3–5 jugadores</span></div></div>
+    <div class="home-copy">${academyIntro()}</div>
     <section class="setup-panel"><span class="eyebrow">LAS PUERTAS ESTÁN ABIERTAS</span><h2>Reúne a tu academia</h2><p>Solo necesitas tu nombre y un código de sala.</p>
       <form id="create-room" class="room-form"><label>Tu nombre<input name="nombre" maxlength="24" required autocomplete="nickname" placeholder="Fali"></label><button class="gold-button" type="submit">Crear sala</button></form>
       <div class="room-divider">O ENTRA EN UNA SALA</div>
@@ -46,7 +47,7 @@ function home() {
     </section><div class="home-footer">INVESTIGAR <span>·</span> TRANSFORMAR <span>·</span> MEJORAR</div></section>`;
 }
 function lobby() {
-  app.innerHTML = `<section class="home-screen lobby-screen"><div class="home-copy">${img('Logo/logo_tesis.webp','home-logo','Tesis')}<span class="eyebrow">TU ACADEMIA TE ESPERA</span><h1>Una sala.<br><em>Muchas ideas.</em></h1><p>${homeMessage}</p><button class="text-button" data-command="home">Volver al inicio</button></div>
+  app.innerHTML = `<section class="home-screen lobby-screen"><div class="home-copy">${academyIntro()}<button class="text-button" data-command="home">Volver al inicio</button></div>
     <section class="setup-panel lobby-panel"><span class="eyebrow">CÓDIGO DE SALA</span><h2 class="room-code">${esc(room.codigo)}</h2><p>Tu identidad: <strong>${esc(room.yo)}</strong></p><h3>Jugadores · ${room.jugadores.length} / 5</h3><ul class="lobby-players">${room.jugadores.map(n=>`<li>${n===room.anfitrion?'♛ ':''}${esc(n)}${n===room.yo?' · tú':''}<small>${n===room.anfitrion?'Anfitrión':''}</small></li>`).join('')}</ul>
     ${room.soyAnfitrion ? `<button class="gold-button" data-command="start-game" ${(room.jugadores.length<3 || room.jugadores.length>5)?'disabled':''}>Iniciar partida</button><p class="setup-note">${(room.jugadores.length<3 || room.jugadores.length>5)?'Esperando jugadores. Se necesitan entre 3 y 5.':'Todo preparado. Puedes iniciar la partida.'}</p>` : `<p class="waiting-copy">Esperando a que ${esc(room.anfitrion)} inicie la partida…</p>`}</section></section>`;
 }
@@ -83,6 +84,7 @@ async function applyRoom(next, force=false) {
     state=after; selectedRole=null; pendingAction=null; selectedTarget=null; clearTargets(); reconcileDialog(sameRoom);
     board(state); feedback(sameRoom ? before : null,state); settled(sameRoom ? before : null,state);
     if (state.fase==='SELECCION_ROLES' && state.seleccion.length && (!before || before.fase!=='SELECCION_ROLES' || before.actual!==state.actual) && !document.getElementById('modal').open) phaseDialog(state);
+    if (state.fase==='FIN_RONDA' && (!before || before.fase!=='FIN_RONDA')) phaseDialog(state);
     if (state.fase==='FIN_PARTIDA' && (!before || before.fase!=='FIN_PARTIDA') && !informationalDialogOpen()) { phaseDialog(state); if(before) victory(); }
   } finally {visualBusy=false; document.body.classList.remove('visual-busy');}
 }
@@ -133,7 +135,8 @@ function chooseAction(id) {
     dialog(action.nombre, `<p>${esc(action.motivo)}</p>`, {kind:'info', snapshot:true}); return;
   }
   if (id === 'FIN_TURNO' && endTurnWarning(state)) {
-    dialog('¿Ceder el turno?', `<p>${esc(endTurnWarning(state))}</p><p>Si cedes ahora, renuncias a lo que queda de este turno.</p><div class="dialog-buttons"><button class="plain-button" data-command="close">Seguir jugando</button><button class="gold-button" data-command="confirm-end">Confirmar</button></div>`); return;
+    dialog('¿Terminar el turno?', `<p>${esc(endTurnWarning(state))}</p><p>Si terminas ahora, renuncias a lo que queda de este turno.</p><div class="dialog-buttons"><button class="plain-button" data-command="close">Seguir jugando</button><button class="gold-button" data-command="confirm-end">Terminar turno</button></div>`);
+    return;
   }
   if (!action.opciones.length) { act(id); return; }
   pendingAction = action;
@@ -194,7 +197,7 @@ document.addEventListener('click', async e => {
     case 'start-game': run(() => api.start(room.revision)); break;
     case 'help': help(); break;
     case 'close': closeDialog(); clearTargets(); break;
-    case 'confirm-end': if (state.acciones.some(a=>a.id==='FIN_TURNO' && a.disponible)) act('FIN_TURNO'); break;
+    case 'confirm-end': if (state.acciones.some(a => a.id === 'FIN_TURNO' && a.disponible)) act('FIN_TURNO'); break;
     case 'phase': phaseDialog(state); break;
     case 'next-round': {
       act('SIGUIENTE_RONDA');

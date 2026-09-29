@@ -33,7 +33,7 @@ export function board(state) {
   update('turn-panel', `<span>RONDA ${state.ronda}${state.ultimaRonda ? ' · ÚLTIMA' : ''}</span><strong>${state.fase === 'SELECCION_ROLES' ? 'Elige ' : state.fase === 'FIN_PARTIDA' ? 'Partida finalizada' : state.fase === 'FIN_RONDA' ? 'Cierre de ronda' : 'Turno de '}${['SELECCION_ROLES','TURNO_JUGADOR'].includes(state.fase) ? esc(state.actual) : ''}</strong>`);
   document.getElementById('rivals').dataset.count = others.length;
   update('rivals', others.map(p=>rival({...p,activo:state.fase==='TURNO_JUGADOR' && p.activo},state)).join(''));
-  if (!document.getElementById('activity-current')) update('decks', `<section class="table-activity" aria-label="Estado actual de la mesa"><span class="eyebrow">AHORA EN LA MESA</span><div id="activity-current" role="status" aria-live="polite" aria-atomic="true"></div><button class="text-button" data-command="history">Ver crónica</button></section>`);
+  if (!document.getElementById('activity-current')) update('decks', `<section class="table-activity" aria-label="Narrador de la mesa"><span class="eyebrow">CRÓNICA DE TESIS</span><div id="activity-current" role="status" aria-live="polite" aria-atomic="true"></div><div id="activity-controls" class="activity-controls"></div></section>`);
   document.getElementById('local').classList.toggle('active', state.fase === 'TURNO_JUGADOR' && me.activo);
   update('local', localPlayer(me, state)); update('studies', tableStudies(me, true));
   for (const anchor of table.querySelectorAll('.rival:is(:hover,:focus-visible), .local-role-button:is(:hover,:focus-visible)')) positionRolePreview(anchor);
@@ -50,13 +50,18 @@ export function board(state) {
     renderedHands.set(hand, handHtml);
   }
   update('phase-message', state.aviso ? `<div class="table-notice">${esc(state.aviso)}</div>` : '');
-  update('action-hint', state.actual !== state.yo && state.fase !== 'FIN_PARTIDA' ? `Esperando a ${esc(state.actual)}` : state.fase === 'TURNO_JUGADOR' ? state.habilidadPendiente ? 'Resuelve tu habilidad inicial' : state.accionesRestantes ? 'Elige tu próximo paso' : 'Acciones agotadas · puedes usar tu habilidad o terminar' : 'INVESTIGA · PUBLICA · TRASCIENDE');
-  const phaseAction = state.fase === 'SELECCION_ROLES' && state.seleccion.length
-    ? {command:'phase', label:'Elegir personaje'}
-    : state.fase === 'FIN_PARTIDA' ? {command:'phase', label:'Ver resultados'} : null;
-  document.getElementById('actions').classList.toggle('single-action', !!phaseAction || state.acciones.length === 1);
+  update('action-hint', state.actual !== state.yo && state.fase !== 'FIN_PARTIDA' ? `Esperando a ${esc(state.actual)}` : state.fase === 'TURNO_JUGADOR' ? state.habilidadPendiente ? 'Resuelve tu habilidad inicial' : state.accionesRestantes ? 'Elige tu próximo paso' : 'Acciones agotadas · usa tu habilidad o termina el turno' : 'INVESTIGA · PUBLICA · TRASCIENDE');
+  const phaseAction = state.fase === 'FIN_PARTIDA' ? {command:'phase', label:'Ver resultados'} : null;
+  const tableActions = state.acciones.filter(a => a.id !== 'SIGUIENTE_RONDA'
+    && (state.accionesRestantes > 0 || a.id === 'HABILIDAD' || a.id === 'FIN_TURNO'));
+  update('activity-controls', state.fase === 'SELECCION_ROLES' && state.seleccion.length
+    ? '<button class="narrator-link" data-command="phase">Ver personajes</button>' : '');
+  document.getElementById('actions').classList.toggle('single-action', !!phaseAction || tableActions.length === 1);
   update('actions', phaseAction
     ? `<button class="action-button phase-action" data-command="${phaseAction.command}"><span class="action-content"><span class="action-label">${phaseAction.label}</span></span></button>`
-    : state.acciones.map(a => `<button class="action-button ${a.id === 'FIN_TURNO' ? 'end-turn' : ''} ${a.id === 'HABILIDAD' ? 'ability-action' : ''}" data-command="${a.id === 'SIGUIENTE_RONDA' ? 'next-round' : 'action'}" data-action="${a.id}" aria-disabled="${!a.disponible}" aria-label="${esc(a.nombre + (!a.disponible ? '. ' + a.motivo + ' Pulsa para ver el motivo.' : ''))}" data-tip="${esc(a.disponible ? a.descripcion : a.motivo)}">
-    <span class="action-content">${img(icons[a.id] ? `acciones/${icons[a.id]}.webp` : a.id === 'HABILIDAD' ? 'recursos/prestigio.webp' : 'acciones/finalizar_turno.webp')}<span class="action-label">${esc(a.nombre)}</span></span></button>`).join(''));
+    : tableActions.map(a => {
+      const label = a.id === 'FIN_TURNO' ? 'Terminar turno' : a.nombre;
+      return `<button class="action-button ${a.id === 'FIN_TURNO' ? 'end-turn' : ''} ${a.id === 'HABILIDAD' ? 'ability-action' : ''}" data-command="action" data-action="${a.id}" aria-disabled="${!a.disponible}" aria-label="${esc(label + (!a.disponible ? '. ' + a.motivo + ' Pulsa para ver el motivo.' : ''))}" data-tip="${esc(a.disponible ? a.descripcion : a.motivo)}">
+    <span class="action-content">${img(icons[a.id] ? `acciones/${icons[a.id]}.webp` : 'recursos/prestigio.webp')}<span class="action-label">${esc(label)}</span></span></button>`;
+    }).join(''));
 }

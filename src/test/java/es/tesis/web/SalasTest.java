@@ -105,8 +105,8 @@ class SalasTest {
         m.sala.actuar(m.tokens.get(actual.yo()),vieja);
         assertEquals(409,assertThrows(ErrorSala.class,()->m.sala.actuar(m.tokens.get(actual.yo()),vieja)).estado);
         m.actuar(actual.yo(),"PENSAR",null,null);
-        assertEquals(manoRival,m.ver(rival).partida().mano());
-        assertEquals(actual.partida().mano().size()+1,m.actual().partida().mano().size());
+        if (!m.actual().yo().equals(rival)) assertEquals(manoRival,m.ver(rival).partida().mano());
+        assertEquals(actual.partida().mano().size()+1,m.ver(actual.yo()).partida().mano().size());
         assertEquals(8,m.actual().partida().ideas());
     }
     @Test void dosSolicitudesSimultaneasNoDuplicanCobro() throws Exception {

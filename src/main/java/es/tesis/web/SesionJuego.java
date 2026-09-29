@@ -87,7 +87,14 @@ public final class SesionJuego {
                 motor.avanzarFase();
             }
             default -> throw new IllegalArgumentException("Acción desconocida.");
-        } } finally { accionEnCurso = null; }
+        }
+            // La última acción o habilidad cierra el turno en la misma revisión de sala.
+            // Así ningún cliente observa una mesa sin decisiones posibles esperando un clic.
+            if (fase == FaseDeTurno.TURNO_JUGADOR && motor.partida().faseActual() == FaseDeTurno.TURNO_JUGADOR
+                    && motor.partida().accionesBaseRealizadas() == 2 && !habilidad().disponible()) {
+                motor.avanzarFase();
+            }
+        } finally { accionEnCurso = null; }
         var partida = motor.partida();
         if (partida.faseActual() == FaseDeTurno.SELECCION_ROLES && fase != partida.faseActual()) revelados.clear();
         if (partida.faseActual() == FaseDeTurno.TURNO_JUGADOR) revelados.add(partida.jugadorActual().nombre());

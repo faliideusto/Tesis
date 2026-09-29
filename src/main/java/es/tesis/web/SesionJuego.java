@@ -169,17 +169,39 @@ public final class SesionJuego {
         if (p.faseActual() != FaseDeTurno.TURNO_JUGADOR) return List.of();
         String base = validar(() -> c.reglas().validarAccionBase(c));
         var iniciar = IntStream.range(0, j.cartasIdea().size()).filter(i -> j.cartasIdea().get(i).costeMonedas() <= j.monedas())
-                .mapToObj(i -> new Vistas.Opcion(j.cartasIdea().get(i).nombre(), i, null)).toList();
+                .mapToObj(i -> {
+                    var carta = j.cartasIdea().get(i);
+                    return new Vistas.Opcion(carta.nombre(), i, null, null, "−" + carta.costeMonedas()
+                            + " monedas · Te quedarán " + (j.monedas() - carta.costeMonedas())
+                            + " · 0/" + carta.trabajoRequerido() + " trabajo · Consume 1 acción");
+                }).toList();
         var trabajar = IntStream.range(0, j.estudios().size()).filter(i -> j.estudios().get(i).estado() == EstadoEstudio.EN_DESARROLLO)
-                .mapToObj(i -> new Vistas.Opcion(j.estudios().get(i).carta().nombre(), i, null)).toList();
+                .mapToObj(i -> new Vistas.Opcion(j.estudios().get(i).carta().nombre(), i, null, null,
+                        previsualizarTrabajo(j, j.estudios().get(i), j.personaje().habilidad()
+                                .modificarPuntosTrabajo(c, j, c.reglas().puntosTrabajoBase())) + " · Consume 1 acción")).toList();
         var resultado = new ArrayList<Vistas.Accion>();
         resultado.add(accion("COBRAR", "Cobrar", "Recibe 2 monedas. Consume una acción.", base, List.of()));
         resultado.add(accion("PENSAR", "Pensar", "Roba una idea. Consume una acción.", !base.isEmpty() ? base : p.mazoIdeas().estaVacio() ? "El mazo de ideas está vacío." : "", List.of()));
-        resultado.add(accion("INICIAR", "Iniciar estudio", "Paga el coste de una idea de tu mano. Consume una acción.", !base.isEmpty() ? base : iniciar.isEmpty() ? "No tienes ideas que puedas pagar." : "", iniciar));
+        String motivoIniciar = j.cartasIdea().isEmpty() ? "No tienes ideas en la mano. Usa Pensar para robar una."
+                : iniciar.isEmpty() ? "Te faltan " + (j.cartasIdea().stream().mapToInt(IdeaCarta::costeMonedas).min().orElseThrow() - j.monedas())
+                    + " monedas para iniciar tu idea más barata." : "";
+        resultado.add(accion("INICIAR", "Iniciar estudio", "Paga el coste de una idea de tu mano. Consume una acción.", !base.isEmpty() ? base : motivoIniciar, iniciar));
         resultado.add(accion("TRABAJAR", "Trabajar", "Aporta trabajo a un estudio propio. Se publica automáticamente al completarlo.", !base.isEmpty() ? base : trabajar.isEmpty() ? "No tienes estudios en desarrollo." : "", trabajar));
         resultado.add(habilidad());
         resultado.add(accion("FIN_TURNO", "Fin de turno", "Cede el control al siguiente jugador.", validar(() -> c.reglas().validarFinTurno(c)), List.of()));
         return resultado;
+    }
+
+    private String previsualizarTrabajo(Jugador jugador, Estudio estudio, int puntos) {
+        int siguiente = estudio.trabajoAcumulado() + puntos;
+        int requerido = estudio.carta().trabajoRequerido();
+        String texto = estudio.trabajoAcumulado() + "/" + requerido + " → " + siguiente + "/" + requerido;
+        if (siguiente >= requerido) {
+            texto += " · PUBLICARÁS · +" + (estudio.carta().prestigio() + estudio.prestigioExtra()) + " prestigio";
+            if (jugador.cantidadPublicados() == 2 && !motor.contexto().reglas().debeFinalizarPartida(motor.contexto()))
+                texto += " · Será la última ronda";
+        } else texto += " · +" + puntos + " trabajo";
+        return texto;
     }
 
     private Vistas.Accion habilidad() {
@@ -193,7 +215,9 @@ public final class SesionJuego {
             for (int i = 0; i < j.estudios().size(); i++) {
                 boolean publicado = j.estudios().get(i).estado() == EstadoEstudio.PUBLICADO;
                 if (h instanceof EstadisticoHabilidad ? publicado : !publicado)
-                    opciones.add(new Vistas.Opcion(j.estudios().get(i).carta().nombre(), i, null));
+                    opciones.add(new Vistas.Opcion(j.estudios().get(i).carta().nombre(), i, null, null,
+                            (h instanceof EstadisticoHabilidad ? "+1 prestigio en este artículo"
+                                    : previsualizarTrabajo(j, j.estudios().get(i), 1)) + " · No consume acciones base"));
             }
         } else if (h instanceof PlagiadorHabilidad) {
             c.partida().jugadores().stream().filter(otro -> otro != j && !c.estaProtegido(otro.nombre()))
@@ -204,13 +228,22 @@ public final class SesionJuego {
                 for (int i = 0; i < otro.estudios().size(); i++) {
                     var e = otro.estudios().get(i);
                     if (e.estado() == EstadoEstudio.EN_DESARROLLO && e.trabajoAcumulado() > 0)
-                        opciones.add(new Vistas.Opcion(otro.nombre() + " · " + e.carta().nombre(), i, otro.nombre()));
+                        opciones.add(new Vistas.Opcion(otro.nombre() + " · " + e.carta().nombre(), i, otro.nombre(), null,
+                                e.trabajoAcumulado() + "/" + e.carta().trabajoRequerido() + " → "
+                                + Math.max(0, e.trabajoAcumulado() - 2) + "/" + e.carta().trabajoRequerido()
+                                + " · −1 moneda · No consume acciones base"));
                 }
             }
         }
         var rol = CatalogoVisual.rol(j.personaje(), -1);
         if (rol.automatica()) motivo = "Esta habilidad se aplica automáticamente.";
-        else if (motivo.isEmpty() && opciones.isEmpty()) motivo = "No hay objetivos válidos o faltan monedas.";
+        else if (motivo.isEmpty() && opciones.isEmpty()) {
+            if (h instanceof EstadisticoHabilidad) motivo = "Necesitas un artículo propio publicado.";
+            else if (h instanceof PreDoctoralHabilidad) motivo = "Necesitas un estudio propio en desarrollo.";
+            else if (h instanceof Revisor2Habilidad) motivo = j.monedas() < 1 ? "Necesitas 1 moneda para revisar."
+                    : "No hay estudios rivales en desarrollo con trabajo que puedas revisar.";
+            else motivo = "No hay objetivos válidos para esta habilidad.";
+        }
         return accion("HABILIDAD", "Habilidad", rol.habilidad(), motivo, opciones);
     }
 
@@ -229,12 +262,14 @@ public final class SesionJuego {
             case "accion.cobrar" -> actor + " recibe 2 monedas.";
             case "accion.pensar" -> actor + " roba una idea.";
             case "accion.iniciar_estudio" -> actor + " inicia «" + d.get("articulo") + "».";
-            case "accion.trabajar", "habilidad.editorial.trabajo" -> actor + ("PUBLICADO".equals(d.get("estado")) ? " publica «" : " trabaja en «") + d.get("articulo") + "».";
+            case "accion.trabajar", "habilidad.editorial.trabajo", "habilidad.pre_doctoral" -> actor
+                    + ("PUBLICADO".equals(d.get("estado")) ? " publica «" : " añade " + d.get("trabajo") + " de trabajo a «")
+                    + d.get("articulo") + "»" + ("PUBLICADO".equals(d.get("estado")) ? " y gana " + d.get("prestigio") + " de prestigio" : "")
+                    + (e.tipo().equals("habilidad.pre_doctoral") ? " con Pre-Doctoral." : ".");
             case "habilidad.comite_etica" -> actor + " registra un veto privado ante el Comité de Ética.";
             case "habilidad.estadistico" -> actor + " añade 1 de prestigio a «" + d.get("articulo") + "».";
             case "habilidad.plagiador" -> actor + " intercambia su mano con " + d.get("objetivo") + ".";
             case "habilidad.revisor_2" -> actor + " retira hasta 2 puntos de trabajo de «" + d.get("articulo") + "», que queda en desarrollo.";
-            case "habilidad.pre_doctoral" -> actor + " añade 1 punto de trabajo a «" + d.get("articulo") + "».";
             case "habilidad.editorial.inicio" -> actor + " recibe " + d.get("monedasRecibidas") + " monedas de Editorial.";
             case "articulo.ingresos" -> actor + " recibe " + d.get("monedas") + " monedas de sus patentes publicadas.";
             case "habilidad.investigador_principal" -> actor + " elegirá primero la próxima ronda" + (Boolean.TRUE.equals(d.get("cartaRobada")) ? " y roba una idea extra." : ".");

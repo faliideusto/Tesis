@@ -37,7 +37,7 @@ export function tableChanges(before, after) {
     if ((resources.length || exchange) && !ownChanges.length) ownChanges.push({player:player.nombre,
       title:exchange ? 'Mano intercambiada' : resources.some(r => r.icon === 'idea' && r.value > 0) ? 'Nuevas ideas' : 'Recursos de la academia',
       detail:exchange ? exchange.texto : '',
-      art:exchange || resources.some(r => r.icon === 'idea') ? 'cartas/reverso_idea.png' : 'recursos/moneda.png'});
+      art:exchange || resources.some(r => r.icon === 'idea') ? 'cartas/reverso_idea.webp' : 'recursos/moneda.webp'});
     if (ownChanges.length) ownChanges[0].resources = resources;
     changes.push(...ownChanges);
     if (player.rol && old.rol?.nombre !== player.rol.nombre) changes.push({player:player.nombre,
@@ -51,20 +51,20 @@ export function currentActivity(state) {
   const own=state.actual===state.yo;
   if(state.fase==='SELECCION_ROLES') return {player:state.actual,
     title:own?'Elige tu personaje':`${state.actual} est\u00e1 eligiendo personaje`,
-    detail:own?'Abre las cartas para elegir. Tu elecci\u00f3n es privada.':'La elecci\u00f3n es privada. Enseguida contin\u00faa la mesa.',art:'cartas/reverso_personaje.png'};
+    detail:own?'Abre las cartas para elegir. Tu elecci\u00f3n es privada.':'La elecci\u00f3n es privada. Enseguida contin\u00faa la mesa.',art:'cartas/reverso_personaje.webp'};
   if(state.fase==='FIN_PARTIDA') return {player:'La academia',title:'Partida finalizada',
-    detail:state.ganadores.length ? `Victoria: ${state.ganadores.join(' \u00b7 ')}`:'Consulta los resultados.',art:'recursos/prestigio.png'};
+    detail:state.ganadores.length ? `Victoria: ${state.ganadores.join(' \u00b7 ')}`:'Consulta los resultados.',art:'recursos/prestigio.webp'};
   if(state.fase==='FIN_RONDA') return {player:`Ronda ${state.ronda}`,title:'Cierre de ronda',
     detail:own ? (state.ultimaRonda?'Puedes abrir el resultado final.':'Puedes comenzar la siguiente ronda.')
-      : `Esperando a ${state.actual} para continuar.`,art:'cartas/reverso_personaje.png'};
+      : `Esperando a ${state.actual} para continuar.`,art:'cartas/reverso_personaje.webp'};
   if(own && state.habilidadPendiente) return {player:state.actual,title:'Resuelve el Comit\u00e9 de \u00c9tica',
-    detail:'Elige en privado el personaje vetado antes de actuar.',art:'cartas/reverso_personaje.png'};
+    detail:'Elige en privado el personaje vetado antes de actuar.',art:'cartas/reverso_personaje.webp'};
   return {player:state.actual,title:own?'Es tu turno':`${state.actual} est\u00e1 jugando su turno`,
     detail:own ? (state.accionesRestantes>0 ? `${state.accionesRestantes} ${state.accionesRestantes===1?'acci\u00f3n disponible':'acciones disponibles'}. Elige tu siguiente paso.`
       :'Sin acciones base. Puedes usar tu habilidad si est\u00e1 disponible o terminar el turno.')
-      :'La mesa espera su siguiente acci\u00f3n.',art:'recursos/prestigio.png'};
+      :'La mesa espera su siguiente acci\u00f3n.',art:'recursos/prestigio.webp'};
 }
-export function showActivity({player='',title,detail='',art='cartas/reverso_personaje.png'}) {
+export function showActivity({player='',title,detail='',art='cartas/reverso_personaje.webp'}) {
   const host=document.getElementById('activity-current');
   if(!host) return;
   const html=`<div class="activity-move activity-now">${img(art,'activity-art')}<div><span class="activity-player">${esc(player)}</span><strong>${esc(title)}</strong><p>${esc(detail)}</p></div></div>`;

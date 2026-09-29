@@ -3,14 +3,26 @@ import {roleCard} from './cards.js';
 
 const modal = document.getElementById('modal');
 let previousFocus;
+export const informationalDialogOpen = () => modal.open && modal.dataset.kind === 'info';
+export function reconcileDialog(sameRoom) {
+  if (!sameRoom || !informationalDialogOpen()) { closeDialog(); return; }
+  if (modal.dataset.snapshot === 'true' && !modal.querySelector('.consultation-update')) {
+    const note = document.createElement('p');
+    note.className = 'consultation-update'; note.setAttribute('role','status');
+    note.textContent = 'La mesa se ha actualizado. Esta consulta conserva la información que abriste.';
+    modal.querySelector('.dialog-body').append(note);
+  }
+}
 export function closeDialog() {
   if (!modal.open) return;
   modal.close(); previousFocus?.focus?.({preventScroll:true});
 }
-export function dialog(title, content, {wide = false, locked = false, subtitle = ''} = {}) {
+export function dialog(title, content, {wide = false, locked = false, subtitle = '', kind = 'decision', snapshot = false} = {}) {
   if (!modal.open) previousFocus = document.activeElement;
   modal.className = `${wide ? 'wide' : ''} ${locked ? 'locked' : ''}`;
   modal.dataset.locked = String(locked);
+  modal.dataset.kind = kind;
+  modal.dataset.snapshot = String(snapshot);
   document.getElementById('modal-content').innerHTML = `<div class="dialog-heading"><span class="eyebrow">TESIS</span><h1 id="modal-title">${esc(title)}</h1>${subtitle ? `<p>${esc(subtitle)}</p>` : ''}</div>${!locked ? '<button class="dialog-close" data-command="close" aria-label="Cerrar">Cerrar</button>' : ''}<div class="dialog-body">${content}</div>`;
   if (!modal.open) modal.showModal();
   modal.scrollTop = 0;
@@ -23,7 +35,7 @@ export function phaseDialog(state) {
   } else if (state.fase === 'FIN_RONDA') {
     dialog(`La ronda ${state.ronda} ha terminado`, `<div class="round-summary">${ranking(state)}<p>${state.ultimaRonda ? 'Se ha alcanzado la tercera publicación. Es hora de reconocer el legado de cada academia.' : 'Los personajes regresan al mazo. Una nueva ronda trae nuevas posibilidades.'}</p>${state.acciones.some(a=>a.id==='SIGUIENTE_RONDA') ? `<button class="gold-button" data-command="next-round">${state.ultimaRonda ? 'Descubrir el resultado' : 'Comenzar siguiente ronda'}</button>` : `<p>Esperando a ${esc(state.actual)} para continuar.</p>`}</div>`, {locked:true});
   } else if (state.fase === 'FIN_PARTIDA') {
-    dialog('TESIS COMPLETADA', `<div class="final-result">${img('recursos/prestigio.png','victory-medal')}<h2>${state.ganadores.map(esc).join(' · ')}</h2><p>${state.ganadores.length > 1 ? 'Comparten' : 'Obtiene'} la victoria por prestigio.</p>${state.jugadores.filter(p=>state.ganadores.includes(p.nombre)).map(p=>`<div class="victory-publications" aria-label="Publicaciones de ${esc(p.nombre)}">${p.estudios.filter(e=>e.publicado).map(e=>img(e.carta.arte,'',e.carta.nombre)).join('')}</div>`).join('')}${ranking(state)}<div class="dialog-buttons"><button class="gold-button" data-command="home">Nueva partida</button><button class="plain-button" data-command="close">Explorar la mesa</button></div></div>`, {locked:false, subtitle:`Partida completada en ${state.ronda} rondas`});
+    dialog('TESIS COMPLETADA', `<div class="final-result">${img('recursos/prestigio.webp','victory-medal')}<h2>${state.ganadores.map(esc).join(' · ')}</h2><p>${state.ganadores.length > 1 ? 'Comparten' : 'Obtiene'} la victoria por prestigio.</p>${state.jugadores.filter(p=>state.ganadores.includes(p.nombre)).map(p=>`<div class="victory-publications" aria-label="Publicaciones de ${esc(p.nombre)}">${p.estudios.filter(e=>e.publicado).map(e=>img(e.carta.arte,'',e.carta.nombre)).join('')}</div>`).join('')}${ranking(state)}<div class="dialog-buttons"><button class="gold-button" data-command="home">Nueva partida</button><button class="plain-button" data-command="close">Explorar la mesa</button></div></div>`, {locked:false, subtitle:`Partida completada en ${state.ronda} rondas`});
   } else closeDialog();
 }
 function ranking(state) {

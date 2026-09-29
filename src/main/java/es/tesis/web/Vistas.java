@@ -14,8 +14,9 @@ public final class Vistas {
     public record Estudio(int indice, Carta carta, int trabajo, int prestigioExtra, boolean publicado) {}
     public record Jugador(String nombre, int monedas, int prestigio, int cartas, int publicados,
                           Rol rol, List<Estudio> estudios, boolean activo) {}
-    public record Opcion(String etiqueta, Integer indice, String objetivo, Rol rol) {
-        public Opcion(String etiqueta, Integer indice, String objetivo) { this(etiqueta, indice, objetivo, null); }
+    public record Opcion(String etiqueta, Integer indice, String objetivo, Rol rol, String previsualizacion) {
+        public Opcion(String etiqueta, Integer indice, String objetivo) { this(etiqueta, indice, objetivo, null, ""); }
+        public Opcion(String etiqueta, Integer indice, String objetivo, Rol rol) { this(etiqueta, indice, objetivo, rol, ""); }
     }
     public record Accion(String id, String nombre, String descripcion, boolean disponible,
                          String motivo, List<Opcion> opciones) {}

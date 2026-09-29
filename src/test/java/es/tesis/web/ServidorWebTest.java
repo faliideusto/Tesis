@@ -23,8 +23,8 @@ class ServidorWebTest {
             var index=get(c,base+"/"); assertEquals(200,index.statusCode()); assertTrue(index.body().contains("Tesis"));
             assertEquals(200,get(c,base+"/js/app.js").statusCode());
             assertTrue(get(c,base+"/css/game.css").headers().firstValue("Content-Type").orElseThrow().contains("text/css"));
-            var png=get(c,base+"/assets/Tesis-assets/cartas/reverso_idea.png");
-            assertEquals(200,png.statusCode()); assertEquals("image/png",png.headers().firstValue("Content-Type").orElseThrow());
+            var png=get(c,base+"/assets/Tesis-assets/cartas/reverso_idea.webp");
+            assertEquals(200,png.statusCode()); assertEquals("image/webp",png.headers().firstValue("Content-Type").orElseThrow());
             assertEquals(404,get(c,base+"/no-existe").statusCode());
             assertEquals(404,get(c,base+"/../pom.xml").statusCode());
             var creacion=post(c,base+"/api/game","{\"nombres\":[\"Ángela\",\"Bruno\",\"Clara\"]}");
@@ -40,6 +40,22 @@ class ServidorWebTest {
             var elegir=post(c,base+"/api/game/select-role","{\"revision\":"+estado.get("revision")+",\"tipo\":\"SELECCIONAR\",\"indice\":0}");
             assertEquals(200,elegir.statusCode());
             assertTrue(JsonParser.parseString(elegir.body()).getAsJsonObject().getAsJsonArray("mano").isEmpty());
+        }
+    }
+
+    @Test void rechazaIndicesInvalidosTambienEnLaApiLocal() throws Exception {
+        try (var web = new ServidorWeb(0)) {
+            web.iniciar(); var c = cliente(); String base = "http://localhost:" + web.puerto();
+            var creado = post(c, base + "/api/game", "{\"nombres\":[\"Ana\",\"Bruno\",\"Clara\"]}");
+            long revision = JsonParser.parseString(creado.body()).getAsJsonObject().get("revision").getAsLong();
+            post(c, base + "/api/game/reveal", "{\"revision\":" + revision + "}");
+            String antes = get(c, base + "/api/game/state").body();
+            revision = JsonParser.parseString(antes).getAsJsonObject().get("revision").getAsLong();
+            for (String indice : new String[]{"0.9", "0.0", "1e0", "-1", "2147483648", "null", "\"0\"", "true", "[]", "{}"}) {
+                assertEquals(400, post(c, base + "/api/game/select-role", "{\"revision\":" + revision
+                        + ",\"tipo\":\"SELECCIONAR\",\"indice\":" + indice + "}").statusCode(), indice);
+                assertEquals(antes, get(c, base + "/api/game/state").body());
+            }
         }
     }
 

@@ -8,14 +8,14 @@ public final class FabricaMazos {
     private FabricaMazos() {}
     public static Mazo<IdeaCarta> crearIdeas() {
         return new Mazo<>(List.of(
-                new IdeaCarta("Artículo Ecológico", 1, 1, 1),
-                new IdeaCarta("Artículo Transversal", 2, 1, 2),
-                new IdeaCarta("Casos y Controles", 2, 2, 3),
-                new IdeaCarta("Cohortes", 3, 3, 5),
-                new IdeaCarta("Ensayo Clínico Aleatorizado", 4, 4, 7),
-                new IdeaCarta("Ensayo Comunitario", 8, 4, 9),
-                new IdeaCarta("Revisión Sistemática", 2, 5, 6),
-                new IdeaCarta("Patente", 3, 5, 5, 2)
+                new IdeaCarta("Artículo Ecológico", 2, 1, 1),
+                new IdeaCarta("Artículo Transversal", 3, 1, 2),
+                new IdeaCarta("Casos y Controles", 3, 2, 3),
+                new IdeaCarta("Cohortes", 4, 3, 5),
+                new IdeaCarta("Ensayo Clínico Aleatorizado", 5, 4, 7),
+                new IdeaCarta("Ensayo Comunitario", 9, 4, 9),
+                new IdeaCarta("Revisión Sistemática", 3, 5, 6),
+                new IdeaCarta("Patente", 4, 5, 5, 2)
         ), List.of(20, 20, 17, 13, 10, 6, 10, 4));
 
     }

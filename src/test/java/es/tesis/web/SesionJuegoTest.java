@@ -196,7 +196,7 @@ class SesionJuegoTest {
             assertEquals(c.costeMonedas(),dto.coste()); assertEquals(c.trabajoRequerido(),dto.trabajo());
             assertEquals(c.nombre().equals("Patente"),dto.legendaria());
             assertEquals(c.nombre().equals("Patente") ? 2 : 0,dto.ingresoPorTurno());
-            if(c.nombre().equals("Ensayo Comunitario")) { assertEquals(8,dto.coste()); assertEquals(4,dto.trabajo()); }
+            if(c.nombre().equals("Ensayo Comunitario")) { assertEquals(9,dto.coste()); assertEquals(4,dto.trabajo()); }
         }
         for(var r:es.tesis.dominio.FabricaMazos.crearRoles().cartas()) {
             var dto=CatalogoVisual.rol(r,0);

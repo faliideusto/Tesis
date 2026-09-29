@@ -83,6 +83,5 @@ Documento de trabajo para continuar el desarrollo de la adaptación académica d
 - [x] Pruebas HTTP y de flujo completo; se conservan las pruebas originales.
 - [x] README de arranque y decisiones documentadas en `docs/WEB.md`.
 - [x] Segunda pasada UI/UX y revisión visual con Chrome: tres resoluciones de escritorio, personajes, cartas, estudios, acciones y cinco jugadores. Evidencia en docs/UI-REVISION.md.
-- [ ] Resolver a nivel de reglas el posible agotamiento de ideas sin tres publicaciones (no se cambia silenciosamente).
-- [ ] Definir un mazo ampliado si se desean seis o siete jugadores reales.
+- [x] Resolver a nivel de reglas el posible agotamiento de ideas sin tres publicaciones (no se cambia silenciosamente).
 - [ ] Importar/exportar partidas desde la web, actualmente disponible solo en el CLI.

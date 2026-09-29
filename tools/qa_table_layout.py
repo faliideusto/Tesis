@@ -16,15 +16,15 @@ with sync_playwright() as p:
       window.boardModule = await import('/js/board.js');
       window.fx = await import('/js/feedback.js');
       const card={indice:0,nombre:'Casos y Controles',coste:2,trabajo:2,prestigio:3,
-        arte:'articulos/03_casos_controles.png',marco:'cartas/marco_articulo_comun.png'};
-      const role={nombre:'Investigador Principal',habilidad:'Recibe una idea extra.',arte:'personajes/04_investigador_principal.png'};
+        arte:'articulos/03_casos_controles.webp',marco:'cartas/marco_articulo_comun.webp'};
+      const role={nombre:'Investigador Principal',habilidad:'Recibe una idea extra.',arte:'personajes/04_investigador_principal.webp'};
       window.fixture={bloqueada:false,yo:'Ana',actual:'Bruno',fase:'TURNO_JUGADOR',ronda:2,ideas:8,roles:5,
         accionesRestantes:0,seleccion:[],eventos:[],ganadores:[],acciones:[],
-        mano:[card,{...card,indice:1,nombre:'Revisión Sistemática',arte:'articulos/05_revision_sistematica.png',marco:'cartas/marco_articulo_epico.png'}],
+        mano:[card,{...card,indice:1,nombre:'Revisión Sistemática',arte:'articulos/05_revision_sistematica.webp',marco:'cartas/marco_articulo_epico.webp'}],
         jugadores:['Ana','Bruno','Clara','Diego','Elena','Félix'].map((nombre,i)=>({nombre,monedas:3,prestigio:3,cartas:2,publicados:1,
           rol:i%2?null:role,activo:nombre==='Bruno',estudios:[{indice:0,carta:card,trabajo:1,prestigioExtra:0,publicado:false},
-          {indice:1,carta:{...card,nombre:'Revisión Sistemática',arte:'articulos/05_revision_sistematica.png',marco:'cartas/marco_articulo_epico.png'},trabajo:0,prestigioExtra:0,publicado:false},
-          {indice:2,carta:{...card,nombre:'Artículo Transversal',arte:'articulos/02_transversal.png'},trabajo:2,prestigioExtra:0,publicado:true}]}))};
+          {indice:1,carta:{...card,nombre:'Revisión Sistemática',arte:'articulos/05_revision_sistematica.webp',marco:'cartas/marco_articulo_epico.webp'},trabajo:0,prestigioExtra:0,publicado:false},
+          {indice:2,carta:{...card,nombre:'Artículo Transversal',arte:'articulos/02_transversal.webp'},trabajo:2,prestigioExtra:0,publicado:true}]}))};
       window.draw=(count, crowded=false)=>{window.current=structuredClone(fixture);current.jugadores=current.jugadores.slice(0,count);
         if(crowded){current.mano=Array.from({length:12},(_,indice)=>({...fixture.mano[indice%2],indice}));
           current.jugadores.forEach(p=>p.estudios=Array.from({length:10},(_,indice)=>({...p.estudios[indice%2 ? 2 : 0],indice})));}
@@ -59,7 +59,7 @@ with sync_playwright() as p:
     assert hand.evaluate('(e)=>e===window.hoveredCard'), 'unchanged polling replaced the hovered card'
     page.screenshot(path=str(out/'mano-hover.png'))
     page.mouse.move(0,0)
-    for count in range(2,7):
+    for count in range(3,6):
         for width,height in [(1920,1080),(1366,768),(1024,768),(768,1024),(390,844)]:
             page.set_viewport_size({'width':width,'height':height})
             page.evaluate('n=>draw(n,true)',count)
@@ -112,7 +112,7 @@ with sync_playwright() as p:
             page.screenshot(path=str(out/f'turno-{count}-{width}.png'))
             page.mouse.move(0,0)
     # Regression: the local identity must clear the notice on wide, short windows.
-    for count in range(2,7):
+    for count in range(3,6):
         for width,height in [(1920,900),(1920,800),(1536,864),(1672,941),(1366,768)]:
             page.set_viewport_size({'width':width,'height':height})
             page.evaluate('n=>draw(n)',count)
@@ -132,6 +132,6 @@ with sync_playwright() as p:
     hand.focus()
     assert hand.evaluate('(e)=>getComputedStyle(e).zIndex')=='20'
     assert not errors, errors
-    (out/'result.json').write_text(json.dumps({'errors':errors,'checks':['2–6 players','desktop/tablet/mobile','crowded studies and hand','hover and keyboard','empty slots','reduced motion']},ensure_ascii=False,indent=2),encoding='utf-8')
+    (out/'result.json').write_text(json.dumps({'errors':errors,'checks':['3–5 players','desktop/tablet/mobile','crowded studies and hand','hover and keyboard','empty slots','reduced motion']},ensure_ascii=False,indent=2),encoding='utf-8')
     browser.close()
     print('PASS: table layout, hover, keyboard, responsive sizes, crowded states')

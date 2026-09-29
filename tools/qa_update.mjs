@@ -15,8 +15,8 @@ try {
     const {settled}=await import('/js/effects.js');
     const {dialog,phaseDialog,closeDialog}=await import('/js/dialogs.js');
     const {articleChoices}=await import('/js/players.js');
-    const role={indice:0,nombre:'Pre-Doctoral',orden:6,habilidad:'Una vez por turno, añade 1 punto de trabajo a uno de tus artículos en desarrollo.',arte:'personajes/07_pre_doctoral.png'};
-    const card={indice:0,nombre:'Casos y Controles',coste:2,trabajo:2,prestigio:3,arte:'articulos/03_casos_controles.png',marco:'cartas/marco_articulo_comun.png'};
+    const role={indice:0,nombre:'Pre-Doctoral',orden:6,habilidad:'Una vez por turno, añade 1 punto de trabajo a uno de tus artículos en desarrollo.',arte:'personajes/07_pre_doctoral.webp'};
+    const card={indice:0,nombre:'Casos y Controles',coste:2,trabajo:2,prestigio:3,arte:'articulos/03_casos_controles.webp',marco:'cartas/marco_articulo_comun.webp'};
     window.fixture={yo:'Ana',actual:'Ana',fase:'TURNO_JUGADOR',ronda:1,roles:2,ideas:8,mano:[],seleccion:[],eventos:[],acciones:[],accionesRestantes:2,
       jugadores:['Ana','Bruno','Clara'].map((nombre,i)=>({nombre,activo:i===0,rol:i===2?null:role,monedas:2,prestigio:0,cartas:2,estudios:[{indice:0,carta:card,trabajo:i,publicado:false,prestigioExtra:0}]}))};
     window.draw=()=>{board(fixture);settled(null,fixture);};

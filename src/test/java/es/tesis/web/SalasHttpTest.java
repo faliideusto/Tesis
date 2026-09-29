@@ -2,12 +2,38 @@ package es.tesis.web;
 
 import com.google.gson.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import java.net.URI;
 import java.net.http.*;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SalasHttpTest {
+    @Test void rechazaNumerosCoercionadosYTiposInvalidosSinMutarLaSala() throws Exception {
+        try (var servidor = new ServidorWeb("127.0.0.1", 0)) {
+            servidor.iniciar();
+            String base = "http://localhost:" + servidor.puerto() + "/api/salas";
+            var http = HttpClient.newHttpClient();
+            var acceso = gson.fromJson(enviar(http, base, null, Map.of("nombre", "Ana")).body(), Vistas.AccesoSala.class);
+            base += "/" + acceso.codigo();
+            var cliente = new Cliente(http, acceso.playerToken(), "Ana");
+            var antes = estado(cliente, base);
+            for (Object invalido : List.of(0.9, 1.0, -1, "0", true, List.of(0), Map.of("n", 0), new java.math.BigInteger("999999999999999999999999"))) {
+                for (String campo : List.of("revision", "indice")) {
+                    var cuerpo = new HashMap<String, Object>();
+                    cuerpo.put("revision", antes.revision()); cuerpo.put("tipo", "SELECCIONAR"); cuerpo.put(campo, invalido);
+                    assertEquals(400, enviar(http, base + "/accion", cliente.token, cuerpo).statusCode(), campo + ": " + invalido);
+                    assertEquals(antes, estado(cliente, base));
+                }
+            }
+            for (String campo : List.of("tipo", "objetivo")) {
+                assertEquals(400, enviar(http, base + "/accion", cliente.token,
+                        Map.of("revision", antes.revision(), campo, 123)).statusCode());
+            }
+            assertEquals(400, enviar(http, base + "/iniciar", cliente.token, Map.of("revision", 1.5)).statusCode());
+        }
+    }
     private final Gson gson=new Gson();
     private record Cliente(HttpClient http, String token, String nombre) {}
     private HttpResponse<String> enviar(HttpClient cliente,String url,String token,Object body) throws Exception {
@@ -57,7 +83,8 @@ class SalasHttpTest {
         }
     }
 
-    @Test void tresClientesIndependientesJueganPartidaEnteraPorHttpYReconectan() throws Exception {
+    @ParameterizedTest @ValueSource(ints = {3, 4, 5})
+    void clientesIndependientesJueganPartidaEnteraPorHttpYReconectan(int cantidad) throws Exception {
         try(var servidor=new ServidorWeb("127.0.0.1",0)) {
             servidor.iniciar(); String base="http://localhost:"+servidor.puerto()+"/api/salas";
             var httpA=HttpClient.newHttpClient(); var httpB=HttpClient.newHttpClient();
@@ -68,21 +95,28 @@ class SalasHttpTest {
             var httpC=HttpClient.newHttpClient();
             var tercera=gson.fromJson(enviar(httpC,base+"/unirse",null,Map.of("nombre","Clara")).body(),Vistas.AccesoSala.class);
             var c=new Cliente(httpC,tercera.playerToken(),"Clara");
-            assertEquals(List.of("Fali","Jefe","Clara"),estado(a,base).jugadores()); assertFalse(estado(b,base).soyAnfitrion());
+            var clientes = new ArrayList<>(List.of(a, b, c));
+            for (int i = 4; i <= cantidad; i++) {
+                var nuevoHttp = HttpClient.newHttpClient();
+                String nombre = "Jugador " + i;
+                var nuevo = gson.fromJson(enviar(nuevoHttp, base + "/unirse", null, Map.of("nombre", nombre)).body(), Vistas.AccesoSala.class);
+                clientes.add(new Cliente(nuevoHttp, nuevo.playerToken(), nombre));
+            }
+            assertEquals(clientes.stream().map(Cliente::nombre).toList(),estado(a,base).jugadores()); assertFalse(estado(b,base).soyAnfitrion());
             assertEquals(200,enviar(httpA,base+"/iniciar",a.token,Map.of("revision",estado(a,base).revision())).statusCode());
             var usados=new HashSet<String>();
             for(int paso=0;paso<1500;paso++) {
                 var vistaA=estado(a,base); var vistaB=estado(b,base);
                 assertEquals(vistaA.revision(),vistaB.revision()); assertEquals(vistaA.partida().actual(),vistaB.partida().actual());
                 if(vistaA.fase().equals("FINALIZADA")) break;
-                var actor=vistaA.partida().actual().equals("Fali")?a:vistaA.partida().actual().equals("Jefe")?b:c;
+                var actor=clientes.stream().filter(j -> j.nombre.equals(vistaA.partida().actual())).findFirst().orElseThrow();
                 var inactivo=actor==a?b:a; var s=estado(actor,base);
                 assertTrue((actor==a?vistaB:vistaA).partida().seleccion().isEmpty());
                 assertTrue((actor==a?vistaB:vistaA).partida().acciones().isEmpty());
                 assertEquals(403,enviar(inactivo.http,base+"/accion",inactivo.token,new Vistas.Peticion(s.revision(),"COBRAR",null,null,null)).statusCode());
                 var p=s.partida(); String tipo; Integer indice=null; String objetivo=null;
                 if(p.fase().equals("SELECCION_ROLES")) {
-                    tipo="SELECCIONAR"; indice=p.seleccion().stream().filter(r->r.orden()!=1&&r.orden()!=3).findFirst().orElseThrow().indice();
+                    tipo="SELECCIONAR"; indice=p.seleccion().stream().filter(r->r.orden()!=1).findFirst().orElseThrow().indice();
                 } else if(p.fase().equals("FIN_RONDA")) tipo="SIGUIENTE_RONDA";
                 else {
                     var prioridad=p.mano().isEmpty()?List.of("TRABAJAR","PENSAR","COBRAR","FIN_TURNO"):List.of("TRABAJAR","INICIAR","COBRAR","FIN_TURNO");
@@ -99,7 +133,7 @@ class SalasHttpTest {
             }
             assertTrue(usados.containsAll(List.of("COBRAR","PENSAR","INICIAR","TRABAJAR","FIN_TURNO","SIGUIENTE_RONDA")));
             var fin=estado(a,base); assertEquals("FINALIZADA",fin.fase()); assertTrue(fin.partida().ronda()>1);
-            assertEquals(fin.partida().ganadores(),estado(b,base).partida().ganadores());
+            for (var cliente : clientes) assertEquals(fin.partida().ganadores(),estado(cliente,base).partida().ganadores());
             assertEquals(409,enviar(a.http,base+"/accion",a.token,new Vistas.Peticion(fin.revision(),"COBRAR",null,null,null)).statusCode());
         }
     }

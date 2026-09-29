@@ -11,7 +11,7 @@ window.addEventListener('resize', () => {
 export function board(state) {
   if (!document.getElementById('board')) document.getElementById('app').innerHTML = `
     <section id="board" class="board" aria-label="Mesa de Tesis">
-      <header class="board-header"><button class="brand" data-command="home" aria-label="Menú principal">${img('Logo/logo_tesis.png')}</button>
+      <header class="board-header"><button class="brand" data-command="home" aria-label="Menú principal">${img('Logo/logo_tesis.webp')}</button>
       <div id="turn-panel" class="turn-panel" aria-live="polite"></div><nav class="utility"><button data-command="history">Crónica</button><button data-command="help">Reglas</button></nav></header>
       <div id="rivals" class="rivals"></div><section id="decks" class="decks" aria-label="Mazos de la mesa"></section>
       <div id="phase-message" class="phase-message"></div>
@@ -57,6 +57,6 @@ export function board(state) {
   document.getElementById('actions').classList.toggle('single-action', !!phaseAction || state.acciones.length === 1);
   update('actions', phaseAction
     ? `<button class="action-button phase-action" data-command="${phaseAction.command}"><span class="action-content"><span class="action-label">${phaseAction.label}</span></span></button>`
-    : state.acciones.map(a => `<button class="action-button ${a.id === 'FIN_TURNO' ? 'end-turn' : ''} ${a.id === 'HABILIDAD' ? 'ability-action' : ''}" data-command="${a.id === 'SIGUIENTE_RONDA' ? 'next-round' : 'action'}" data-action="${a.id}" ${!a.disponible ? 'disabled' : ''} data-tip="${esc(a.disponible ? a.descripcion : a.motivo)}">
-    <span class="action-content">${img(icons[a.id] ? `acciones/${icons[a.id]}.png` : a.id === 'HABILIDAD' ? 'recursos/prestigio.png' : 'acciones/finalizar_turno.png')}<span class="action-label">${esc(a.nombre)}</span></span></button>`).join(''));
+    : state.acciones.map(a => `<button class="action-button ${a.id === 'FIN_TURNO' ? 'end-turn' : ''} ${a.id === 'HABILIDAD' ? 'ability-action' : ''}" data-command="${a.id === 'SIGUIENTE_RONDA' ? 'next-round' : 'action'}" data-action="${a.id}" aria-disabled="${!a.disponible}" aria-label="${esc(a.nombre + (!a.disponible ? '. ' + a.motivo + ' Pulsa para ver el motivo.' : ''))}" data-tip="${esc(a.disponible ? a.descripcion : a.motivo)}">
+    <span class="action-content">${img(icons[a.id] ? `acciones/${icons[a.id]}.webp` : a.id === 'HABILIDAD' ? 'recursos/prestigio.webp' : 'acciones/finalizar_turno.webp')}<span class="action-label">${esc(a.nombre)}</span></span></button>`).join(''));
 }

@@ -1,6 +1,6 @@
 # Tesis
 
-Juego de cartas multijugador por salas para **2–6 personas**. Cada navegador controla a su jugador, con mano privada, sin cuentas: nombre y código de sala. El motor Java sigue siendo la única fuente de verdad.
+Juego de cartas multijugador por salas para **3–5 personas**. Cada navegador controla a su jugador, con mano privada, sin cuentas: nombre y código de sala. El motor Java sigue siendo la única fuente de verdad.
 
 ## Ejecutar y jugar
 
@@ -11,7 +11,7 @@ mvn test
 mvn compile exec:java
 ```
 
-En el ordenador servidor abre `http://localhost:8080`. Crea una sala con tu nombre y comparte su código. Los demás deben abrir **el mismo servidor**: en la misma red, `http://IP_DEL_SERVIDOR:8080`. El firewall del servidor debe permitir ese puerto. El código por sí solo no conecta servidores diferentes. El anfitrión inicia cuando hay entre dos y seis participantes.
+En el ordenador servidor abre `http://localhost:8080`. Crea una sala con tu nombre y comparte su código. Los demás deben abrir **el mismo servidor**: en la misma red, `http://IP_DEL_SERVIDOR:8080`. El firewall del servidor debe permitir ese puerto. El código por sí solo no conecta servidores diferentes. El anfitrión inicia cuando hay entre tres y cinco participantes.
 
 La selección es privada; cada persona actúa desde su dispositivo. Los personajes se revelan al llegar su turno. Al terminar una ronda, el último jugador indicado pulsa «Siguiente ronda» o «Ver resultados». Hay siete habilidades, dos acciones base, tres publicaciones para desencadenar el cierre y victoria por prestigio. Los ocho tipos de idea permanecen siempre disponibles; cada robo usa las probabilidades indicadas más abajo, con reposición.
 
@@ -34,19 +34,28 @@ Para Internet hace falta un servicio que ejecute Java y HTTPS, normalmente con u
 
 ## Verificación
 
-- `mvn test`: pruebas de salas de hasta seis personas, privacidad, habilidades, republicación, persistencia, probabilidades e ingresos de Patente.
+- `mvn test`: pruebas de partidas completas de 3, 4 y 5 personas, privacidad, validación estricta de solicitudes, previsualizaciones, habilidades, persistencia, probabilidades e ingresos de Patente.
 - `mvn -DskipTests package`: **BUILD SUCCESS**.
-- Prueba real automatizada: dos contextos aislados de Chrome, creación/unión, partida completa, recargas, estabilidad de modal bajo polling y recuperación de red.
+- Prueba real automatizada: 3, 4 y 5 contextos aislados de Chrome, creación/unión, partida completa, recargas, avisos, previsualizaciones, estabilidad de modal bajo polling y recuperación de red. La partida de cinco personas usa una pantalla de 390 × 844.
 
 La prueba visual es opcional y no añade dependencias de producción:
 
 ```powershell
-py -m pip install playwright
+npm install --no-save --package-lock=false playwright
 # Con Chrome instalado y el servidor escuchando en 8091:
-py tools/qa_multiplayer.py
+node tools/qa_multiplayer.mjs
+node tools/qa_article_boxes.mjs
+# Pruebas JS sin dependencias externas (PowerShell):
+Get-ChildItem tests/*.test.mjs | ForEach-Object { node --experimental-vm-modules $_.FullName }
 ```
 
-`TESIS_URL` permite cambiar la dirección de la prueba. Evidencia temporal: `target/qa-multiplayer/`. Arquitectura y contrato: [docs/WEB.md](docs/WEB.md).
+`TESIS_URL` permite cambiar la dirección de la prueba. `TESIS_PLAYERS=3,4,5` selecciona tamaños de sala y `TESIS_FAST_QA=1` acelera las animaciones únicamente dentro del navegador de prueba. Evidencia temporal: `target/qa-multiplayer/`. El antiguo comando Python delega en este mismo script Node. Arquitectura y contrato: [docs/WEB.md](docs/WEB.md).
+
+Incidencia visual previa pendiente: `qa_article_boxes.mjs` detecta solapamiento entre la placa local y el aviso central en algunas resoluciones de escritorio. Se ha contrastado con el CSS anterior y reproduce los mismos fallos; la prueba conserva la aserción para no ocultarlos. No impide completar las partidas multijugador verificadas.
+
+La interfaz conserva las consultas informativas durante las actualizaciones; una nota avisa cuando sus datos pertenecen al momento de apertura. Las decisiones sí se invalidan al cambiar la revisión. Los objetivos válidos y sus previsualizaciones proceden del servidor. Finalizar turno pide confirmación cuando quedan acciones o una habilidad disponible.
+
+Los 47 gráficos de producción usan WebP sin pérdida: 102.763.160 → 73.694.796 bytes, conservando dimensiones, transparencia y píxeles visibles. `tools/optimize_assets.mjs` permite repetir la conversión de nuevos PNG con Sharp; las referencias originales de diseño no se convierten.
 
 ## Modo terminal conservado
 
@@ -68,8 +77,8 @@ El diseño parte de estas decisiones del documento base:
 - Acciones base: cobrar, pensar, iniciar estudio y trabajar.
 - Roles con habilidades específicas: Comité de Ética, Estadístico, Investigador Principal, Decana, Editorial, Pre-Doctoral y Revisor 2.
 - Numeración de personajes: 1 Comité, 2 Estadístico, 3 Investigador Principal,
-  4 Decana, 5 Editorial, 6 Pre-Doctoral y 7 Revisor 2. El máximo es seis personas;
-  el séptimo personaje permite descartar uno en cada ronda.
+  4 Decana, 5 Editorial, 6 Pre-Doctoral y 7 Revisor 2. El máximo es cinco personas;
+  se descartan dos personajes con tres jugadores y uno con cuatro o cinco.
 
 ## Arquitectura propuesta
 
@@ -150,8 +159,8 @@ Escribe `0`, `cancelar` o `volver` para abandonar una selección sin ejecutar la
 | Investigador Principal | Automática: roba una idea aleatoria extra al inicio, y elige primero la siguiente ronda. |
 | Decana | Automática: inmunidad a habilidades rivales durante toda la ronda. |
 | Editorial | Al iniciar tu turno, recibe 1 Moneda por cada artículo publicado en la mesa. No compra trabajo. |
-| Pre-Doctoral | Automática: la opción 4 aporta dos puntos de trabajo. |
-| Revisor 2 | Una vez por turno, paga 1 Moneda para retirar hasta 2 Puntos de Trabajo de cualquier artículo, incluso publicado. Vuelve a desarrollo y pierde su prestigio hasta republicarse; conserva la bonificación del Estadístico en la carta. Decana es inmune a revisiones rivales. |
+| Pre-Doctoral | Activa: una vez por turno aporta 1 punto de trabajo a un estudio propio en desarrollo, sin consumir acciones base. Trabajar sigue aportando 1 punto. |
+| Revisor 2 | Una vez por turno, paga 1 moneda para retirar hasta 2 puntos de trabajo de un estudio rival en desarrollo que tenga trabajo. No revisa publicaciones ni estudios propios. Decana es inmune a revisiones rivales. |
 
 Las habilidades activas se usan una vez por turno. Las automáticas no necesitan activarse con la opción 5. El Plagiador ya no forma parte del mazo de las nuevas partidas; el lector de guardados antiguos conserva su compatibilidad.
 
@@ -172,8 +181,8 @@ El reparto inicial y todos los robos usan la misma distribución con reposición
 
 **Patente** es la única carta legendaria: cuesta 3 monedas y 5 de trabajo, da
 5 de prestigio y genera 2 monedas al inicio de cada turno de su propietario
-mientras esté publicada. Cada copia publicada aporta sus ingresos. Una revisión
-suspende sus ingresos hasta republicarla. Recuperar una partida no vuelve a cobrar
+mientras esté publicada. Cada copia publicada aporta sus ingresos. Los artículos
+publicados no son objetivos válidos del Revisor 2. Recuperar una partida no vuelve a cobrar
 el ingreso del turno en curso. Los turnos vetados no activan efectos de inicio.
 
 ### Consultar la partida

@@ -16,15 +16,15 @@ try {
     const {feedback}=await import('/js/feedback.js');
     const cards=[
       ['Artículo Ecológico','01_ecologico',1,1,1],
-      ['Artículo Transversal','02_transversal',3,2,5],
+      ['Artículo Transversal','02_transversal',2,1,2],
       ['Casos y Controles','03_casos_controles',2,2,3],
       ['Cohortes','04_cohortes',3,3,5],
       ['Revisión Sistemática','05_revision_sistematica',2,5,6],
-      ['Ensayo Clínico Aleatorizado','06_ensayo_clinico_aleatorizado',4,5,7],
-      ['Ensayo Comunitario','07_ensayo_comunitario',3,4,6]
+      ['Ensayo Clínico Aleatorizado','06_ensayo_clinico_aleatorizado',4,4,7],
+      ['Ensayo Comunitario','07_ensayo_comunitario',8,4,9]
     ].map(([nombre,art,coste,trabajo,prestigio],indice)=>({indice,nombre,coste,trabajo,prestigio,
-      arte:`articulos/${art}.png`,marco:`cartas/marco_articulo_${prestigio<=3?'comun':prestigio<=6?'raro':'epico'}.png`}));
-    const role=(nombre,arte,orden)=>({nombre,orden,indice:orden-1,arte:`personajes/${arte}.png`,habilidad:'Una vez por turno.'});
+      arte:`articulos/${art}.webp`,marco:`cartas/marco_articulo_${prestigio<=3?'comun':prestigio<=6?'raro':'epico'}.webp`}));
+    const role=(nombre,arte,orden)=>({nombre,orden,indice:orden-1,arte:`personajes/${arte}.webp`,habilidad:'Una vez por turno.'});
     const configurations=[
       ['Jugador 5',3,0,role('Investigador Principal','04_investigador_principal',3)],
       ['Fali',2,1,role('Decana','05_decana',4)],

@@ -22,8 +22,8 @@ with sync_playwright() as p:
         window.boardModule = await import('/js/board.js');
         window.fx = await import('/js/feedback.js');
         const card = {indice:0,nombre:'Casos y Controles',coste:2,trabajo:2,prestigio:3,
-            arte:'articulos/03_casos_controles.png',marco:'cartas/marco_articulo_comun.png'};
-        const role = {indice:0,nombre:'Pre-Doctoral',orden:6,habilidad:'La acción de trabajar te aporta 2 puntos de trabajo durante toda la ronda.',arte:'personajes/07_pre_doctoral.png'};
+            arte:'articulos/03_casos_controles.webp',marco:'cartas/marco_articulo_comun.webp'};
+        const role = {indice:0,nombre:'Pre-Doctoral',orden:6,habilidad:'La acción de trabajar te aporta 2 puntos de trabajo durante toda la ronda.',arte:'personajes/07_pre_doctoral.webp'};
         window.initial = {yo:'Ana',fase:'TURNO_JUGADOR',ronda:1,actual:'Bruno',bloqueada:false,
             ideas:7,roles:5,accionesRestantes:0,habilidadPendiente:false,seleccion:[],eventos:[],ganadores:[],ultimaRonda:false,aviso:'',
             jugadores:[{nombre:'Ana',monedas:4,prestigio:0,cartas:2,publicados:0,rol:role,estudios:[],activo:false},
@@ -57,10 +57,10 @@ with sync_playwright() as p:
         draw.eventos.push({numero:2,tipo:'accion.pensar',actor:'Bruno',texto:'Bruno roba una idea.'});
         boardModule.board(draw); fx.feedback(withStudy,draw,fx.captureTable());
     }""")
-    expect(page.locator('.flying-card img')).to_have_attribute('src', '/assets/Tesis-assets/cartas/reverso_idea.png')
+    expect(page.locator('.flying-card img')).to_have_attribute('src', '/assets/Tesis-assets/cartas/reverso_idea.webp')
     expect(page.locator('#activity-current')).to_contain_text('+1 ideas')
     assert page.locator('.idea-deck, .character-deck').count() == 0
-    assert page.locator('.rival-portrait img').get_attribute('src').endswith('reverso_personaje.png')
+    assert page.locator('.rival-portrait img').get_attribute('src').endswith('reverso_personaje.webp')
 
     # Work, review and publication use the public study identity, including duplicates.
     results = page.evaluate("""() => {
@@ -140,7 +140,7 @@ with sync_playwright() as p:
     expect(page.locator('.flying-card')).to_have_count(0)
 
     # Every supported table size, with public studies and narrow screens.
-    for count, width, height in [(n,w,h) for n in range(2,7) for w,h in [(1920,1080),(1600,900),(1024,768),(390,844)]]:
+    for count, width, height in [(n,w,h) for n in range(3,6) for w,h in [(1920,1080),(1600,900),(1024,768),(390,844)]]:
         page.set_viewport_size({'width':width,'height':height})
         page.evaluate("""count => {
             fx.resetFeedback(); const state=structuredClone(published);
@@ -198,7 +198,7 @@ with sync_playwright() as p:
         const s=structuredClone(published); s.actual='Ana'; s.acciones=initial.acciones;
         while(s.jugadores.length<6) s.jugadores.push({...structuredClone(s.jugadores[1]),nombre:`Academia ${s.jugadores.length+1}`});
         const patente={indice:0,nombre:'Patente',coste:3,trabajo:5,prestigio:5,ingresoPorTurno:2,legendaria:true,
-            arte:'cartas/patente_legendaria.png',marco:'cartas/patente_legendaria.png'};
+            arte:'cartas/patente_legendaria.webp',marco:'cartas/patente_legendaria.webp'};
         s.mano=[patente,...s.mano];
         for(const player of s.jugadores.slice(1)) player.estudios=Array.from({length:3},(_,indice)=>({indice,carta:indice===0?patente:s.mano[1],trabajo:indice===0?5:1,prestigioExtra:0,publicado:indice===0}));
         boardModule.board(s); fx.feedback(null,s);

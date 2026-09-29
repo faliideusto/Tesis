@@ -47,7 +47,7 @@ export async function runEffectsTests(root) {
     jugadores:[{nombre:'Yo',estudios:[]},{nombre:'Rival',publicados:0,estudios:[]}]};
   const event=(tipo,extra={})=>({numero:11,tipo,actor:'Rival',...extra});
   const after=e=>({...before,eventos:[...before.eventos,e]});
-  const role={indice:-1,nombre:'Estadístico',orden:2,habilidad:'Añade 1 de prestigio. Una vez por turno.',arte:'personajes/02_estadistico.png'};
+  const role={indice:-1,nombre:'Estadístico',orden:2,habilidad:'Añade 1 de prestigio. Una vez por turno.',arte:'personajes/02_estadistico.webp'};
   const tick=async()=>{for(let i=0;i<30;i++) await Promise.resolve();};
   {
     const {fx,calls}=await setup();
@@ -74,7 +74,7 @@ export async function runEffectsTests(root) {
     assert(!nodes.some(n=>n.className?.includes('fx-role-reveal')));
     pending[0].finish(); await tick();
     assert(!nodes.find(n=>n.className?.includes('fx-banner')).isConnected);
-    assert(nodes.some(n=>n.innerHTML?.includes('marco_personaje.png')));
+    assert(nodes.some(n=>n.innerHTML?.includes('marco_personaje.webp')));
     assert.equal(calls[1].options.duration,3850);
     assert.equal(calls[1].options.easing,'linear');
     assert.equal(Math.round((calls[1].frames[2].offset-calls[1].frames[1].offset)*3850),3000);
@@ -89,7 +89,7 @@ export async function runEffectsTests(root) {
     const {fx,nodes,calls}=await setup({reduce:true});
     const next=after(event('fase.turno',{rolPublico:role}));
     await fx.transition(before,next);
-    assert(nodes.some(n=>n.innerHTML?.includes('marco_personaje.png')));
+    assert(nodes.some(n=>n.innerHTML?.includes('marco_personaje.webp')));
     assert(calls.every(c=>c.frames.every(f=>!f.transform)));
     assert(calls.some(c=>c.options.duration===3850));
     const length=nodes.length;
@@ -123,14 +123,14 @@ export async function runEffectsTests(root) {
   {
     const {fx,nodes}=await setup();
     await fx.transition(before,after(event('accion.pensar',{robo:true})));
-    assert(nodes.some(n=>n.innerHTML?.includes('reverso_idea.png')));
+    assert(nodes.some(n=>n.innerHTML?.includes('reverso_idea.webp')));
     assert(nodes.every(n=>!n.innerHTML?.includes('SECRETO')));
     assert(nodes.every(n=>!n.isConnected)); count++;
   }
   {
     const {fx,nodes}=await setup();
     await fx.transition(before,after(event('accion.cobrar',{cantidad:2})));
-    assert(nodes.some(n=>n.innerHTML?.includes('moneda.png')));
+    assert(nodes.some(n=>n.innerHTML?.includes('moneda.webp')));
     assert(nodes.some(n=>n.textContent==='+2')); count++;
   }
   {
@@ -149,7 +149,7 @@ export async function runEffectsTests(root) {
   {
     const {fx,nodes,card}=await setup({hold:true});
     const next=after(event('accion.trabajar',{cantidad:2,estudio:0,publicacion:true}));
-    next.jugadores=[before.jugadores[0],{nombre:'Rival',publicados:1,estudios:[{indice:0,trabajo:2,carta:{arte:'publica.png'}}]}];
+    next.jugadores=[before.jugadores[0],{nombre:'Rival',publicados:1,estudios:[{indice:0,trabajo:2,carta:{arte:'publica.png',prestigio:5}}]}];
     const playing=fx.transition(before,next);
     assert.equal(card.style.visibility,'hidden');
     fx.resetEffects(); await playing;
@@ -176,11 +176,22 @@ export async function runEffectsTests(root) {
   {
     const {fx,nodes,calls}=await setup();
     const next=after(event('accion.trabajar',{cantidad:2,estudio:0,publicacion:true}));
-    next.jugadores=[before.jugadores[0],{nombre:'Rival',publicados:1,estudios:[{indice:0,trabajo:2,carta:{arte:'publica.png'}}]}];
+    next.jugadores=[before.jugadores[0],{nombre:'Rival',publicados:1,estudios:[{indice:0,trabajo:2,carta:{arte:'publica.png',prestigio:5}}]}];
     await fx.transition(before,next);
     assert(nodes.some(n=>n.className.includes('fx-publication-halo')));
     assert(calls.some(c=>c.element.className?.includes('fx-ceremonial') && c.options.duration===2800));
     assert(nodes.every(n=>!n.isConnected)); count++;
+  }
+  for (const tipo of ['accion.trabajar','habilidad.pre_doctoral']) {
+    const {fx,nodes}=await setup();
+    const next=after(event(tipo,{cantidad:1,estudio:0,publicacion:true}));
+    next.jugadores=[before.jugadores[0],{nombre:'Rival',publicados:1,rol:{nombre:'Pre-Doctoral'},
+      estudios:[{indice:0,trabajo:3,prestigioExtra:1,carta:{arte:'publica.png',prestigio:5}}]}];
+    await fx.transition(before,next);
+    assert(nodes.some(n=>n.textContent==='+6 prestigio'));
+    assert(nodes.some(n=>n.textContent===(tipo==='habilidad.pre_doctoral'?'+1 trabajo · Pre-Doctoral':'+1 trabajo')));
+    assert.equal(nodes.some(n=>n.textContent?.includes('Pre-Doctoral')),tipo==='habilidad.pre_doctoral');
+    count++;
   }
   return `${count} pruebas de efectos superadas`;
 }

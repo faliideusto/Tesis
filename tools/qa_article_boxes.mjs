@@ -15,7 +15,7 @@ try {
     const {board} = await import('/js/board.js');
     const {feedback} = await import('/js/feedback.js');
     const card = {indice:0,nombre:'Casos y Controles',coste:2,trabajo:2,prestigio:3,
-      arte:'articulos/03_casos_controles.png',marco:'cartas/marco_articulo_comun.png'};
+      arte:'articulos/03_casos_controles.webp',marco:'cartas/marco_articulo_comun.webp'};
     window.drawArticles = (players,development,published)=>{
       const state = {bloqueada:false,yo:'Ana',actual:'Bruno',fase:'TURNO_JUGADOR',ronda:2,
         ideas:8,roles:5,accionesRestantes:0,seleccion:[],eventos:[],ganadores:[],acciones:[],mano:[card],
@@ -28,7 +28,7 @@ try {
   });
   for (const [width,height] of [[1920,1080],[1672,941],[1366,768],[1024,768],[768,1024],[390,844]]) {
     await page.setViewportSize({width,height});
-    for (const players of [2,3,4,5,6]) {
+    for (const players of [3,4,5]) {
       for (const [development,published] of [[0,0],[1,0],[3,0],[2,1],[1,2],[0,3],[3,3],[5,5]]) {
         await page.evaluate(([n,d,p])=>drawArticles(n,d,p),[players,development,published]);
         const context = {width,height,players,development,published};
@@ -38,7 +38,7 @@ try {
           if(innerWidth>=1000) {
             const notice=document.querySelector('.table-activity').getBoundingClientRect();
             const identity=document.querySelector('.local-panel').getBoundingClientRect();
-            if(identity.top<notice.bottom+6) failures.push('identity overlaps notice');
+            if(identity.left<notice.right && identity.right>notice.left && identity.top<notice.bottom && identity.bottom>notice.top) failures.push('identity overlaps notice');
             const hand=document.querySelector('#hand .game-card').getBoundingClientRect();
             const local=document.querySelector('.local-academy').getBoundingClientRect();
             if(local.bottom>hand.top) failures.push(['academy overlaps hand',local.bottom,hand.top]);

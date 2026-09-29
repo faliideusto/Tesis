@@ -5,4 +5,4 @@ export function update(id, html) {
   const element = document.getElementById(id);
   if (element && element.innerHTML !== html) element.innerHTML = html;
 }
-export const resource = (name, value, label) => `<span class="resource" data-tip="${esc(label)}">${img(`recursos/${name}.png`)}<b>${esc(value)}</b><span class="sr-only"> ${esc(label)}</span></span>`;
+export const resource = (name, value, label) => `<span class="resource" data-tip="${esc(label)}">${img(`recursos/${name}.webp`)}<b>${esc(value)}</b><span class="sr-only"> ${esc(label)}</span></span>`;

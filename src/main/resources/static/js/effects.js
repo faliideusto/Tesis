@@ -287,17 +287,17 @@ export async function transition(before, after) {
       }
       if (e.cantidad > 0 && ['accion.cobrar','habilidad.editorial.inicio','articulo.ingresos'].includes(e.tipo)) {
         const counter=actor?.querySelector('.resource');
-        tasks.push(flight('recursos/moneda.png',document.querySelector('.idea-deck'),counter,{coin:true})
+        tasks.push(flight('recursos/moneda.webp',document.querySelector('.idea-deck'),counter,{coin:true})
           .then(()=>current===epoch ? Promise.all([glow(counter),floating(`+${e.cantidad}`,counter)]) : undefined));
       }
-      if (e.robo) tasks.push(flight('cartas/reverso_idea.png',document.querySelector('.idea-deck'),hand(e.actor,before)));
+      if (e.robo) tasks.push(flight('cartas/reverso_idea.webp',document.querySelector('.idea-deck'),hand(e.actor,before)));
       if (e.tipo==='accion.iniciar_estudio' && nextStudy) {
         const card=e.actor===after.yo ? before.mano.find(c=>c.nombre===nextStudy.carta.nombre) : null;
         const source=card ? document.querySelector(`#hand [data-index="${card.indice}"]`) : hand(e.actor,before);
         tasks.push(flight(nextStudy.carta.arte,source,e.actor===after.yo?document.getElementById('studies'):actor,{replace:!!card}));
       }
-      if (e.tipo==='accion.trabajar') {
-        const predoc=before.jugadores.find(p=>p.nombre===e.actor)?.rol?.nombre==='Pre-Doctoral';
+      if (['accion.trabajar','habilidad.pre_doctoral'].includes(e.tipo)) {
+        const predoc=e.tipo==='habilidad.pre_doctoral';
         tasks.push(floating(`+${e.cantidad} trabajo${predoc?' · Pre-Doctoral':''}`,target,predoc?'research':'gold'),glow(target));
         const progress=target?.querySelector('progress') || target?.closest('.table-study-slot')?.querySelector('progress');
         if (progress) tasks.push(progressTo(progress,nextStudy?.trabajo));
@@ -308,12 +308,13 @@ export async function transition(before, after) {
         const destination=third ? document.querySelector('.table-activity') : owner===after.yo
           ? document.querySelector('#studies .publications h3') : actor;
         tasks.push(publication(nextStudy.carta.arte,study(owner,e.estudio),destination,third));
+        tasks.push(floating(`+${nextStudy.carta.prestigio + (nextStudy.prestigioExtra || 0)} prestigio`,player(owner,before)));
       }
       if (identities[e.tipo]) {
         const [label,tone]=identities[e.tipo]; tasks.push(floating(label,target,tone),particles(target,false,tone));
         if (e.tipo==='habilidad.plagiador') tasks.push(
-          flight('cartas/reverso_idea.png',actor,player(e.objetivo,before),{tone}),
-          flight('cartas/reverso_idea.png',player(e.objetivo,before),actor,{tone}));
+          flight('cartas/reverso_idea.webp',actor,player(e.objetivo,before),{tone}),
+          flight('cartas/reverso_idea.webp',player(e.objetivo,before),actor,{tone}));
         if (e.tipo==='habilidad.revisor_2') {
           const mark=node('fx-correction','╱',target); tasks.push(ephemeral(mark,[{opacity:0,transform:'scaleX(.2)'},{opacity:1,offset:.3},{opacity:0,transform:'scaleX(1)'}],1400));
         }

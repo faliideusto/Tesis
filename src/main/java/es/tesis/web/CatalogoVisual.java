@@ -16,11 +16,11 @@ final class CatalogoVisual {
 
     static Vistas.Carta carta(IdeaCarta c, int indice) {
         if (c.nombre().equals("Patente")) return new Vistas.Carta(indice, c.nombre(), c.costeMonedas(),
-                c.trabajoRequerido(), c.prestigio(), "cartas/patente_legendaria.png", "cartas/patente_legendaria.png", c.ingresoPorTurno(), true);
+                c.trabajoRequerido(), c.prestigio(), "cartas/patente_legendaria.webp", "cartas/patente_legendaria.webp", c.ingresoPorTurno(), true);
         String marco = c.prestigio() <= 3 ? "comun" : c.prestigio() <= 6 ? "raro" : "epico";
         return new Vistas.Carta(indice, c.nombre(), c.costeMonedas(), c.trabajoRequerido(), c.prestigio(),
-                "articulos/" + ARTICULOS.getOrDefault(c.nombre(), "01_ecologico") + ".png",
-                "cartas/marco_articulo_" + marco + ".png", c.ingresoPorTurno(), false);
+                "articulos/" + ARTICULOS.getOrDefault(c.nombre(), "01_ecologico") + ".webp",
+                "cartas/marco_articulo_" + marco + ".webp", c.ingresoPorTurno(), false);
     }
 
     static Vistas.Rol rol(Personaje p, int indice) {
@@ -43,6 +43,6 @@ final class CatalogoVisual {
         } else {
             arte = "08_revisor_2"; texto = "Una vez por turno, podrás pagar 1 Moneda para retirar 2 Puntos de Trabajo de un artículo rival en desarrollo.";
         }
-        return new Vistas.Rol(indice, p.nombre(), p.ordenTurno(), texto, "personajes/" + arte + ".png", automatica);
+        return new Vistas.Rol(indice, p.nombre(), p.ordenTurno(), texto, "personajes/" + arte + ".webp", automatica);
     }
 }

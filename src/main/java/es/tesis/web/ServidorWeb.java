@@ -67,7 +67,11 @@ public final class ServidorWeb implements AutoCloseable {
             if (!metodo.equals("POST")) { json(x, 404, Map.of("error", "Ruta no encontrada.")); return; }
             byte[] cuerpo = x.getRequestBody().readNBytes(8193);
             if (cuerpo.length > 8192) { json(x, 413, Map.of("error", "Solicitud demasiado grande.")); return; }
-            var p = gson.fromJson(new String(cuerpo, StandardCharsets.UTF_8), Vistas.Peticion.class);
+            var datos = gson.fromJson(new String(cuerpo, StandardCharsets.UTF_8), JsonObject.class);
+            if (datos == null) throw new IllegalArgumentException("Faltan los datos de la solicitud.");
+            if (Set.of("/api/game/action", "/api/game/select-role", "/api/game/reveal", "/api/game/lock").contains(ruta))
+                validarPeticion(datos, ruta.endsWith("action") || ruta.endsWith("select-role"));
+            var p = gson.fromJson(datos, Vistas.Peticion.class);
             if (p == null) throw new IllegalArgumentException("Faltan los datos de la solicitud.");
             Object resultado = switch (ruta) {
                 case "/api/game" -> juego.crear(p.nombres());
@@ -129,8 +133,42 @@ public final class ServidorWeb implements AutoCloseable {
         var estado = sala.estado(token);
         if (operacion.equals("estado")) { json(x, 200, estado); return; }
         var objeto = cuerpoSala(x, operacion.equals("iniciar") ? Set.of("revision") : Set.of("revision", "tipo", "indice", "objetivo"));
+        validarPeticion(objeto, operacion.equals("accion"));
         var peticion = gson.fromJson(objeto, Vistas.Peticion.class);
         json(x, 200, operacion.equals("iniciar") ? sala.iniciar(token, peticion.revision()) : sala.actuar(token, peticion));
+    }
+
+    private void validarPeticion(JsonObject objeto, boolean accion) {
+        entero(objeto, "revision", Long.MAX_VALUE, true);
+        if (!accion) return;
+        entero(objeto, "indice", Integer.MAX_VALUE, false);
+        texto(objeto, "tipo", true);
+        texto(objeto, "objetivo", false);
+    }
+
+    private void entero(JsonObject objeto, String campo, long maximo, boolean obligatorio) {
+        var valor = objeto.get(campo);
+        if (valor == null || valor.isJsonNull()) {
+            if (obligatorio || valor != null) throw new IllegalArgumentException("Falta un valor válido para " + campo + ".");
+            return;
+        }
+        // Never let Gson coerce strings, truncate fractions or wrap oversized integers.
+        if (!valor.isJsonPrimitive() || !valor.getAsJsonPrimitive().isNumber()
+                || !valor.getAsString().matches("[0-9]+"))
+            throw new IllegalArgumentException(campo + " debe ser un entero no negativo.");
+        try {
+            if (new java.math.BigInteger(valor.getAsString()).compareTo(java.math.BigInteger.valueOf(maximo)) > 0)
+                throw new IllegalArgumentException(campo + " está fuera de rango.");
+        } catch (NumberFormatException error) {
+            throw new IllegalArgumentException(campo + " está fuera de rango.");
+        }
+    }
+
+    private void texto(JsonObject objeto, String campo, boolean obligatorio) {
+        var valor = objeto.get(campo);
+        if (valor == null && !obligatorio) return;
+        if (valor == null || !valor.isJsonPrimitive() || !valor.getAsJsonPrimitive().isString()
+                || valor.getAsString().isBlank()) throw new IllegalArgumentException(campo + " debe ser texto no vacío.");
     }
 
     private JsonObject cuerpoSala(HttpExchange x, Set<String> campos) throws IOException {
@@ -184,9 +222,9 @@ public final class ServidorWeb implements AutoCloseable {
             }
             try (InputStream archivo = ServidorWeb.class.getResourceAsStream("/static" + ruta)) {
                 if (archivo == null) { enviar(x, 404, "text/plain", new byte[0]); return; }
-                String tipo = ruta.endsWith(".png") ? "image/png" : ruta.endsWith(".css") ? "text/css; charset=utf-8"
+                String tipo = ruta.endsWith(".webp") ? "image/webp" : ruta.endsWith(".png") ? "image/png" : ruta.endsWith(".css") ? "text/css; charset=utf-8"
                         : ruta.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8";
-                x.getResponseHeaders().set("Cache-Control", ruta.endsWith(".png") ? "public, max-age=86400" : "no-cache");
+                x.getResponseHeaders().set("Cache-Control", ruta.endsWith(".png") || ruta.endsWith(".webp") ? "public, max-age=86400" : "no-cache");
                 x.getResponseHeaders().set("Content-Security-Policy", "default-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
                 if (x.getRequestMethod().equals("HEAD")) { x.getResponseHeaders().set("Content-Type", tipo); x.sendResponseHeaders(200, -1); }
                 else {

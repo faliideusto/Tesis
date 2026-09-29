@@ -1,11 +1,12 @@
 import {img, esc, resource} from './dom.js';
 import {ideaCardContents, roleCard} from './cards.js';
+import {preview} from './decisions.js';
 
 function playerBadge(p, local = false) {
   const name = local ? `<h2>${esc(p.nombre)}</h2>` : `<strong>${esc(p.nombre)}</strong>`;
-  return `<span class="rival-portrait">${img(p.rol?.arte || 'cartas/reverso_personaje.png')}</span>
+  return `<span class="rival-portrait">${img(p.rol?.arte || 'cartas/reverso_personaje.webp')}</span>
     <span class="rival-body">${name}<span class="rival-role">${p.rol ? esc(p.rol.nombre) : 'Personaje reservado'}</span>
-    <span class="resources">${resource('moneda', p.monedas, 'Monedas')}${resource('prestigio', p.prestigio, 'Prestigio')}<span class="hand-count" aria-label="${p.cartas} ideas en mano">${img('cartas/reverso_idea.png')} ${p.cartas}</span></span></span>`;
+    <span class="resources">${resource('moneda', p.monedas, 'Monedas')}${resource('prestigio', p.prestigio, 'Prestigio')}<span class="hand-count" aria-label="${p.cartas} ideas en mano">${img('cartas/reverso_idea.webp')} ${p.cartas}</span></span></span>`;
 }
 export function rival(p, state = {}) {
   return `<section class="rival-seat" aria-label="Academia de ${esc(p.nombre)}"><button class="rival ${p.activo ? 'active' : ''}" data-command="rival" data-player="${esc(p.nombre)}" aria-label="Ver estudios de ${esc(p.nombre)}">${playerBadge(p)}${actionBolts(p,state)}</button>${rolePreview(p)}${tableStudies(p)}</section>`;
@@ -55,14 +56,14 @@ export function localPlayer(p, state) {
 }
 
 // Public study data plus the option index preserve ownership even for duplicate cards.
-export function studyChoice(e, owner, optionIndex) {
-  return `<div class="article-choice"><strong class="article-owner">${esc(owner)}</strong><button class="game-card idea-card" data-command="target" data-index="${optionIndex}" aria-label="${esc(e.carta.nombre)} de ${esc(owner)}, ${e.trabajo} de ${e.carta.trabajo} trabajo">${ideaCardContents(e.carta)}</button><strong>${esc(e.carta.nombre)}</strong><span>${e.trabajo} / ${e.carta.trabajo} trabajo · ${e.carta.prestigio + (e.prestigioExtra || 0)} prestigio</span><progress value="${e.trabajo}" max="${e.carta.trabajo}" aria-label="Progreso de ${esc(e.carta.nombre)} de ${esc(owner)}"></progress><small>${e.publicado ? 'Publicado' : 'En desarrollo'}</small></div>`;
+export function studyChoice(e, owner, optionIndex, option) {
+  return `<div class="article-choice eligible-option"><strong class="article-owner">${esc(owner)}</strong><button class="game-card idea-card" data-command="target" data-index="${optionIndex}" aria-label="Objetivo válido: ${esc(e.carta.nombre)} de ${esc(owner)}, ${e.trabajo} de ${e.carta.trabajo} trabajo">${ideaCardContents(e.carta)}</button><strong>${esc(e.carta.nombre)}</strong><span>${e.trabajo} / ${e.carta.trabajo} trabajo · ${e.carta.prestigio + (e.prestigioExtra || 0)} prestigio</span><progress value="${e.trabajo}" max="${e.carta.trabajo}" aria-label="Progreso de ${esc(e.carta.nombre)} de ${esc(owner)}"></progress><small>Objetivo válido · ${e.publicado ? 'Publicado' : 'En desarrollo'}</small>${preview(option)}</div>`;
 }
 export function articleChoices(action, state) {
   return `<div class="article-selector">${action.opciones.map((o,i) => {
     const owner = state.jugadores.find(p => p.nombre === (o.objetivo || state.yo));
     const study = owner?.estudios.find(e => e.indice === o.indice);
-    return study ? studyChoice(study,owner.nombre,i) : '';
+    return study ? studyChoice(study,owner.nombre,i,o) : '';
   }).join('')}</div>`;
 }
 export function studies(p, interactive = true) {
@@ -77,5 +78,5 @@ export function studyRow(e, player, {command = 'study', selection = false} = {})
   return `<button class="study-row ${selection ? 'study-choice' : ''} ${e.publicado ? 'published' : ''}" data-command="${command}" data-index="${e.indice}" data-player="${esc(player)}">
     ${img(e.carta.arte)}<span><strong>${esc(e.carta.nombre)}</strong><span class="study-status">${e.publicado ? `Publicado · ${e.carta.prestigio + e.prestigioExtra} prestigio` : `${e.trabajo} / ${e.carta.trabajo} trabajo`}</span>
     ${!e.publicado ? `<progress value="${e.trabajo}" max="${e.carta.trabajo}"></progress>` : ''}</span>
-    ${e.publicado ? img('recursos/prestigio.png', 'study-medal') : ''}${selection ? '<span class="study-choice-label">Ver estudio →</span>' : ''}</button>`;
+    ${e.publicado ? img('recursos/prestigio.webp', 'study-medal') : ''}${selection ? '<span class="study-choice-label">Ver estudio →</span>' : ''}</button>`;
 }

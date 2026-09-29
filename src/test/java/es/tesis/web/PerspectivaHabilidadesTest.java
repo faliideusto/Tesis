@@ -7,6 +7,33 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PerspectivaHabilidadesTest {
+    @Test void previsualizacionDeTrabajoYPublicacionNoMutaNiSeEnviaAlRival() {
+        var m = preparar(6, 7); estudio(m.a, 3); m.a.trabajarEstudio(0, 2);
+        var antes = m.ver(m.a);
+        var habilidad = antes.acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow();
+        assertTrue(habilidad.opciones().get(0).previsualizacion().contains("2/3 → 3/3 · PUBLICARÁS · +3 prestigio"));
+        assertTrue(m.ver(m.b).acciones().isEmpty());
+        assertEquals(antes, m.ver(m.a));
+        var despues = m.actuar(m.a, "HABILIDAD", 0, null);
+        var evento = despues.eventos().get(despues.eventos().size() - 1);
+        assertTrue(evento.publicacion()); assertEquals(1, evento.cantidad());
+        assertTrue(evento.texto().contains("publica")); assertTrue(evento.texto().contains("3 de prestigio"));
+        assertTrue(evento.texto().contains("Pre-Doctoral"));
+        assertEquals(antes.accionesRestantes(), despues.accionesRestantes());
+        assertEquals(despues.eventos(), m.ver(m.b).eventos());
+    }
+
+    @Test void habilidadExplicaFaltaDeMonedasObjetivosYUsoPrevio() {
+        var m = preparar(7, 6);
+        assertTrue(m.ver(m.a).acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow().motivo().contains("No hay estudios rivales"));
+        estudio(m.b, 3); m.b.trabajarEstudio(0, 1); m.a.gastarMonedas(2);
+        assertEquals("Necesitas 1 moneda para revisar.", m.ver(m.a).acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow().motivo());
+        m.a.sumarMonedas(1);
+        var opcion = m.ver(m.a).acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow().opciones().get(0);
+        assertTrue(opcion.previsualizacion().contains("1/3 → 0/3"));
+        m.actuar(m.a, "HABILIDAD", 0, m.b.nombre());
+        assertTrue(m.ver(m.a).acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow().motivo().contains("ya se ha usado"));
+    }
     private record Mesa(SesionJuego sesion, Jugador a, Jugador b, Jugador c) {
         Vistas.Estado ver(Jugador j) {return sesion.estado(j);}
         Vistas.Estado actuar(Jugador j,String tipo,Integer indice,String objetivo) {

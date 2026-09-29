@@ -17,7 +17,7 @@ export function roleCard(r, {command = 'role', selected = false, unavailable = f
   const ability = r.habilidad.replace(/\s*(Una vez por turno\.|Automática\.)$/i, '').replace(/, sin límite de usos\.$/i, '.');
   return `<button class="game-card role-card ${selected ? 'selected' : ''} ${unavailable ? 'unavailable' : ''}" data-command="${command}" data-index="${r.indice}" data-order="${r.orden}" aria-label="${unavailable ? 'No disponible. ' : ''}${esc(r.nombre)}, orden ${r.orden}. ${esc(r.habilidad)}">
     ${unavailable ? '<span class="role-unavailable">No disponible</span>' : ''}
-    ${img(r.arte, 'role-art')}${img('cartas/marco_personaje.png', 'card-frame')}
+    ${img(r.arte, 'role-art')}${img('cartas/marco_personaje.webp', 'card-frame')}
     <span class="role-order"><b>${r.orden}</b></span><span class="card-name">${esc(r.nombre)}</span>
     <span class="role-ability">${esc(ability)}</span><span class="role-cadence">${esc(cadence)}</span>
   </button>`;

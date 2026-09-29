@@ -292,6 +292,10 @@ class PerspectivaHabilidadesTest {
         assertEquals(1,m.ver(m.a).accionesRestantes());
         assertEquals(1,m.ver(m.b).accionesRestantes());
         m.actuar(m.a,"PENSAR",null,null);
+        assertEquals(m.a.nombre(),m.ver(m.a).actual());
+        assertEquals(0,m.ver(m.a).accionesRestantes());
+        assertEquals(0,m.ver(m.b).accionesRestantes());
+        m.actuar(m.a,"FIN_TURNO",null,null);
         assertNotEquals(m.a.nombre(),m.ver(m.a).actual());
         assertEquals(2,m.ver(m.a).accionesRestantes());
         assertEquals(2,m.ver(m.b).accionesRestantes());

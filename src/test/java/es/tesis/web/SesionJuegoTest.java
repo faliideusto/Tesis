@@ -80,11 +80,16 @@ class SesionJuegoTest {
         s = action(juego,s,"COBRAR",null,null);
         assertThrows(SesionJuego.Conflicto.class,() -> action(juego,anterior,"COBRAR",null,null));
         assertEquals(1,s.accionesRestantes());
+        String actor = s.actual();
         s = action(juego,s,"COBRAR",null,null);
         final var agotado = s;
-        assertTrue(s.bloqueada()); assertEquals(2,s.accionesRestantes()); assertTrue(s.mano().isEmpty());
+        assertEquals("TURNO_JUGADOR",s.fase()); assertEquals(actor,s.actual());
+        assertFalse(s.bloqueada()); assertEquals(0,s.accionesRestantes());
+        assertTrue(s.acciones().stream().filter(a -> a.id().equals("FIN_TURNO")).findFirst().orElseThrow().disponible());
         assertThrows(IllegalStateException.class,() -> action(juego,agotado,"COBRAR",null,null));
         assertEquals(agotado,juego.estado());
+        s = action(juego,s,"FIN_TURNO",null,null);
+        assertNotEquals(actor,s.actual()); assertTrue(s.bloqueada());
     }
 
     @Test void indicesInvalidosNoConsumenRecursosYNoPublicanSecretos() {
@@ -142,10 +147,11 @@ class SesionJuegoTest {
     @Test void editorialNoCompraTrabajoDespuesDeConsumirAcciones() {
         var mesa=conRol(5); var juego=mesa.juego(); var s=mesa.estado();
         s=action(juego,s,"INICIAR",0,null); s=action(juego,s,"COBRAR",null,null);
-        assertNotEquals("TURNO_JUGADOR",s.fase());
-        final var antes=s;
-        assertThrows(IllegalStateException.class,()->action(juego,antes,"HABILIDAD",0,null));
-        assertEquals(antes,juego.estado());
+        assertEquals("TURNO_JUGADOR",s.fase()); assertEquals(0,s.accionesRestantes());
+        assertFalse(s.acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow().disponible());
+        assertEquals(s,juego.estado());
+        s=action(juego,s,"FIN_TURNO",null,null);
+        assertEquals("FIN_RONDA",s.fase());
     }
 
     @Test void estadisticoBonificaPublicacionDesdeLasOpcionesWeb() {
@@ -157,6 +163,10 @@ class SesionJuegoTest {
         s=action(juego,s,"HABILIDAD",0,null);
         assertEquals(2,s.jugadores().get(0).prestigio());
         assertEquals(1,s.jugadores().get(0).estudios().get(0).prestigioExtra());
+        assertEquals("Ana",s.actual()); assertEquals("TURNO_JUGADOR",s.fase());
+        assertEquals(0,s.accionesRestantes());
+        assertFalse(s.acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow().disponible());
+        s=action(juego,s,"FIN_TURNO",null,null);
         assertNotEquals("Ana",s.actual());
     }
 

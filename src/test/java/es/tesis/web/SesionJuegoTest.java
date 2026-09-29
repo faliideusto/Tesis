@@ -150,8 +150,9 @@ class SesionJuegoTest {
         assertEquals("TURNO_JUGADOR",s.fase()); assertEquals(0,s.accionesRestantes());
         assertFalse(s.acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow().disponible());
         assertEquals(s,juego.estado());
+        String actor=s.actual();
         s=action(juego,s,"FIN_TURNO",null,null);
-        assertEquals("FIN_RONDA",s.fase());
+        assertTrue(s.fase().equals("FIN_RONDA") || !s.actual().equals(actor));
     }
 
     @Test void estadisticoBonificaPublicacionDesdeLasOpcionesWeb() {

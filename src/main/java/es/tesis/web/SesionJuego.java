@@ -63,6 +63,11 @@ public final class SesionJuego {
         return ejecutar(p, jugador);
     }
 
+    synchronized void avanzarRondaAutomatica() {
+        if (motor.partida().faseActual() != FaseDeTurno.FIN_RONDA) return;
+        ejecutar(new Vistas.Peticion(revision, "SIGUIENTE_RONDA", null, null, null), null);
+    }
+
     private Vistas.Estado ejecutar(Vistas.Peticion p, Jugador perspectiva) {
         if (p == null || p.revision() == null) throw new IllegalArgumentException("Falta la versión de la partida.");
         comprobarVersion(p.revision());

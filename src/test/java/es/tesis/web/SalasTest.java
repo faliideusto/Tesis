@@ -127,6 +127,30 @@ class SalasTest {
         assertEquals(antes,b.ver()); assertEquals(a.ver(),a.ver());
     }
     private void mCobrar(Mesa m) {m.actuar(m.actual().yo(),"COBRAR",null,null);}
+    @Test void cierreDeRondaAvanzaSoloTrasCincoSegundosSinAccionDelUltimoJugador() {
+        class Reloj extends Clock {
+            Instant instante=Instant.parse("2026-01-01T00:00:00Z");
+            public ZoneId getZone(){return ZoneOffset.UTC;} public Clock withZone(ZoneId z){return this;} public Instant instant(){return instante;}
+        }
+        var reloj=new Reloj(); var sala=new SalaJuego("ABCDE",reloj,new java.security.SecureRandom());
+        var tokens=new LinkedHashMap<String,String>();
+        for(String nombre:List.of("Ana","Bruno","Clara")) tokens.put(nombre,sala.unirse(nombre).playerToken());
+        var m=new Mesa(sala,tokens,"Ana"); iniciar(m); seleccionar(m);
+        while(m.ver().partida().fase().equals("TURNO_JUGADOR")) {
+            var turno=m.actual(); m.actuar(turno.yo(),"FIN_TURNO",null,null);
+        }
+        var cierre=m.ver(); assertEquals("FIN_RONDA",cierre.partida().fase());
+        String observador=tokens.keySet().stream().filter(n->!n.equals(cierre.partida().actual())).findFirst().orElseThrow();
+        reloj.instante=reloj.instante.plusMillis(4_999);
+        assertEquals(cierre.revision(),m.ver(observador).revision());
+        assertEquals("FIN_RONDA",m.ver(observador).partida().fase());
+        reloj.instante=reloj.instante.plusMillis(1);
+        var siguiente=m.ver(observador);
+        assertEquals(cierre.revision()+1,siguiente.revision());
+        assertEquals("SELECCION_ROLES",siguiente.partida().fase());
+        assertEquals(2,siguiente.partida().ronda());
+        assertEquals(siguiente.revision(),m.ver().revision());
+    }
     @Test void caducidadRespetaConsultasValidasYNoLaProlonganTokensInvalidos() {
         class Reloj extends Clock {
             Instant instante=Instant.parse("2026-01-01T00:00:00Z");

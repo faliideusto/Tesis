@@ -199,10 +199,6 @@ document.addEventListener('click', async e => {
     case 'close': closeDialog(); clearTargets(); break;
     case 'confirm-end': if (state.acciones.some(a => a.id === 'FIN_TURNO' && a.disponible)) act('FIN_TURNO'); break;
     case 'phase': phaseDialog(state); break;
-    case 'next-round': {
-      act('SIGUIENTE_RONDA');
-      break;
-    }
     case 'action': chooseAction(button.dataset.action); break;
     case 'unavailable-role': {
       const r = state.catalogoSeleccion.find(r => r.orden === Number(button.dataset.order));

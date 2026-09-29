@@ -50,7 +50,7 @@ export function board(state) {
     renderedHands.set(hand, handHtml);
   }
   update('phase-message', state.aviso ? `<div class="table-notice">${esc(state.aviso)}</div>` : '');
-  update('action-hint', state.actual !== state.yo && state.fase !== 'FIN_PARTIDA' ? `Esperando a ${esc(state.actual)}` : state.fase === 'TURNO_JUGADOR' ? state.habilidadPendiente ? 'Resuelve tu habilidad inicial' : state.accionesRestantes ? 'Elige tu próximo paso' : 'Acciones agotadas · usa tu habilidad o termina el turno' : 'INVESTIGA · PUBLICA · TRASCIENDE');
+  update('action-hint', state.fase === 'FIN_RONDA' ? state.ultimaRonda ? 'Preparando resultados' : 'Preparando la siguiente ronda' : state.actual !== state.yo && state.fase !== 'FIN_PARTIDA' ? `Esperando a ${esc(state.actual)}` : state.fase === 'TURNO_JUGADOR' ? state.habilidadPendiente ? 'Resuelve tu habilidad inicial' : state.accionesRestantes ? 'Elige tu próximo paso' : 'Acciones agotadas · usa tu habilidad o termina el turno' : 'INVESTIGA · PUBLICA · TRASCIENDE');
   const phaseAction = state.fase === 'FIN_PARTIDA' ? {command:'phase', label:'Ver resultados'} : null;
   const tableActions = state.acciones.filter(a => a.id !== 'SIGUIENTE_RONDA'
     && (state.accionesRestantes > 0 || a.id === 'HABILIDAD' || a.id === 'FIN_TURNO'));

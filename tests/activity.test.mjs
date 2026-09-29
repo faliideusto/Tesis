@@ -15,6 +15,6 @@ assert(!JSON.stringify(currentActivity(base)).includes('SECRETO'));
 assert.match(currentActivity({...base,yo:'Jefe',fase:'TURNO_JUGADOR',accionesRestantes:1}).detail,/1 acción disponible/);
 assert.match(currentActivity({...base,yo:'Jefe',fase:'TURNO_JUGADOR',accionesRestantes:0}).detail,/Sin acciones base/);
 assert.match(currentActivity({...base,yo:'Jefe',fase:'TURNO_JUGADOR',habilidadPendiente:true}).detail,/en privado/);
-assert.match(currentActivity({...base,fase:'FIN_RONDA'}).detail,/Esperando a Jefe/);
+assert.match(currentActivity({...base,fase:'FIN_RONDA'}).detail,/siguiente ronda comenzará en unos segundos/);
 assert.match(currentActivity({...base,fase:'FIN_PARTIDA',ganadores:['Fali']}).detail,/Victoria: Fali/);
 console.log('9 comprobaciones de estado actual superadas');

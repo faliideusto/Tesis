@@ -55,8 +55,7 @@ export function currentActivity(state) {
   if(state.fase==='FIN_PARTIDA') return {player:'La academia',title:'Partida finalizada',
     detail:state.ganadores.length ? `Victoria: ${state.ganadores.join(' \u00b7 ')}`:'Consulta los resultados.',art:'recursos/prestigio.webp'};
   if(state.fase==='FIN_RONDA') return {player:`Ronda ${state.ronda}`,title:'Cierre de ronda',
-    detail:own ? (state.ultimaRonda?'Puedes abrir el resultado final.':'Puedes comenzar la siguiente ronda.')
-      : `Esperando a ${state.actual} para continuar.`,art:'cartas/reverso_personaje.webp'};
+    detail:state.ultimaRonda?'El resultado final aparecerá en unos segundos.':'La siguiente ronda comenzará en unos segundos.',art:'cartas/reverso_personaje.webp'};
   if(own && state.habilidadPendiente) return {player:state.actual,title:'Resuelve el Comit\u00e9 de \u00c9tica',
     detail:'Elige en privado el personaje vetado antes de actuar.',art:'cartas/reverso_personaje.webp'};
   return {player:state.actual,title:own?'Es tu turno':`${state.actual} est\u00e1 jugando su turno`,

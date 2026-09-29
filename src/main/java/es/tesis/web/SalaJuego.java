@@ -7,6 +7,7 @@ import java.util.*;
 
 /** Cada operación autentica, valida y obtiene su DTO bajo el mismo bloqueo. */
 public final class SalaJuego {
+    private static final long PAUSA_FIN_RONDA_MS = 5_000;
     private final String codigo;
     private final Clock reloj;
     private final SecureRandom azar;
@@ -17,6 +18,7 @@ public final class SalaJuego {
     private long actividad;
     private boolean iniciada;
     private boolean caducada;
+    private long finRondaHasta;
 
     SalaJuego(String codigo, Clock reloj, SecureRandom azar) {
         this.codigo = codigo; this.reloj = reloj; this.azar = azar;
@@ -64,13 +66,24 @@ public final class SalaJuego {
     public synchronized Vistas.Sala actuar(String token, Vistas.Peticion peticion) {
         var jugador = autenticar(token);
         if (peticion == null) throw new IllegalArgumentException("Falta la acción.");
+        continuarRondaSiCorresponde();
         comprobarVersion(peticion.revision());
         if (!iniciada) throw new ErrorSala(409, "La partida todavía no ha comenzado.");
         var estado = juego.estado(jugador);
         if (estado.fase().equals("FIN_PARTIDA")) throw new ErrorSala(409, "La partida ha terminado.");
         juego.actuar(jugador, new Vistas.Peticion(estado.revision(), peticion.tipo(), peticion.indice(), peticion.objetivo(), null));
         revision++;
+        if (juego.estado(jugador).fase().equals("FIN_RONDA")) {
+            if (finRondaHasta == 0) finRondaHasta = reloj.millis() + PAUSA_FIN_RONDA_MS;
+        } else finRondaHasta = 0;
         return vista(jugador);
+    }
+
+    private void continuarRondaSiCorresponde() {
+        if (finRondaHasta == 0 || reloj.millis() < finRondaHasta) return;
+        finRondaHasta = 0;
+        juego.avanzarRondaAutomatica();
+        revision++;
     }
 
     private Jugador autenticar(String token) {
@@ -87,6 +100,7 @@ public final class SalaJuego {
     }
 
     private Vistas.Sala vista(Jugador jugador) {
+        continuarRondaSiCorresponde();
         var estado = iniciada ? juego.estado(jugador) : null;
         String fase = !iniciada ? "LOBBY" : estado.fase().equals("FIN_PARTIDA") ? "FINALIZADA" : "EN_PARTIDA";
         return new Vistas.Sala(codigo, revision, fase, jugador.nombre(), anfitrion.nombre(), jugador == anfitrion,

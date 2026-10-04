@@ -13,11 +13,18 @@ public final class GestorSalas {
     private final SecureRandom azar = new SecureRandom();
     private final Clock reloj;
     private final Duration caducidad;
+    private final ProgresionPartidas progresion;
 
     public GestorSalas() { this(Clock.systemUTC(), Duration.ofHours(24)); }
-    GestorSalas(Clock reloj, Duration caducidad) { this.reloj = reloj; this.caducidad = caducidad; }
+    GestorSalas(Clock reloj, Duration caducidad) { this(reloj, caducidad, null); }
+    GestorSalas(Clock reloj, Duration caducidad, ProgresionPartidas progresion) {
+        this.reloj = reloj; this.caducidad = caducidad; this.progresion = progresion;
+    }
 
     public synchronized Vistas.AccesoSala crear(String nombre) {
+        return crear(nombre, null);
+    }
+    public synchronized Vistas.AccesoSala crear(String nombre, UUID cuenta) {
         SalaJuego.validarNombre(nombre);
         limpiar();
         if (salas.size() >= 256) throw new ErrorSala(409, "Hay demasiadas salas abiertas. Inténtalo más tarde.");
@@ -27,8 +34,8 @@ public final class GestorSalas {
             for (int i = 0; i < 5; i++) texto.append(ALFABETO.charAt(azar.nextInt(ALFABETO.length())));
             codigo = texto.toString();
         } while (salas.containsKey(codigo));
-        var sala = new SalaJuego(codigo, reloj, azar);
-        var acceso = sala.unirse(nombre);
+        var sala = new SalaJuego(codigo, reloj, azar, progresion);
+        var acceso = sala.unirse(nombre, cuenta);
         salas.put(codigo, sala);
         return acceso;
     }

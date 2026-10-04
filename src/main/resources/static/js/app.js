@@ -1,4 +1,6 @@
 import {api} from './api.js';
+import {accounts} from './auth.js';
+import {initAccountPanel, progressText} from './account-panel.js';
 import {img, esc} from './dom.js';
 import {board} from './board.js';
 import {ideaCard, roleCard} from './cards.js';
@@ -37,6 +39,9 @@ function schedulePoll() {
 function home() {
   stopPolling(); resetEffects(); screen='home'; closeDialog(); resetFeedback(); connectionStatus();
   state=null; room=null;
+  const accountOpener=document.getElementById('account-open');
+  accountOpener.classList.remove('in-board');document.body.append(accountOpener);
+  document.getElementById('account-progress').hidden=true;
   app.innerHTML = `<section class="home-screen"><nav class="home-nav"><span>UNA MESA. MUCHAS IDEAS.</span><button class="text-button" data-command="help">Cómo jugar</button></nav>
     <div class="home-copy">${academyIntro()}</div>
     <section class="setup-panel"><span class="eyebrow">LAS PUERTAS ESTÁN ABIERTAS</span><h2>Reúne a tu academia</h2><p>Solo necesitas tu nombre y un código de sala.</p>
@@ -62,6 +67,17 @@ function renderRoom(next, force=false) {
   return result;
 }
 async function applyRoom(next, force=false) {
+  // La persistencia cambia independientemente de la revisión del juego.
+  if (!room || (room.codigo===next.codigo && next.revision>=room.revision) || (force && room.codigo!==next.codigo)) {
+    const progress=document.getElementById('account-progress');
+    const message=progressText(next.progreso);
+    if(progress.textContent!==message) {
+      progress.textContent=message;
+      if(next.progreso?.estado==='CONFIRMADA' && accounts.signedIn()) void accounts.refreshProfile().catch(()=>{});
+    }
+    progress.hidden=!message || Boolean(next.partida && next.partida.fase!=='FIN_PARTIDA');
+    if(room?.codigo===next.codigo) room={...room,progreso:next.progreso};
+  }
   if (room?.codigo===next.codigo && room.revision>=next.revision && screen==='game') return;
   if (!force && room?.codigo===next.codigo && room.revision===next.revision) return;
   const before=state, current=generation;
@@ -83,6 +99,8 @@ async function applyRoom(next, force=false) {
     if (screen==='lobby') { state=null; lobby(); return; }
     state=after; selectedRole=null; pendingAction=null; selectedTarget=null; clearTargets(); reconcileDialog(sameRoom);
     board(state); feedback(sameRoom ? before : null,state); settled(sameRoom ? before : null,state);
+    const accountOpener=document.getElementById('account-open');
+    accountOpener.classList.add('in-board');document.querySelector('#board .utility').append(accountOpener);
     if (state.fase==='SELECCION_ROLES' && state.seleccion.length && (!before || before.fase!=='SELECCION_ROLES' || before.actual!==state.actual) && !document.getElementById('modal').open) phaseDialog(state);
     if (state.fase==='FIN_RONDA' && (!before || before.fase!=='FIN_RONDA')) phaseDialog(state);
     if (state.fase==='FIN_PARTIDA' && (!before || before.fase!=='FIN_PARTIDA') && !informationalDialogOpen()) { phaseDialog(state); if(before) victory(); }
@@ -269,4 +287,5 @@ async function boot() {
     if (screen!=='home') app.innerHTML='<div class="connection-error"><h1>Recuperando tu academia</h1><p>Volveremos a conectar automáticamente.</p><button class="text-button" data-command="home">Volver al inicio</button></div>';
   } finally { schedulePoll(); }
 }
+initAccountPanel();
 boot();

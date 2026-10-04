@@ -1,5 +1,9 @@
 # Tesis
 
+La versión 2.0.0 incorpora cuentas opcionales y progresión del perfil con Supabase,
+sin ventajas dentro de la partida. Configuración, variables y límites en
+[Cuentas, Supabase y Render](docs/CUENTAS_SUPABASE_RENDER.md).
+
 Juego de cartas multijugador por salas para **3–5 personas**. Cada navegador controla a su jugador, con mano privada, sin cuentas: nombre y código de sala. El motor Java sigue siendo la única fuente de verdad.
 
 ## Ejecutar y jugar

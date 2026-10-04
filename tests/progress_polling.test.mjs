@@ -1,0 +1,33 @@
+// node --experimental-vm-modules tests/progress_polling.test.mjs
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import vm from 'node:vm';
+let transitions=0,profileReads=0;
+const nodes=new Map();
+function element() {return {hidden:true,textContent:'',innerHTML:'',addEventListener(){},setAttribute(){},classList:{add(){},remove(){}}};}
+const document={getElementById:id=>{if(!nodes.has(id))nodes.set(id,element());return nodes.get(id);},createElement:element,
+  body:{append(){},classList:{add(){},remove(){}}},addEventListener(){}};
+const context=vm.createContext({document,setTimeout,clearTimeout,console});
+const exports={
+  api:{identity:()=>null},accounts:{signedIn:()=>true,refreshProfile:async()=>{profileReads++;}},
+  initAccountPanel:()=>{},progressText:p=>p?.estado==='CONFIRMADA'?`Guardado ${p.xp}`:p?.estado || '',
+  img:()=>'',esc:String,board:()=>{},ideaCard:()=>{},roleCard:()=>{},studies:()=>{},articleChoices:()=>{},
+  dialog:()=>{},closeDialog:()=>{},phaseDialog:()=>{},reconcileDialog:()=>{},informationalDialogOpen:()=>false,
+  endTurnWarning:()=>{},preview:()=>{},ideaUnavailableReason:()=>{},highlightTargets:()=>{},clearTargets:()=>{},
+  notify:()=>{},feedback:()=>{},resetFeedback:()=>{},transition:async()=>{transitions++;},settled:()=>{},resetEffects:()=>{},
+  chooseRole:()=>{},chooseVeto:()=>{},victory:()=>{}
+};
+const dependency=new vm.SyntheticModule(Object.keys(exports),function(){for(const [name,value] of Object.entries(exports))this.setExport(name,value);},{context});
+const source=await readFile(new URL('../src/main/resources/static/js/app.js',import.meta.url),'utf8');
+const module=new vm.SourceTextModule(source+'\nexport {applyRoom}; export function fixture(value){room=value;screen="game";}',{context});
+await module.link(()=>dependency);await module.evaluate();
+module.namespace.fixture({codigo:'ABCDE',revision:7,progreso:{estado:'PENDIENTE'}});
+const next={codigo:'ABCDE',revision:7,partida:{fase:'FIN_PARTIDA'},progreso:{estado:'CONFIRMADA',xp:150}};
+await module.namespace.applyRoom(next);
+assert.equal(nodes.get('account-progress').textContent,'Guardado 150');
+assert.equal(nodes.get('account-progress').hidden,false);
+assert.equal(transitions,0);assert.equal(profileReads,1);
+await module.namespace.applyRoom(next);assert.equal(profileReads,1);assert.equal(transitions,0);
+await module.namespace.applyRoom({...next,revision:6,progreso:{estado:'PENDIENTE'}});
+assert.equal(nodes.get('account-progress').textContent,'Guardado 150');
+console.log('Polling de progreso con misma revisión: actualiza recibo sin repetir efectos; descarta estado anterior');

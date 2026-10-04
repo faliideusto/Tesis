@@ -1,14 +1,19 @@
+import {accounts} from './auth.js';
 const KEY = 'tesis.sala';
 let identity;
 try { identity = JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch { identity = null; }
 let queue = Promise.resolve();
-function request(path, body, authenticated = false) {
+function request(path, body, authenticated = false, account = false) {
   const task = async () => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 12000);
     try {
       const headers = body === undefined ? {} : {'Content-Type':'application/json', 'X-Tesis':'1'};
       if (authenticated && identity) headers.Authorization = `Bearer ${identity.playerToken}`;
+      if (account) {
+        const token=await accounts.accessToken();
+        if (token) headers['X-Tesis-Account-Authorization']=`Bearer ${token}`;
+      }
       const response = await fetch(`/api/${path}`, {
         method: body === undefined ? 'GET' : 'POST', cache:'no-store', headers,
         signal:controller.signal, body:body === undefined ? undefined : JSON.stringify(body)
@@ -21,7 +26,7 @@ function request(path, body, authenticated = false) {
   const result = queue.then(task, task); queue = result.catch(() => {}); return result;
 }
 async function enter(path, nombre) {
-  const access = await request(path, {nombre});
+  const access = await request(path, {nombre},false,true);
   identity = {codigo:access.codigo, playerToken:access.playerToken};
   sessionStorage.setItem(KEY, JSON.stringify(identity));
   return access.sala;

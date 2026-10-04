@@ -2,6 +2,8 @@ package es.tesis.web;
 
 import com.google.gson.*;
 import com.sun.net.httpserver.*;
+import es.tesis.cuentas.CuentasSupabase;
+import es.tesis.cuentas.ExcepcionCuenta;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
@@ -15,18 +17,28 @@ public final class ServidorWeb implements AutoCloseable {
     private final ExecutorService ejecutor = Executors.newFixedThreadPool(4);
     private final Map<String, Entrada> sesiones = new ConcurrentHashMap<>();
     private final Gson gson = new GsonBuilder().setStrictness(Strictness.STRICT).create();
-    private final GestorSalas salas = new GestorSalas();
+    private final GestorSalas salas;
+    private final CuentasSupabase cuentas;
+    private final ProgresionPartidas progresion;
+    // Al menos dos trabajadores HTTP quedan disponibles para las salas durante una caída de Auth.
+    private final Semaphore consultasCuenta = new Semaphore(2);
     private final ScheduledExecutorService limpieza = Executors.newSingleThreadScheduledExecutor();
     private final boolean localCompatible;
     private record Entrada(SesionJuego juego, java.util.concurrent.atomic.AtomicLong acceso) {}
 
     /** Compatibilidad para las pruebas originales de pantalla compartida; solo loopback. */
     public ServidorWeb(int puerto) throws IOException {
-        this("127.0.0.1", puerto, true);
+        this("127.0.0.1", puerto, true, CuentasSupabase.desdeEntorno());
     }
-    public ServidorWeb(String host, int puerto) throws IOException { this(host, puerto, false); }
-    private ServidorWeb(String host, int puerto, boolean localCompatible) throws IOException {
+    public ServidorWeb(String host, int puerto) throws IOException { this(host, puerto, false, CuentasSupabase.desdeEntorno()); }
+    public ServidorWeb(String host, int puerto, CuentasSupabase cuentas) throws IOException {
+        this(host, puerto, false, cuentas);
+    }
+    private ServidorWeb(String host, int puerto, boolean localCompatible, CuentasSupabase cuentas) throws IOException {
         this.localCompatible = localCompatible;
+        this.cuentas = cuentas;
+        this.progresion = cuentas.habilitado() ? new ProgresionPartidas(cuentas::registrarResultado) : null;
+        this.salas = new GestorSalas(java.time.Clock.systemUTC(), java.time.Duration.ofHours(24), progresion);
         servidor = HttpServer.create(new InetSocketAddress(host, puerto), 0);
         servidor.setExecutor(ejecutor);
         servidor.createContext("/api/", this::api);
@@ -34,7 +46,11 @@ public final class ServidorWeb implements AutoCloseable {
     }
     public void iniciar() { servidor.start(); limpieza.scheduleAtFixedRate(salas::limpiar, 1, 1, TimeUnit.MINUTES); }
     public int puerto() { return servidor.getAddress().getPort(); }
-    @Override public void close() { servidor.stop(0); ejecutor.shutdownNow(); limpieza.shutdownNow(); }
+    @Override public void close() {
+        servidor.stop(0); ejecutor.shutdownNow(); limpieza.shutdownNow();
+        if (progresion != null) progresion.close();
+        cuentas.close();
+    }
 
     public static void main(String[] args) throws IOException {
         int puerto = Integer.parseInt(args.length == 0 ? System.getenv().getOrDefault("PORT", "8080") : args[0]);
@@ -54,6 +70,18 @@ public final class ServidorWeb implements AutoCloseable {
             }
             if (ruta.equals("/api/config") && metodo.equals("GET")) {
                 json(x, 200, SesionJuego.configuracion()); return;
+            }
+            if (ruta.equals("/api/cuentas/config") && metodo.equals("GET")) {
+                json(x, 200, Map.of("habilitado", cuentas.habilitado(), "url", cuentas.url(),
+                        "publishableKey", cuentas.publishableKey())); return;
+            }
+            if (ruta.equals("/api/perfil")) {
+                String jwt = bearer(x.getRequestHeaders().getFirst("Authorization"));
+                String nuevoNombre = metodo.equals("POST")
+                        ? SalaJuego.validarNombre(nombre(cuerpoSala(x, Set.of("nombre")))) : null;
+                json(x, 200, consultarCuenta(() -> metodo.equals("GET") ? cuentas.perfil(jwt)
+                        : cuentas.renombrar(jwt, nuevoNombre)));
+                return;
             }
             if (ruta.equals("/api/salas") || ruta.startsWith("/api/salas/")) { salas(x, ruta, metodo); return; }
             // Compatibilidad del servidor local de pruebas, nunca conectada al registro de salas.
@@ -87,6 +115,8 @@ public final class ServidorWeb implements AutoCloseable {
                 default -> null;
             };
             if (resultado == null) json(x, 404, Map.of("error", "Ruta no encontrada.")); else json(x, 200, resultado);
+        } catch (ExcepcionCuenta e) {
+            json(x, e.estado(), Map.of("error", e.getMessage()));
         } catch (ErrorSala e) {
             json(x, e.estado, Map.of("error", e.getMessage()));
         } catch (SesionJuego.Conflicto e) {
@@ -116,7 +146,8 @@ public final class ServidorWeb implements AutoCloseable {
     private void salas(HttpExchange x, String ruta, String metodo) throws IOException {
         String[] partes = ruta.split("/", -1);
         if (ruta.equals("/api/salas") && metodo.equals("POST")) {
-            json(x, 201, salas.crear(nombre(cuerpoSala(x, Set.of("nombre"))))); return;
+            UUID cuenta = cuentaEntrada(x);
+            json(x, 201, salas.crear(nombre(cuerpoSala(x, Set.of("nombre"))), cuenta)); return;
         }
         if (partes.length != 5 || !Set.of("unirse", "estado", "iniciar", "accion").contains(partes[4]))
             throw new ErrorSala(404, "Ruta no encontrada.");
@@ -125,7 +156,8 @@ public final class ServidorWeb implements AutoCloseable {
             throw new ErrorSala(405, "Método no permitido.");
         var sala = salas.buscar(partes[3]);
         if (operacion.equals("unirse")) {
-            json(x, 200, sala.unirse(nombre(cuerpoSala(x, Set.of("nombre"))))); return;
+            UUID cuenta = cuentaEntrada(x);
+            json(x, 200, sala.unirse(nombre(cuerpoSala(x, Set.of("nombre"))), cuenta)); return;
         }
         String cabecera = x.getRequestHeaders().getFirst("Authorization");
         String token = cabecera != null && cabecera.startsWith("Bearer ") ? cabecera.substring(7) : null;
@@ -136,6 +168,19 @@ public final class ServidorWeb implements AutoCloseable {
         validarPeticion(objeto, operacion.equals("accion"));
         var peticion = gson.fromJson(objeto, Vistas.Peticion.class);
         json(x, 200, operacion.equals("iniciar") ? sala.iniciar(token, peticion.revision()) : sala.actuar(token, peticion));
+    }
+
+    private static String bearer(String cabecera) {
+        return cabecera != null && cabecera.startsWith("Bearer ") ? cabecera.substring(7) : null;
+    }
+    private UUID cuentaEntrada(HttpExchange x) {
+        String cabecera = x.getRequestHeaders().getFirst("X-Tesis-Account-Authorization");
+        return cabecera == null ? null : consultarCuenta(() -> cuentas.autenticar(bearer(cabecera)));
+    }
+    private <T> T consultarCuenta(java.util.function.Supplier<T> consulta) {
+        if (!consultasCuenta.tryAcquire())
+            throw new ExcepcionCuenta(503, "Las cuentas están ocupadas. Inténtalo más tarde.");
+        try { return consulta.get(); } finally { consultasCuenta.release(); }
     }
 
     private void validarPeticion(JsonObject objeto, boolean accion) {
@@ -225,7 +270,9 @@ public final class ServidorWeb implements AutoCloseable {
                 String tipo = ruta.endsWith(".webp") ? "image/webp" : ruta.endsWith(".png") ? "image/png" : ruta.endsWith(".css") ? "text/css; charset=utf-8"
                         : ruta.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8";
                 x.getResponseHeaders().set("Cache-Control", ruta.endsWith(".png") || ruta.endsWith(".webp") ? "public, max-age=86400" : "no-cache");
-                x.getResponseHeaders().set("Content-Security-Policy", "default-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+                x.getResponseHeaders().set("Content-Security-Policy", "default-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'"
+                        + (cuentas.habilitado() ? " " + cuentas.url() : "")
+                        + "; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
                 if (x.getRequestMethod().equals("HEAD")) { x.getResponseHeaders().set("Content-Type", tipo); x.sendResponseHeaders(200, -1); }
                 else {
                     x.getResponseHeaders().set("Content-Type", tipo);

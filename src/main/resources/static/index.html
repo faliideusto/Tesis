@@ -10,11 +10,16 @@
   <link rel="stylesheet" href="/css/game.css">
   <link rel="stylesheet" href="/css/effects.css">
   <link rel="stylesheet" href="/css/table.css">
+  <link rel="stylesheet" href="/css/accounts.css">
+  <script defer src="/js/vendor/supabase-2.57.4.js"></script>
   <script type="module" src="/js/app.js"></script>
 </head>
 <body>
   <div class="ambient" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
   <main id="app"><div class="loading">Abriendo las puertas de la academia…</div></main>
+  <button id="account-open" class="plain-button account-opener" hidden>Cuenta / Invitado</button>
+  <dialog id="account-panel" aria-label="Cuenta y perfil"></dialog>
+  <div id="account-progress" class="account-progress" role="status" aria-live="polite" hidden></div>
   <dialog id="modal" aria-labelledby="modal-title"><div id="modal-content"></div></dialog>
   <div id="notifications" role="status" aria-live="polite" aria-atomic="false"></div>
   <div id="tooltip" role="tooltip" hidden></div>

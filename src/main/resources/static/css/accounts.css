@@ -1,0 +1,14 @@
+.account-opener {position:fixed;right:1rem;bottom:1rem;z-index:35;max-width:calc(100vw - 2rem);background:#102339;color:#f5ead4;box-shadow:0 3px 18px #0008}
+.account-opener.in-board {position:static;max-width:none;box-shadow:none}
+#account-panel {width:min(430px,calc(100vw - 2rem));max-height:calc(100dvh - 2rem);overflow:auto}
+.account-content {padding:1.5rem;display:grid;gap:1rem}
+.account-content h2,.account-content p {margin:0}
+.account-content .setup-note {color:#66523b;line-height:1.6}
+.account-content .text-button {color:#715020}
+.account-content form {display:grid;gap:1rem}
+.account-content label {display:grid;gap:.4rem}
+.account-content input {width:100%;min-width:0;background:#081424;color:#f5ead4;border:1px solid #647084;border-radius:8px;padding:.75rem;font:inherit}
+.account-close {justify-self:end}
+.profile-stats {display:grid;gap:.5rem;padding:1rem;background:#102339;color:#f5ead4;border-radius:10px}
+.account-progress {position:fixed;left:1rem;bottom:1rem;max-width:min(520px,calc(100vw - 12rem));padding:.6rem .8rem;z-index:34;background:#102339;color:#f5ead4;border:1px solid #647084;border-radius:8px;font-size:.8rem;pointer-events:none}
+@media(max-width:600px) {.account-progress {bottom:4.3rem;max-width:calc(100vw - 2rem)}.account-content {padding:1rem}}

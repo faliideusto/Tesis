@@ -18,6 +18,14 @@ public final class SesionJuego {
     private final Set<String> revelados = new HashSet<>();
     private final List<Vistas.Evento> eventos = new ArrayList<>();
 
+    record ResultadoJugador(Jugador jugador, int prestigio, boolean ganador) {}
+    synchronized List<ResultadoJugador> resultadoFinal() {
+        if (motor == null || motor.partida().faseActual() != FaseDeTurno.FIN_PARTIDA) return List.of();
+        var ganadores = motor.partida().ganadores();
+        return motor.partida().jugadores().stream()
+                .map(j -> new ResultadoJugador(j, j.prestigio(), ganadores.contains(j))).toList();
+    }
+
     public static Vistas.Configuracion configuracion() {
         int maximo = ReglasAcademicas.MAX_JUGADORES;
         return new Vistas.Configuracion(ReglasAcademicas.MIN_JUGADORES, maximo, 8,

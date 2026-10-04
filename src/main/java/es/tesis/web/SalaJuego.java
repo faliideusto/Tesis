@@ -19,17 +19,30 @@ public final class SalaJuego {
     private boolean iniciada;
     private boolean caducada;
     private long finRondaHasta;
+    private final Map<Jugador, UUID> cuentas = new IdentityHashMap<>();
+    private final UUID partidaId = UUID.randomUUID();
+    private final ProgresionPartidas progresion;
+    private ProgresionPartidas.Registro resultado;
 
     SalaJuego(String codigo, Clock reloj, SecureRandom azar) {
+        this(codigo, reloj, azar, null);
+    }
+    SalaJuego(String codigo, Clock reloj, SecureRandom azar, ProgresionPartidas progresion) {
         this.codigo = codigo; this.reloj = reloj; this.azar = azar;
+        this.progresion = progresion;
         actividad = reloj.millis();
     }
 
     public synchronized Vistas.AccesoSala unirse(String nombre) {
+        return unirse(nombre, null);
+    }
+    public synchronized Vistas.AccesoSala unirse(String nombre, UUID cuenta) {
         vigente();
         nombre = validarNombre(nombre);
         if (iniciada) throw new ErrorSala(409, "La partida ya ha comenzado.");
         if (miembros.size() >= es.tesis.reglas.ReglasAcademicas.MAX_JUGADORES) throw new ErrorSala(409, "La sala está llena (máximo 5 personas).");
+        if (cuenta != null && cuentas.values().stream().anyMatch(cuenta::equals))
+            throw new ErrorSala(409, "Esta cuenta ya está vinculada a un jugador de la sala.");
         String elegido = nombre;
         if (miembros.values().stream().anyMatch(j -> j.nombre().equalsIgnoreCase(elegido)))
             throw new ErrorSala(409, "Ese nombre ya está en la sala.");
@@ -39,6 +52,7 @@ public final class SalaJuego {
         while (miembros.containsKey(token));
         var jugador = new Jugador(nombre);
         miembros.put(token, jugador);
+        if (cuenta != null) cuentas.put(jugador, cuenta);
         if (anfitrion == null) anfitrion = jugador;
         revision++; actividad = reloj.millis();
         return new Vistas.AccesoSala(codigo, token, vista(jugador));
@@ -103,8 +117,31 @@ public final class SalaJuego {
         continuarRondaSiCorresponde();
         var estado = iniciada ? juego.estado(jugador) : null;
         String fase = !iniciada ? "LOBBY" : estado.fase().equals("FIN_PARTIDA") ? "FINALIZADA" : "EN_PARTIDA";
+        registrarResultado();
         return new Vistas.Sala(codigo, revision, fase, jugador.nombre(), anfitrion.nombre(), jugador == anfitrion,
-                miembros.values().stream().map(Jugador::nombre).toList(), estado);
+                miembros.values().stream().map(Jugador::nombre).toList(), estado, progreso(jugador));
+    }
+
+    private void registrarResultado() {
+        if (resultado != null || progresion == null || cuentas.isEmpty()) return;
+        var finalizados = juego.resultadoFinal();
+        if (finalizados.isEmpty()) return;
+        var participantes = new ArrayList<es.tesis.cuentas.CuentasSupabase.Participante>();
+        for (int i = 0; i < finalizados.size(); i++) {
+            var finalizado = finalizados.get(i);
+            participantes.add(new es.tesis.cuentas.CuentasSupabase.Participante(i,
+                    cuentas.get(finalizado.jugador()), finalizado.jugador().nombre(),
+                    finalizado.prestigio(), finalizado.ganador()));
+        }
+        resultado = progresion.registrar(partidaId, reloj.instant(), participantes);
+    }
+    private Vistas.Progreso progreso(Jugador jugador) {
+        if (!cuentas.containsKey(jugador)) return new Vistas.Progreso("INVITADO", false, null, null);
+        if (resultado == null) return new Vistas.Progreso("VINCULADA", true, null, null);
+        int xp = resultado.participantes.stream().filter(p -> p.user_id() != null
+                && p.user_id().equals(cuentas.get(jugador))).findFirst().map(p -> p.winner() ? 150 : 100).orElse(0);
+        return new Vistas.Progreso(resultado.estado, true,
+                resultado.estado.equals("CONFIRMADA") ? xp : null, partidaId);
     }
 
     private void vigente() { if (caducada) throw new ErrorSala(404, "La sala ha caducado."); }

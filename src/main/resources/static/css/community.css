@@ -1,0 +1,72 @@
+/* Community shares the profile's ink, parchment and gold palette. */
+#account-panel .profile-shell>[hidden]{display:none!important}
+.profile-community-notice{max-width:1240px;margin:24px auto 12px;color:#a5b8c1;font:11px/1.6 var(--ui)}
+.community-tabs{display:flex;flex-wrap:wrap;gap:8px;max-width:1240px;margin:12px auto 30px;border-bottom:1px solid #d9b48938;padding-bottom:12px}
+.community-tabs button{min-height:44px;padding:12px 20px;border:1px solid transparent;border-radius:6px;font:600 12px var(--ui);background:transparent;color:#c3cbd0;cursor:pointer}
+.community-tabs button[aria-current]{background:#d6b48520;color:#f8deb6;border-color:#d6b48570}
+.community-tabs button:hover,.community-action:hover{background:#d6b48525;color:#fff1d7}
+.community-panel{max-width:1240px;margin:auto;padding-bottom:35px;font:13px/1.65 var(--ui);color:#c5d0d5}
+.community-heading{margin:30px 0}
+.community-heading h2{font:400 clamp(30px,4vw,48px)/1.15 var(--serif);color:#f5e9d9;letter-spacing:-.03em;margin:10px 0}
+.community-heading p{max-width:780px;margin:10px 0;color:#becbd1}
+.community-heading .eyebrow{color:#d4b083;font-size:10px}
+.community-card{border:1px solid #b59a7544;background:linear-gradient(140deg,#1a3040e8,#102435e8);border-radius:12px;padding:24px;box-shadow:0 12px 30px #0002;min-width:0}
+.community-card h3,.mission-section-heading h3{font:400 26px/1.2 var(--serif);color:#f0d5ac;margin:0 0 18px}
+.community-card h3 small{font:12px var(--ui);color:#94aab5;margin-left:8px}
+.community-action{font:600 11px var(--ui);min-height:44px;padding:10px 15px;color:#ebd3b1;background:#0c2331;border:1px solid #b59a7555;border-radius:6px;cursor:pointer}
+.community-panel button:disabled{cursor:default;opacity:.55}
+.community-panel :is(input,select){min-width:0;min-height:44px;border:1px solid #b59a7570;border-radius:6px;background:#071b29;color:#f5e9d9;padding:10px 12px;font:13px var(--ui)}
+.community-panel :is(button,input,select):focus-visible,.community-tabs button:focus-visible,.ranking-scroll:focus-visible{outline:2px solid #f0cf8c;outline-offset:3px}
+.community-panel label{display:block;color:#e5cfaf;font:600 11px var(--ui);margin-bottom:10px}
+.friend-invite{display:grid;grid-template-columns:1fr 1fr;gap:35px;margin-bottom:24px}
+.friend-code-line{display:flex;gap:10px;flex-wrap:wrap}
+.friend-code-line input{flex:1;width:140px}
+.friend-code-line input[readonly]{letter-spacing:.12em;font-weight:600;cursor:text}
+.friend-invite p{font-size:11px;margin-bottom:0}
+.friend-code-line .gold-button{font:600 11px var(--ui);min-height:44px}
+.community-friend-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.community-friend-grid>section:first-child{grid-column:1/-1}
+.community-people{padding:0;margin:0;list-style:none}
+.community-people li{display:flex;align-items:center;gap:12px;border-top:1px solid #b59a752d;padding:16px 0;min-width:0;flex-wrap:wrap}
+.community-people li:last-child{padding-bottom:0}
+.community-avatar{display:grid;place-items:center;flex:0 0 40px;height:40px;border-radius:50%;border:1px solid #d2b08070;background:#d2b0801a;color:#f3d4a6;font:20px var(--serif)}
+.community-people li>div:first-of-type{flex:1;min-width:120px;overflow-wrap:anywhere}
+.community-people strong{display:block;color:#f4e6d2;font-size:13px}
+.community-people li>div>span{display:block;color:#a8bbc4;font-size:11px}
+.community-person-actions{display:flex;gap:8px;flex-wrap:wrap}
+.community-empty{color:#aebec6;max-width:600px;margin:15px 0;font-size:13px}
+.community-message{min-height:22px;color:#f0d5ac;margin:20px 0;overflow-wrap:anywhere}
+.community-message:empty{margin:0;min-height:0}
+.ranking-controls{display:flex;align-items:center;gap:15px;flex-wrap:wrap;margin-bottom:24px}
+.ranking-controls label{margin:0}
+.ranking-position{display:flex;align-items:center;gap:25px;flex-wrap:wrap;margin-bottom:24px}
+.ranking-position>span{font-size:11px;color:#cfb99a}
+.ranking-position>strong{font:40px var(--serif);color:#f0d5ac}
+.ranking-position p{margin:0}
+.ranking-scroll{overflow:auto;padding:0}
+.ranking-table{width:100%;min-width:520px;border-collapse:collapse;color:#ced9df;font:12px var(--ui);font-variant-numeric:tabular-nums}
+.ranking-table caption{text-align:left;padding:20px 24px;color:#ecd5b2;font-weight:600}
+.ranking-table :is(th,td){text-align:left;border-top:1px solid #b59a752d;padding:16px 20px}
+.ranking-table thead th{font-size:10px;color:#b1c0c8;background:#071b293d}
+.ranking-table td strong{display:block;color:#f4e6d2;overflow-wrap:anywhere}
+.ranking-table td small{display:block;color:#a2b9c5;margin-top:5px}
+.ranking-self{background:#dcc08916}
+.ranking-you{font-size:9px;color:#f0cf8c;margin-left:7px}
+.mission-section{margin-top:32px}
+.mission-section-heading{display:flex;justify-content:space-between;align-items:baseline;gap:18px;flex-wrap:wrap;margin-bottom:16px}
+.mission-section-heading h3{margin:0}
+.mission-section-heading p{margin:0;font-size:11px;color:#aabfc9}
+.mission-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.mission-card{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.mission-card h4{font:400 24px/1.25 var(--serif);color:#f4e6d2;margin:0}
+.mission-card p{font-size:11px;margin:0}
+.mission-reward{font:600 12px var(--ui);color:#f0cf8c;background:#e3c59217;border:1px solid #e3c59244;padding:5px 10px;border-radius:99px}
+.mission-card progress{width:100%;height:10px;accent-color:#d1b07d;border:0;border-radius:99px;margin:8px 0 10px;background:#081d2b}
+.mission-card progress::-webkit-progress-bar{background:#081d2b;border-radius:99px}
+.mission-card progress::-webkit-progress-value{background:#d1b07d;border-radius:99px}
+.mission-card progress::-moz-progress-bar{background:#d1b07d;border-radius:99px}
+.mission-card button{margin-top:auto;min-height:44px;font-size:11px}
+.mission-claimed{border-color:#8eb6a455}
+.community-heading .community-fine-print{font-size:11px;color:#a5b8c1}
+@media(max-width:800px){.friend-invite,.community-friend-grid{grid-template-columns:1fr}.community-friend-grid>section:first-child{grid-column:auto}.mission-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.community-card{padding:20px}.ranking-scroll{padding:0}}
+@media(max-width:480px){.community-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:22px}.community-tabs button{padding:10px 8px;font-size:11px}.community-heading{margin:20px 0}.community-friend-grid,.mission-grid{grid-template-columns:1fr;gap:16px}.friend-invite{gap:25px}.community-person-actions{width:100%;justify-content:flex-end}.ranking-position{gap:14px}.mission-section-heading{gap:8px}.ranking-table :is(th,td){padding:14px 12px}}

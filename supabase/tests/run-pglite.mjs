@@ -20,10 +20,12 @@ try {
     grant usage on schema auth to authenticated;
   `);
   await db.exec(await readFile(new URL('../migrations/202610050001_cuentas_progresion.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('../migrations/202610060001_comunidad_misiones.sql', import.meta.url), 'utf8'));
   await db.exec(await readFile(new URL('cuentas_progresion.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('comunidad_misiones.sql', import.meta.url), 'utf8'));
   const {rows} = await db.query('select count(*)::integer as perfiles from public.profiles');
   if (rows[0].perfiles !== 0) throw new Error('El script no revirtió los perfiles de prueba');
-  console.log('PASS PostgreSQL WASM: migración, trigger, permisos/RLS, empates, invitados, reintentos y rollback.');
+  console.log('PASS PostgreSQL WASM: ambas migraciones; perfiles/resultados, amistad consentida, ranking, misiones, permisos/RLS, reintentos y rollback.');
   console.log('No verifica Supabase Auth/PostgREST ni concurrencia con varias conexiones.');
 } finally {
   await db.close();

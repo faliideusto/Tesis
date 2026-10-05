@@ -1,6 +1,7 @@
 import {accounts} from './auth.js';
 import {esc} from './dom.js';
 import {RANKS, progression, badge} from './profile-ranks.js';
+import {academyTabs,mountCommunity} from './community-panel.js';
 
 export function progressText(progress) {
   switch(progress?.estado) {
@@ -25,7 +26,7 @@ export function profileView(profile) {
     <div class="profile-stat-grid"><div><span class="stat-glyph" aria-hidden="true">▤</span><strong>${esc(played)}</strong><span>Partidas terminadas</span></div><div><span class="stat-glyph" aria-hidden="true">♛</span><strong>${esc(wins)}</strong><span>Victorias</span></div><div><span class="stat-glyph" aria-hidden="true">✦</span><strong>${played?Math.round(wins/played*100):0}<small>%</small></strong><span>Porcentaje de victorias</span></div></div>
     <div class="next-rank-card">${p.nextRank?`${badge(p.nextRank.id,{small:true})}<div><span>EL SIGUIENTE HORIZONTE</span><strong>${esc(p.nextRank.name)}</strong><p>Nivel ${p.nextRank.start} · ${Math.max(0,(p.nextRank.start-1)*500-p.xp)} XP por recorrer</p></div>`:`${badge('eterno',{small:true})}<div><span>EL MAYOR HONOR DE LA ACADEMIA</span><strong>Un legado eterno</strong><p>Has alcanzado el último rango. Tus niveles continúan.</p></div>`}</div></section></div>
     <section class="rank-journey" aria-label="Ruta de rangos"><div class="journey-heading"><div><span class="eyebrow">DE LA PRIMERA IDEA AL LEGADO</span><h3>Tu camino en Tesis</h3></div><span class="cosmetic-note">Prestigio visual. Sin ventajas en partida.</span></div><ol class="rank-path">${RANKS.map((rank,i)=>`<li class="rank-step ${i<p.index?'achieved':i===p.index?'current':'locked'}" ${i===p.index?'aria-current="step"':''} title="${esc(rank.name)} · nivel ${rank.start}">${badge(rank.id,{small:true})}<strong>${esc(rank.name)}</strong><span>NIV. ${rank.start}${i===p.index?' · ACTUAL':i<p.index?' · ✓':''}</span></li>`).join('')}</ol></section>
-    <footer class="profile-footer"><p>+100 XP por terminar <span>·</span> +50 XP por ganar, también en empate</p><div><button type="button" class="account-link" id="account-edit" aria-expanded="false">Editar nombre</button><button type="button" class="account-link" id="account-refresh">Actualizar</button><button type="button" class="account-link logout" id="account-logout">Cerrar sesión</button></div></footer>
+    <p class="profile-community-notice">Tu nombre visible y tus estadísticas aparecen para otras cuentas en el ranking global.</p><footer class="profile-footer"><p>+100 XP por terminar <span>·</span> +50 XP por ganar, también en empate</p><div><button type="button" class="account-link" id="account-edit" aria-expanded="false">Editar nombre</button><button type="button" class="account-link" id="account-refresh">Actualizar</button><button type="button" class="account-link logout" id="account-logout">Cerrar sesión</button></div></footer>
     <form id="account-rename" class="profile-name-editor" hidden><label>Nombre visible<input name="nombre" value="${esc(profile.nombre)}" maxlength="24" required autocomplete="nickname"></label><button class="gold-button">Guardar nombre</button><p>Tu asiento actual mantiene su nombre.</p></form><p id="account-message" class="account-message" role="status"></p></div>`;
 }
 function authView(mode) {
@@ -36,8 +37,10 @@ function authView(mode) {
 export function initAccountPanel() {
   const panel=document.getElementById('account-panel'),opener=document.getElementById('account-open');
   let mode='login',working=false,lastView='',restoring=true,pushed=false,returnFocus=null,returnScroll=0;
+  let academyPage='profile',community=null,lastIdentity=accounts.identity();
   const app=document.getElementById('app');
   function leave() {
+    community?.destroy();community=null;lastView='';
     panel.hidden=true;app.inert=false;app.hidden=false;document.body.classList.remove('account-page-active');
     document.title='Tesis · La mesa del conocimiento';
     window.scrollTo(0,returnScroll);
@@ -65,6 +68,8 @@ export function initAccountPanel() {
   function draw(force=false) {
     opener.hidden=false;
     const profile=accounts.profile();
+    const identity=accounts.identity();
+    if(identity!==lastIdentity){lastIdentity=identity;academyPage='profile';community?.destroy();community=null;lastView='';}
     if(accounts.signedIn()) {
       const p=progression(profile||{});opener.classList.add('has-profile');
       opener.dataset.rank=p.rank.id;
@@ -77,11 +82,24 @@ export function initAccountPanel() {
     // Una recompensa/renovación en segundo plano no debe borrar el alias en edición.
     if(!force&&accounts.signedIn()&&profile&&panel.querySelector('#account-rename:not([hidden])'))return;
     const unavailable=!accounts.enabled()&&!restoring;
-    const view=accounts.signedIn()?JSON.stringify(profile):unavailable?'unavailable':mode;
+    const view=accounts.signedIn()?`${academyPage}:${academyPage==='profile'||!profile?JSON.stringify(profile):identity}`:unavailable?'unavailable':mode;
     if(!force&&lastView===view)return;lastView=view;
+    community?.destroy();community=null;
     if(accounts.signedIn()&&profile)panel.innerHTML=profileView(profile);
     else if(accounts.signedIn())panel.innerHTML=`<div class="account-empty-shell">${closeButton()}${badge('madera')}<span class="eyebrow">TU ACADEMIA</span><h2 id="account-title">Preparando tu perfil</h2><p>Conectando con tu legado…</p><p id="account-message" class="account-message" role="status"></p><button type="button" class="account-link" id="account-refresh">Volver a intentar</button><button type="button" class="account-link" id="account-logout">Cerrar sesión</button></div>`;
     else panel.innerHTML=unavailable?unavailableView():authView(mode);
+    if(accounts.signedIn()&&profile) {
+      const navigation=panel.querySelector('.academy-navigation');
+      navigation.insertAdjacentHTML('afterend',academyTabs(academyPage));
+      if(academyPage!=='profile') {
+        const shell=panel.querySelector('.profile-shell');
+        Array.from(shell.children).forEach(child=>{if(!child.matches('.academy-navigation,.community-tabs'))child.hidden=true;});
+        shell.insertAdjacentHTML('beforeend','<h2 id="community-title" class="sr-only">Mi academia</h2><section class="community-panel" aria-labelledby="community-title"></section>');
+        panel.setAttribute('aria-labelledby','community-title');
+        community=mountCommunity(panel.querySelector('.community-panel'),{accounts,page:academyPage,onReward:()=>{void accounts.refreshProfile().catch(()=>{});}});
+      } else panel.setAttribute('aria-labelledby','account-title');
+      panel.querySelectorAll('[data-academy-page]').forEach(button=>button.onclick=()=>{academyPage=button.dataset.academyPage;draw(true);panel.querySelector(`[data-academy-page="${academyPage}"]`)?.focus();});
+    } else panel.setAttribute('aria-labelledby','account-title');
     panel.dataset.view=accounts.signedIn()?'profile':unavailable?'unavailable':'auth';
     panel.querySelector('.account-close').onclick=closePage;
     panel.querySelectorAll('[data-auth-mode]').forEach(button=>button.onclick=()=>{mode=button.dataset.authMode;draw(true);});
@@ -101,6 +119,7 @@ export function initAccountPanel() {
     finally {working=false;panel.removeAttribute('aria-busy');controls.forEach(el=>el.disabled=false);draw(success);const target=panel.querySelector('#account-message');if(target)target.textContent=message;}
   }
   panel.addEventListener('submit',event=>{
+    if(!event.target.id.startsWith('account-'))return;
     event.preventDefault();const form=event.target,fields=new FormData(form);
     void perform(async()=>{
       if(form.id==='account-rename'){await accounts.rename(String(fields.get('nombre')).trim());return 'Nombre guardado. Tu asiento actual mantiene su nombre.';}

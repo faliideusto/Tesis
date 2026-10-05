@@ -73,7 +73,14 @@ const disabledKnown=auth.namespace.createAccounts({storage:knownStorage,
 await assert.rejects(()=>disabledKnown.initialize(),/deshabilitadas/);
 await assert.rejects(()=>disabledKnown.accessToken(),/recuperar/);
 const panel=new vm.SourceTextModule(await readFile(new URL('../src/main/resources/static/js/account-panel.js',import.meta.url),'utf8'),{context});
-await panel.link(async spec=>spec.includes('auth')?fakeAuth:new vm.SourceTextModule(await readFile(new URL(spec.includes('profile-ranks')?'../src/main/resources/static/js/profile-ranks.js':'../src/main/resources/static/js/dom.js',import.meta.url),'utf8'),{context}));await panel.evaluate();
+const panelModules=new Map();
+async function panelDependency(spec) {
+  if(spec.includes('auth'))return fakeAuth;
+  if(panelModules.has(spec))return panelModules.get(spec);
+  const dependency=new vm.SourceTextModule(await readFile(new URL(`../src/main/resources/static/js/${spec.replace('./','')}`,import.meta.url),'utf8'),{context});
+  panelModules.set(spec,dependency);await dependency.link(panelDependency);return dependency;
+}
+await panel.link(panelDependency);await panel.evaluate();
 assert.match(panel.namespace.progressText({estado:'CONFIRMADA',xp:150}),/150 XP/);
 assert.match(panel.namespace.progressText({estado:'INVITADO'}),/no acumula/);
 assert.match(panel.namespace.progressText({estado:'PENDIENTE'}),/puede perderse/);

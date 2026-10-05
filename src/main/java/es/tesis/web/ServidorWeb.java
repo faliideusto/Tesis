@@ -83,6 +83,9 @@ public final class ServidorWeb implements AutoCloseable {
                         : cuentas.renombrar(jwt, nuevoNombre)));
                 return;
             }
+            if (Set.of("/api/comunidad", "/api/amigos", "/api/ranking", "/api/misiones", "/api/misiones/reclamar").contains(ruta)) {
+                comunidad(x, ruta, metodo); return;
+            }
             if (ruta.equals("/api/salas") || ruta.startsWith("/api/salas/")) { salas(x, ruta, metodo); return; }
             // Compatibilidad del servidor local de pruebas, nunca conectada al registro de salas.
             // El arranque main y el constructor de red no publican estas rutas.
@@ -133,6 +136,44 @@ public final class ServidorWeb implements AutoCloseable {
     private boolean hostValido(HttpExchange x) {
         String host = x.getRequestHeaders().getFirst("Host");
         return ("localhost:" + puerto()).equals(host) || ("127.0.0.1:" + puerto()).equals(host);
+    }
+
+    private void comunidad(HttpExchange x, String ruta, String metodo) throws IOException {
+        boolean mutacion = ruta.equals("/api/amigos") || ruta.equals("/api/misiones/reclamar");
+        if (!(mutacion ? "POST" : "GET").equals(metodo)) throw new ErrorSala(405, "Método no permitido.");
+        String jwt = bearer(x.getRequestHeaders().getFirst("Authorization"));
+        // Dentro del mismo cupo limitado se verifica la cuenta y se ejecuta la RPC.
+        json(x, 200, consultarCuenta(() -> {
+            cuentas.autenticar(jwt);
+            String consulta = x.getRequestURI().getRawQuery();
+            if (!ruta.equals("/api/ranking") && consulta != null)
+                throw new IllegalArgumentException("Esta ruta no admite parámetros de consulta.");
+            try {
+                return switch (ruta) {
+                    case "/api/comunidad" -> cuentas.comunidad(jwt);
+                    case "/api/misiones" -> cuentas.misiones(jwt);
+                    case "/api/ranking" -> {
+                        String criterio = "xp";
+                        if (consulta != null) {
+                            if (!consulta.matches("criterio=(xp|victorias|partidas)"))
+                                throw new IllegalArgumentException("Criterio de ranking no válido.");
+                            criterio = consulta.substring("criterio=".length());
+                        }
+                        yield cuentas.ranking(jwt, criterio);
+                    }
+                    case "/api/amigos" -> {
+                        JsonObject cuerpo = cuerpoSala(x, Set.of("codigo", "accion"));
+                        texto(cuerpo, "codigo", true); texto(cuerpo, "accion", true);
+                        yield cuentas.amistad(jwt, cuerpo.get("codigo").getAsString(), cuerpo.get("accion").getAsString());
+                    }
+                    case "/api/misiones/reclamar" -> {
+                        JsonObject cuerpo = cuerpoSala(x, Set.of("id")); texto(cuerpo, "id", true);
+                        yield cuentas.reclamarMision(jwt, cuerpo.get("id").getAsString());
+                    }
+                    default -> throw new IllegalArgumentException("Ruta no válida.");
+                };
+            } catch (IOException e) { throw new ErrorSala(400, "No se pudo leer la solicitud."); }
+        }));
     }
     private boolean origenValido(HttpExchange x) {
         String origen = x.getRequestHeaders().getFirst("Origin");
@@ -253,7 +294,9 @@ public final class ServidorWeb implements AutoCloseable {
         return entrada.juego();
     }
     private void json(HttpExchange x, int estado, Object dato) throws IOException {
-        enviar(x, estado, "application/json; charset=utf-8", gson.toJson(dato).getBytes(StandardCharsets.UTF_8));
+        String cuerpo = dato instanceof CuentasSupabase.Ranking
+                ? new GsonBuilder().serializeNulls().create().toJson(dato) : gson.toJson(dato);
+        enviar(x, estado, "application/json; charset=utf-8", cuerpo.getBytes(StandardCharsets.UTF_8));
     }
     private void estatico(HttpExchange x) throws IOException {
         try {

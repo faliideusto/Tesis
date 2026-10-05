@@ -3,10 +3,19 @@ export function createAccounts({fetcher=globalThis.fetch, storage=globalThis.ses
   sdk=()=>globalThis.supabase}={}) {
   let client, session=null, profile=null, enabled=false, initialization;
   let profileGeneration=0;
+  let authGeneration=0;
   const listeners=new Set();
   const emit=()=>listeners.forEach(fn=>fn());
+  function applySession(value) {
+    if(session?.user?.id!==value?.user?.id || !value || (!session&&value)) {
+      profile=null;++profileGeneration;++authGeneration;
+    }
+    session=value;
+  }
   async function request(path, body) {
+    const generation=authGeneration,known=Boolean(session);
     const token=await accessToken();
+    if(known&&generation!==authGeneration)throw new Error('La cuenta ha cambiado. Vuelve a abrir tu perfil antes de realizar esta acción.');
     if (!token) throw new Error('Inicia sesión para consultar tu perfil.');
     const controller=new AbortController(), timeout=setTimeout(()=>controller.abort(),12000);
     try {
@@ -44,14 +53,13 @@ export function createAccounts({fetcher=globalThis.fetch, storage=globalThis.ses
         persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
       enabled=true;
       client.auth.onAuthStateChange((_event,value)=>{
-        if(session?.user?.id!==value?.user?.id || !value) {profile=null; ++profileGeneration;}
-        session=value;
+        applySession(value);
         // No hacer llamadas Auth dentro del callback del SDK: evitar su bloqueo interno.
         emit();
       });
       const {data,error}=await client.auth.getSession();
       if (error) throw error;
-      session=data.session;
+      applySession(data.session);
       emit();
     })();
     try {await initialization;} catch(error) {initialization=null; throw error;}
@@ -70,9 +78,13 @@ export function createAccounts({fetcher=globalThis.fetch, storage=globalThis.ses
         throw new Error('Las cuentas están deshabilitadas. Tu sesión guardada no puede vincularse a una sala.');
       return null;
     }
+    const generation=authGeneration;
     const {data,error}=await client.auth.getSession();
     if (error) throw new Error('No se pudo renovar tu sesión. Vuelve a iniciar sesión.');
-    session=data.session;
+    if(generation!==authGeneration)throw new Error('La cuenta ha cambiado. Vuelve a abrir tu perfil antes de realizar esta acción.');
+    const previous=authGeneration;
+    applySession(data.session);
+    if(previous!==authGeneration)emit();
     return session?.access_token || null;
   }
   async function login(email,password) {
@@ -80,21 +92,21 @@ export function createAccounts({fetcher=globalThis.fetch, storage=globalThis.ses
     if (!client) throw new Error('Las cuentas todavía no están habilitadas.');
     const {data,error}=await client.auth.signInWithPassword({email,password});
     if(error) throw new Error('No se pudo iniciar sesión. Comprueba correo y contraseña.');
-    session=data.session; emit();
+    applySession(data.session); emit();
   }
   async function register(email,password,nombre) {
     await initialize();
     if (!client) throw new Error('Las cuentas todavía no están habilitadas.');
     const {data,error}=await client.auth.signUp({email,password,options:{data:{display_name:nombre}}});
     if(error) throw new Error('No se pudo crear la cuenta. Comprueba los datos e inténtalo de nuevo.');
-    session=data.session; emit();
+    applySession(data.session); emit();
     return Boolean(session);
   }
   async function logout() {
     if (!client) return;
     const {error}=await client.auth.signOut({scope:'local'});
     if(error) throw new Error('No se pudo cerrar sesión. Inténtalo de nuevo.');
-    session=null; profile=null; ++profileGeneration; emit();
+    applySession(null); emit();
   }
   async function rename(nombre) {
     const current=++profileGeneration;
@@ -103,6 +115,12 @@ export function createAccounts({fetcher=globalThis.fetch, storage=globalThis.ses
     return value;
   }
   return {initialize,accessToken,login,register,logout,refreshProfile,rename,
+    community:()=>request('comunidad'),
+    friendship:(codigo,accion)=>request('amigos',{codigo,accion}),
+    ranking:(criterio='xp')=>request(`ranking?criterio=${encodeURIComponent(criterio)}`),
+    missions:()=>request('misiones'),
+    claimMission:id=>request('misiones/reclamar',{id}),
+    identity:()=>session?.user?.id || null,
     forgetStoredSession:()=>{storage.removeItem('tesis.cuenta');},
     enabled:()=>enabled,signedIn:()=>Boolean(session),profile:()=>profile,
     onChange:fn=>{listeners.add(fn);return()=>listeners.delete(fn);}};

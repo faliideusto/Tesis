@@ -12,7 +12,7 @@ export function progressText(progress) {
     default: return '';
   }
 }
-const closeButton=()=>'<button type="button" class="account-close" aria-label="Cerrar perfil"><span aria-hidden="true">×</span></button>';
+const closeButton=()=>'<nav class="academy-navigation" aria-label="Navegación de tu academia"><button type="button" class="account-close"><span aria-hidden="true">←</span> Volver al juego</button><span class="academy-wordmark">TESIS <small>LA ACADEMIA</small></span><span class="academy-section-label">MI ACADEMIA</span></nav>';
 export function profileView(profile) {
   const p=progression(profile),played=Math.max(0,Number(profile.partidasTerminadas)||0),wins=Math.max(0,Number(profile.victorias)||0);
   return `<div class="profile-shell tier-${p.rank.id}">${closeButton()}
@@ -32,19 +32,45 @@ function authView(mode) {
 }
 export function initAccountPanel() {
   const panel=document.getElementById('account-panel'),opener=document.getElementById('account-open');
-  panel.setAttribute('aria-labelledby','account-title');
-  let mode='login',working=false,lastView='',restoring=true;
+  let mode='login',working=false,lastView='',restoring=true,pushed=false,returnFocus=null,returnScroll=0;
+  const app=document.getElementById('app');
+  function leave() {
+    panel.hidden=true;app.inert=false;app.hidden=false;document.body.classList.remove('account-page-active');
+    document.title='Tesis · La mesa del conocimiento';
+    window.scrollTo(0,returnScroll);
+    (returnFocus?.isConnected&&returnFocus!==document.body?returnFocus:opener).focus({preventScroll:true});
+    document.dispatchEvent(new Event('tesis:account-return'));
+  }
+  function enter() {
+    if(!panel.hidden)return;
+    returnFocus=document.activeElement;returnScroll=window.scrollY;
+    panel.hidden=false;app.inert=true;app.hidden=true;document.body.classList.add('account-page-active');
+    document.title='Mi academia · Tesis';window.scrollTo(0,0);draw(true);panel.focus();
+    if(accounts.signedIn())void perform(()=>accounts.refreshProfile());
+  }
+  function openPage() {
+    if(location.hash!=='#perfil'){history.pushState(null,'','#perfil');pushed=true;}
+    enter();
+  }
+  function closePage() {
+    if(pushed&&location.hash==='#perfil'){pushed=false;history.back();}
+    else {history.replaceState(null,'',location.pathname+location.search);leave();}
+  }
+  function followLocation(){if(location.hash==='#perfil')enter();else if(!panel.hidden)leave();}
+  window.addEventListener('popstate',followLocation);window.addEventListener('hashchange',followLocation);
+  panel.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();closePage();}});
   function draw(force=false) {
     opener.hidden=!accounts.enabled()&&!restoring;
     const profile=accounts.profile();
     if(accounts.signedIn()) {
       const p=progression(profile||{});opener.classList.add('has-profile');
-      opener.innerHTML=`${badge(p.rank.id,{small:true})}<span class="account-trigger-copy"><strong>Mi perfil</strong><small>${profile?`${esc(p.rank.name)} · NIV. ${p.level}`:'Tu academia'}</small></span><span class="account-chevron" aria-hidden="true">›</span>`;
+      opener.dataset.rank=p.rank.id;
+      opener.innerHTML=`<span class="account-trigger-monogram" aria-hidden="true">${esc(Array.from(profile?.nombre||'T')[0].toUpperCase())}<span>${p.level}</span></span><span class="account-trigger-copy"><strong>${esc(profile?.nombre||'Mi academia')}</strong><small>Mi perfil <span>·</span> ${esc(p.rank.name)}</small></span><span class="account-chevron" aria-hidden="true">↗</span>`;
       opener.setAttribute('aria-label',profile?`Mi perfil, ${p.rank.name}, nivel ${p.level}`:'Mi perfil');
     } else {
-      opener.classList.remove('has-profile');opener.innerHTML='<span class="account-trigger-symbol" aria-hidden="true">♙</span><span class="account-trigger-copy"><strong>Entrar / Crear cuenta</strong><small>Construye tu legado</small></span><span class="account-chevron" aria-hidden="true">›</span>';opener.setAttribute('aria-label','Entrar o crear cuenta');
+      opener.classList.remove('has-profile');delete opener.dataset.rank;opener.innerHTML='<span class="account-trigger-monogram guest-monogram" aria-hidden="true">T</span><span class="account-trigger-copy"><strong>Mi academia</strong><small>Entrar o crear cuenta</small></span><span class="account-chevron" aria-hidden="true">↗</span>';opener.setAttribute('aria-label','Entrar o crear cuenta');
     }
-    if(!panel.open||working)return;
+    if(panel.hidden||working)return;
     // Una recompensa/renovación en segundo plano no debe borrar el alias en edición.
     if(!force&&accounts.signedIn()&&profile&&panel.querySelector('#account-rename:not([hidden])'))return;
     const view=accounts.signedIn()?JSON.stringify(profile):mode;
@@ -53,9 +79,9 @@ export function initAccountPanel() {
     else if(accounts.signedIn())panel.innerHTML=`<div class="account-empty-shell">${closeButton()}${badge('madera')}<span class="eyebrow">TU ACADEMIA</span><h2 id="account-title">Preparando tu perfil</h2><p>Conectando con tu legado…</p><p id="account-message" class="account-message" role="status"></p><button type="button" class="account-link" id="account-refresh">Volver a intentar</button><button type="button" class="account-link" id="account-logout">Cerrar sesión</button></div>`;
     else panel.innerHTML=authView(mode);
     panel.dataset.view=accounts.signedIn()?'profile':'auth';
-    panel.querySelector('.account-close').onclick=()=>panel.close();
+    panel.querySelector('.account-close').onclick=closePage;
     panel.querySelectorAll('[data-auth-mode]').forEach(button=>button.onclick=()=>{mode=button.dataset.authMode;draw(true);});
-    const dismiss=panel.querySelector('#account-dismiss');if(dismiss)dismiss.onclick=()=>panel.close();
+    const dismiss=panel.querySelector('#account-dismiss');if(dismiss)dismiss.onclick=closePage;
     const edit=panel.querySelector('#account-edit');if(edit)edit.onclick=()=>{const form=panel.querySelector('#account-rename');form.hidden=!form.hidden;edit.setAttribute('aria-expanded',String(!form.hidden));if(!form.hidden)form.querySelector('input').focus();};
     const refresh=panel.querySelector('#account-refresh');if(refresh)refresh.onclick=()=>perform(()=>accounts.refreshProfile());
     const logout=panel.querySelector('#account-logout');if(logout)logout.onclick=()=>perform(()=>accounts.logout());
@@ -80,10 +106,12 @@ export function initAccountPanel() {
       try{await accounts.refreshProfile();}catch{return 'Sesión iniciada. No se pudo cargar tu perfil; pulsa Volver a intentar.';}
     });
   });
-  opener.onclick=()=>{panel.showModal();draw(true);if(accounts.signedIn())void perform(()=>accounts.refreshProfile());};
+  opener.onclick=openPage;
   accounts.onChange(()=>draw());draw();
   void accounts.initialize().then(()=>{restoring=false;draw();if(accounts.signedIn())void accounts.refreshProfile().catch(()=>{});}).catch(()=>{
-    restoring=false;opener.hidden=false;opener.innerHTML='<span class="account-trigger-symbol" aria-hidden="true">♙</span><span class="account-trigger-copy"><strong>Mi academia</strong><small>Conexión pendiente</small></span>';
-    opener.onclick=()=>{panel.dataset.view='auth';panel.innerHTML=`<div class="account-empty-shell">${closeButton()}${badge('madera')}<span class="eyebrow">VOLVEREMOS A ENCONTRARNOS</span><h2 id="account-title">La academia está desconectada</h2><p>Recarga para volver a conectar con tu cuenta.</p><p>Continuar como invitado cierra tu cuenta en esta pestaña. Tu sala actual conserva su identidad; las nuevas salas no acumularán XP.</p><button type="button" class="gold-button" id="account-guest">Continuar como invitado</button></div>`;panel.querySelector('.account-close').onclick=()=>panel.close();panel.querySelector('#account-guest').onclick=()=>{accounts.forgetStoredSession();globalThis.location.reload();};panel.showModal();};
+    restoring=false;opener.hidden=false;opener.innerHTML='<span class="account-trigger-monogram guest-monogram" aria-hidden="true">T</span><span class="account-trigger-copy"><strong>Mi academia</strong><small>Conexión pendiente</small></span>';
+    const disconnected=()=>{panel.dataset.view='auth';panel.innerHTML=`<div class="account-empty-shell">${closeButton()}${badge('madera')}<span class="eyebrow">VOLVEREMOS A ENCONTRARNOS</span><h2 id="account-title">La academia está desconectada</h2><p>Recarga para volver a conectar con tu cuenta.</p><p>Continuar como invitado cierra tu cuenta en esta pestaña. Tu sala actual conserva su identidad; las nuevas salas no acumularán XP.</p><button type="button" class="gold-button" id="account-guest">Continuar como invitado</button></div>`;panel.querySelector('.account-close').onclick=closePage;panel.querySelector('#account-guest').onclick=()=>{accounts.forgetStoredSession();globalThis.location.reload();};};
+    opener.onclick=()=>{openPage();disconnected();};if(!panel.hidden)disconnected();
   });
+  followLocation();
 }

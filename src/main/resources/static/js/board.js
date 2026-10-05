@@ -1,11 +1,13 @@
 import {img, esc, update} from './dom.js';
 import {ideaCard} from './cards.js';
 import {rival, localPlayer, tableStudies, positionRolePreview} from './players.js';
+import {orientTableStudies} from './table-perspective.js';
 
 const icons = {COBRAR:'cobrar', PENSAR:'pensar', INICIAR:'iniciar_estudio', TRABAJAR:'trabajar', FIN_TURNO:'finalizar_turno'};
 const renderedHands = new WeakMap();
 const previewBoards = new WeakSet();
 window.addEventListener('resize', () => {
+  orientTableStudies(document.getElementById('board'));
   for (const anchor of document.querySelectorAll('.rival:is(:hover,:focus-visible), .local-role-button:is(:hover,:focus-visible)')) positionRolePreview(anchor);
 });
 export function board(state) {
@@ -64,4 +66,5 @@ export function board(state) {
       return `<button class="action-button ${a.id === 'FIN_TURNO' ? 'end-turn' : ''} ${a.id === 'HABILIDAD' ? 'ability-action' : ''}" data-command="action" data-action="${a.id}" ${disabled ? 'disabled' : ''} aria-disabled="${!a.disponible}" aria-label="${esc(label + (!a.disponible ? '. ' + a.motivo + (disabled ? '' : ' Pulsa para ver el motivo.') : ''))}" data-tip="${esc(a.disponible ? a.descripcion : a.motivo)}">
     <span class="action-content">${img(icons[a.id] ? `acciones/${icons[a.id]}.webp` : 'recursos/prestigio.webp')}<span class="action-label">${esc(label)}</span></span></button>`;
     }).join(''));
+  orientTableStudies(table);
 }

@@ -1,5 +1,10 @@
 # Tesis
 
+La versión 2.1.0 renueva la portada, sala de espera, mesa y diálogos con una
+estética de academia nocturna, arte propio y animaciones decorativas accesibles.
+«Mi perfil» tiene acceso visible, carnet de investigador, estadísticas y rangos.
+Conserva las reglas, el flujo multijugador y los efectos de partida existentes.
+
 La versión 2.0.0 incorpora cuentas opcionales y progresión del perfil con Supabase,
 sin ventajas dentro de la partida. Configuración, variables y límites en
 [Cuentas, Supabase y Render](docs/CUENTAS_SUPABASE_RENDER.md).

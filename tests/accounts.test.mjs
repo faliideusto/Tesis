@@ -73,8 +73,12 @@ const disabledKnown=auth.namespace.createAccounts({storage:knownStorage,
 await assert.rejects(()=>disabledKnown.initialize(),/deshabilitadas/);
 await assert.rejects(()=>disabledKnown.accessToken(),/recuperar/);
 const panel=new vm.SourceTextModule(await readFile(new URL('../src/main/resources/static/js/account-panel.js',import.meta.url),'utf8'),{context});
-await panel.link(spec=>spec.includes('auth')?fakeAuth:new vm.SourceTextModule('export const esc=String;',{context}));await panel.evaluate();
+await panel.link(async spec=>spec.includes('auth')?fakeAuth:new vm.SourceTextModule(await readFile(new URL(spec.includes('profile-ranks')?'../src/main/resources/static/js/profile-ranks.js':'../src/main/resources/static/js/dom.js',import.meta.url),'utf8'),{context}));await panel.evaluate();
 assert.match(panel.namespace.progressText({estado:'CONFIRMADA',xp:150}),/150 XP/);
 assert.match(panel.namespace.progressText({estado:'INVITADO'}),/no acumula/);
 assert.match(panel.namespace.progressText({estado:'PENDIENTE'}),/puede perderse/);
+const hostile=panel.namespace.profileView({nombre:'<img src=x onerror="alert(1)">',nivel:75,xp:37000,partidasTerminadas:2,victorias:1});
+assert.ok(!hostile.includes('<img src=x'),'El nombre del perfil debe quedar escapado');
+assert.match(hostile,/&lt;img src=x onerror=&quot;alert\(1\)&quot;&gt;/);
+assert.match(hostile,/tier-eterno/);assert.match(hostile,/aria-valuenow="0"/);
 console.log('Cuentas: almacenamiento, headers separados, invitado, cierre y progreso verificados');

@@ -1,76 +1,89 @@
 import {accounts} from './auth.js';
 import {esc} from './dom.js';
+import {RANKS, progression, badge} from './profile-ranks.js';
 
 export function progressText(progress) {
   switch(progress?.estado) {
-    case 'INVITADO': return 'Invitado · esta partida no acumula experiencia.';
-    case 'VINCULADA': return 'Partida vinculada a tu cuenta. El nivel no da ventajas.';
-    case 'PENDIENTE': return 'Resultado válido · guardando experiencia. Si el servidor reinicia antes de guardarla, puede perderse.';
+    case 'INVITADO': return 'Como invitado · esta partida no acumula experiencia.';
+    case 'VINCULADA': return 'Cuenta vinculada · tu progreso se guardará al terminar.';
+    case 'PENDIENTE': return 'Guardando experiencia… Si el servidor reinicia antes de guardarla, puede perderse.';
     case 'CONFIRMADA': return `Progreso guardado · +${Number(progress.xp) || 0} XP.`;
-    case 'ERROR': return 'Resultado válido · no se pudo guardar el progreso. Contacta con quien administra Tesis; no se garantiza recuperar esta recompensa.';
+    case 'ERROR': return 'No se pudo guardar el progreso. Contacta con quien administra Tesis; no se garantiza recuperar esta recompensa.';
     default: return '';
   }
 }
+const closeButton=()=>'<button type="button" class="account-close" aria-label="Cerrar perfil"><span aria-hidden="true">×</span></button>';
+export function profileView(profile) {
+  const p=progression(profile),played=Math.max(0,Number(profile.partidasTerminadas)||0),wins=Math.max(0,Number(profile.victorias)||0);
+  return `<div class="profile-shell tier-${p.rank.id}">${closeButton()}
+    <header class="profile-heading"><span class="eyebrow">EL LEGADO DE TU ACADEMIA</span><h2 id="account-title">Mi perfil</h2><span class="profile-ornament" aria-hidden="true">✦</span></header>
+    <div class="profile-main"><section class="profile-identity" aria-label="Tu rango actual"><div class="profile-emblem">${badge(p.rank.id)}<span class="emblem-level">NIVEL <b>${esc(p.level)}</b></span></div><span class="rank-kicker">${esc(p.rank.title)}</span><h3>${esc(profile.nombre)}</h3><span class="rank-name">${esc(p.rank.name)}</span><p class="rank-description">${esc(p.rank.description)}</p></section>
+    <section class="profile-record" aria-label="Progresión y estadísticas"><div class="profile-section-label"><span>PROGRESIÓN DE NIVEL</span><span>NIVEL ${esc(p.level)} → ${esc(p.level+1)}</span></div><div class="xp-headline"><strong>${esc(p.inLevel)} <small>/ 500 XP</small></strong><span>${esc(p.toNextLevel)} XP para el siguiente nivel</span></div><div class="xp-track" role="progressbar" aria-label="Progreso al siguiente nivel" aria-valuemin="0" aria-valuemax="500" aria-valuenow="${p.inLevel}" aria-valuetext="${p.inLevel} de 500 XP"><span style="width:${p.percent}%"></span></div><p class="xp-total">${esc(p.xp)} XP acumulada <span>·</span> Tu legado sigue creciendo</p>
+    <div class="profile-stat-grid"><div><span class="stat-glyph" aria-hidden="true">▤</span><strong>${esc(played)}</strong><span>Partidas terminadas</span></div><div><span class="stat-glyph" aria-hidden="true">♛</span><strong>${esc(wins)}</strong><span>Victorias</span></div><div><span class="stat-glyph" aria-hidden="true">✦</span><strong>${played?Math.round(wins/played*100):0}<small>%</small></strong><span>Porcentaje de victorias</span></div></div>
+    <div class="next-rank-card">${p.nextRank?`${badge(p.nextRank.id,{small:true})}<div><span>EL SIGUIENTE HORIZONTE</span><strong>${esc(p.nextRank.name)}</strong><p>Nivel ${p.nextRank.start} · ${Math.max(0,(p.nextRank.start-1)*500-p.xp)} XP por recorrer</p></div>`:`${badge('eterno',{small:true})}<div><span>EL MAYOR HONOR DE LA ACADEMIA</span><strong>Un legado eterno</strong><p>Has alcanzado el último rango. Tus niveles continúan.</p></div>`}</div></section></div>
+    <section class="rank-journey" aria-label="Ruta de rangos"><div class="journey-heading"><div><span class="eyebrow">DE LA PRIMERA IDEA AL LEGADO</span><h3>Tu camino en Tesis</h3></div><span class="cosmetic-note">Prestigio visual. Sin ventajas en partida.</span></div><ol class="rank-path">${RANKS.map((rank,i)=>`<li class="rank-step ${i<p.index?'achieved':i===p.index?'current':'locked'}" ${i===p.index?'aria-current="step"':''} title="${esc(rank.name)} · nivel ${rank.start}">${badge(rank.id,{small:true})}<strong>${esc(rank.name)}</strong><span>NIV. ${rank.start}${i===p.index?' · ACTUAL':i<p.index?' · ✓':''}</span></li>`).join('')}</ol></section>
+    <footer class="profile-footer"><p>+100 XP por terminar <span>·</span> +50 XP por ganar, también en empate</p><div><button type="button" class="account-link" id="account-edit" aria-expanded="false">Editar nombre</button><button type="button" class="account-link" id="account-refresh">Actualizar</button><button type="button" class="account-link logout" id="account-logout">Cerrar sesión</button></div></footer>
+    <form id="account-rename" class="profile-name-editor" hidden><label>Nombre visible<input name="nombre" value="${esc(profile.nombre)}" maxlength="24" required autocomplete="nickname"></label><button class="gold-button">Guardar nombre</button><p>Tu asiento actual mantiene su nombre.</p></form><p id="account-message" class="account-message" role="status"></p></div>`;
+}
+function authView(mode) {
+  const register=mode==='register';
+  return `<div class="account-auth-shell">${closeButton()}<section class="auth-art">${badge('oro')}<span class="eyebrow">CADA IDEA DEJA HUELLA</span><h2>Tu academia.<br> <em>Tu legado.</em></h2><p>De la primera partida a una trayectoria inolvidable.</p><div class="auth-rank-preview">${badge('madera',{small:true})}<span>✦</span>${badge('diamante',{small:true})}<span>✦</span>${badge('eterno',{small:true})}</div></section><section class="auth-form-panel"><span class="eyebrow">BIENVENIDO A TESIS</span><h2 id="account-title">${register?'Comienza tu legado':'Entra en tu academia'}</h2><p class="auth-intro">${register?'Crea tu cuenta y conserva cada paso de tu progreso.':'Tu próxima gran idea te está esperando.'}</p><div class="auth-tabs" aria-label="Acceso de cuenta"><button type="button" data-auth-mode="login" aria-pressed="${!register}">Iniciar sesión</button><button type="button" id="account-switch" data-auth-mode="register" aria-pressed="${register}">Crear cuenta</button></div>
+    <form id="account-${mode}">${register?'<label>Nombre de tu investigador<input name="nombre" maxlength="24" required autocomplete="nickname" placeholder="Así te conocerá la academia"></label>':''}<label>Correo electrónico<input name="email" type="email" required autocomplete="email" placeholder="tu@correo.com"></label><label>Contraseña<input name="password" type="password" minlength="6" required autocomplete="${register?'new-password':'current-password'}" placeholder="Mínimo 6 caracteres"></label><button class="gold-button">${register?'Crear mi academia':'Entrar en Tesis'} <span aria-hidden="true">→</span></button></form><p id="account-message" class="account-message" role="status"></p><button type="button" class="account-link auth-guest" id="account-dismiss">Seguir jugando como invitado</button><p class="auth-fine-print">No verificamos el correo. Sin recuperación pública por email: conserva tu contraseña. Entrar como invitado no acumula XP en esa partida.</p></section></div>`;
+}
 export function initAccountPanel() {
-  const panel=document.getElementById('account-panel');
-  const opener=document.getElementById('account-open');
-  let mode='login', working=false;
-  function draw() {
-    opener.hidden=!accounts.enabled();
-    opener.textContent=accounts.signedIn()?'Mi perfil':'Cuenta / Invitado';
-    if (!panel.open || working) return;
+  const panel=document.getElementById('account-panel'),opener=document.getElementById('account-open');
+  panel.setAttribute('aria-labelledby','account-title');
+  let mode='login',working=false,lastView='',restoring=true;
+  function draw(force=false) {
+    opener.hidden=!accounts.enabled()&&!restoring;
     const profile=accounts.profile();
-    panel.innerHTML=`<div class="account-content"><button type="button" class="text-button account-close" aria-label="Cerrar perfil">Cerrar</button><h2>${accounts.signedIn()?'Mi perfil':mode==='register'?'Crear cuenta':'Iniciar sesión'}</h2>
-      ${accounts.signedIn() ? `<p id="account-message" role="status">${profile?'':'Perfil pendiente de cargar.'}</p>
-        ${profile?`<div class="profile-stats"><strong>Nivel ${esc(profile.nivel)}</strong><span>${esc(profile.xp)} XP</span><span>${esc(profile.partidasTerminadas)} partidas terminadas</span><span>${esc(profile.victorias)} victorias</span></div>
-          <form id="account-rename"><label>Nombre visible<input name="nombre" value="${esc(profile.nombre)}" maxlength="24" required autocomplete="nickname"></label><button class="gold-button">Guardar nombre</button></form>`:''}
-        <button type="button" class="plain-button" id="account-refresh">Actualizar perfil</button><button type="button" class="text-button" id="account-logout">Cerrar sesión</button><p class="setup-note">Cerrar sesión conserva tu sala. El nombre y la cuenta del asiento se fijan al entrar.</p>`:
-        `<form id="account-${mode}">${mode==='register'?'<label>Nombre visible<input name="nombre" maxlength="24" required autocomplete="nickname"></label>':''}<label>Correo<input name="email" type="email" required autocomplete="email"></label><label>Contraseña<input name="password" type="password" minlength="6" required autocomplete="${mode==='register'?'new-password':'current-password'}"></label><p class="setup-note">Mínimo 6 caracteres. No se verifica el correo. La recuperación por correo no está disponible públicamente; conserva tu contraseña.</p><button class="gold-button">${mode==='register'?'Crear cuenta':'Entrar'}</button></form>
-         <p id="account-message" role="status"></p><button type="button" class="text-button" id="account-switch">${mode==='register'?'Ya tengo cuenta':'Crear una cuenta'}</button><p class="setup-note">También puedes jugar como invitado. Entrar después no reclama experiencia de una sala creada como invitado.</p>`}
-      </div>`;
+    if(accounts.signedIn()) {
+      const p=progression(profile||{});opener.classList.add('has-profile');
+      opener.innerHTML=`${badge(p.rank.id,{small:true})}<span class="account-trigger-copy"><strong>Mi perfil</strong><small>${profile?`${esc(p.rank.name)} · NIV. ${p.level}`:'Tu academia'}</small></span><span class="account-chevron" aria-hidden="true">›</span>`;
+      opener.setAttribute('aria-label',profile?`Mi perfil, ${p.rank.name}, nivel ${p.level}`:'Mi perfil');
+    } else {
+      opener.classList.remove('has-profile');opener.innerHTML='<span class="account-trigger-symbol" aria-hidden="true">♙</span><span class="account-trigger-copy"><strong>Entrar / Crear cuenta</strong><small>Construye tu legado</small></span><span class="account-chevron" aria-hidden="true">›</span>';opener.setAttribute('aria-label','Entrar o crear cuenta');
+    }
+    if(!panel.open||working)return;
+    // Una recompensa/renovación en segundo plano no debe borrar el alias en edición.
+    if(!force&&accounts.signedIn()&&profile&&panel.querySelector('#account-rename:not([hidden])'))return;
+    const view=accounts.signedIn()?JSON.stringify(profile):mode;
+    if(!force&&lastView===view)return;lastView=view;
+    if(accounts.signedIn()&&profile)panel.innerHTML=profileView(profile);
+    else if(accounts.signedIn())panel.innerHTML=`<div class="account-empty-shell">${closeButton()}${badge('madera')}<span class="eyebrow">TU ACADEMIA</span><h2 id="account-title">Preparando tu perfil</h2><p>Conectando con tu legado…</p><p id="account-message" class="account-message" role="status"></p><button type="button" class="account-link" id="account-refresh">Volver a intentar</button><button type="button" class="account-link" id="account-logout">Cerrar sesión</button></div>`;
+    else panel.innerHTML=authView(mode);
+    panel.dataset.view=accounts.signedIn()?'profile':'auth';
     panel.querySelector('.account-close').onclick=()=>panel.close();
-    const switcher=panel.querySelector('#account-switch');
-    if(switcher) switcher.onclick=()=>{mode=mode==='login'?'register':'login';draw();};
-    const refresh=panel.querySelector('#account-refresh');
-    if(refresh) refresh.onclick=()=>perform(()=>accounts.refreshProfile());
-    const logout=panel.querySelector('#account-logout');
-    if(logout) logout.onclick=()=>perform(()=>accounts.logout());
+    panel.querySelectorAll('[data-auth-mode]').forEach(button=>button.onclick=()=>{mode=button.dataset.authMode;draw(true);});
+    const dismiss=panel.querySelector('#account-dismiss');if(dismiss)dismiss.onclick=()=>panel.close();
+    const edit=panel.querySelector('#account-edit');if(edit)edit.onclick=()=>{const form=panel.querySelector('#account-rename');form.hidden=!form.hidden;edit.setAttribute('aria-expanded',String(!form.hidden));if(!form.hidden)form.querySelector('input').focus();};
+    const refresh=panel.querySelector('#account-refresh');if(refresh)refresh.onclick=()=>perform(()=>accounts.refreshProfile());
+    const logout=panel.querySelector('#account-logout');if(logout)logout.onclick=()=>perform(()=>accounts.logout());
+    if(!panel.contains(document.activeElement))panel.querySelector('input,.account-close')?.focus();
   }
   async function perform(task) {
-    if(working) return;
-    working=true;
-    panel.querySelectorAll('button,input').forEach(el=>el.disabled=true);
-    let message='';
-    try {const result=await task();message=typeof result==='string'?result:'';}
-    catch(error) {message=error.message || 'No se pudo completar la operación.';}
-    finally {
-      working=false; draw();
-      const target=panel.querySelector('#account-message');
-      if(target) target.textContent=message;
-    }
+    if(working)return;working=true;panel.setAttribute('aria-busy','true');
+    const controls=Array.from(panel.querySelectorAll('button,input'));controls.forEach(el=>{if(!el.classList.contains('account-close'))el.disabled=true;});
+    const messageNode=panel.querySelector('#account-message');if(messageNode)messageNode.textContent='Conectando…';
+    let message='',success=false;
+    try {const result=await task();message=typeof result==='string'?result:'';success=true;}
+    catch(error){message=error.message||'No se pudo completar la operación.';}
+    finally {working=false;panel.removeAttribute('aria-busy');controls.forEach(el=>el.disabled=false);draw(success);const target=panel.querySelector('#account-message');if(target)target.textContent=message;}
   }
   panel.addEventListener('submit',event=>{
-    event.preventDefault();
-    const form=event.target,fields=new FormData(form);
+    event.preventDefault();const form=event.target,fields=new FormData(form);
     void perform(async()=>{
-      if(form.id==='account-rename') {await accounts.rename(String(fields.get('nombre')).trim());return 'Nombre guardado. Tu asiento actual mantiene su nombre.';}
+      if(form.id==='account-rename'){await accounts.rename(String(fields.get('nombre')).trim());return 'Nombre guardado. Tu asiento actual mantiene su nombre.';}
       const email=String(fields.get('email')).trim(),password=String(fields.get('password'));
-      if(mode==='register') {
-        const active=await accounts.register(email,password,String(fields.get('nombre')).trim());
-        if(!active) return 'Cuenta creada sin sesión. Revisa la configuración de confirmación de correo del proyecto.';
-      } else await accounts.login(email,password);
-      try {await accounts.refreshProfile();} catch {return 'Sesión iniciada. No se pudo cargar tu perfil; pulsa Actualizar perfil.';}
+      if(mode==='register'){const active=await accounts.register(email,password,String(fields.get('nombre')).trim());if(!active)return 'Cuenta creada sin sesión. Revisa la confirmación de correo del proyecto.';}
+      else await accounts.login(email,password);
+      try{await accounts.refreshProfile();}catch{return 'Sesión iniciada. No se pudo cargar tu perfil; pulsa Volver a intentar.';}
     });
   });
-  opener.onclick=()=>{panel.showModal();draw();if(accounts.signedIn()) void perform(()=>accounts.refreshProfile());};
-  accounts.onChange(draw);
-  void accounts.initialize().then(draw).catch(()=>{
-    opener.hidden=false;opener.textContent='Cuenta no disponible';
-    opener.onclick=()=>{
-      panel.innerHTML='<div class="account-content"><h2>Cuenta no disponible</h2><p>Recarga la página para volver a conectar con las cuentas.</p><p>Si continúas como invitado, cerraremos tu sesión de cuenta en esta pestaña y las nuevas salas no acumularán experiencia. Tu sala actual y la cuenta con la que entraste se conservan.</p><button type="button" class="gold-button" id="account-guest">Continuar como invitado</button><button type="button" class="plain-button account-close">Cerrar</button></div>';
-      panel.querySelector('.account-close').onclick=()=>panel.close();
-      panel.querySelector('#account-guest').onclick=()=>{accounts.forgetStoredSession();globalThis.location.reload();};
-      panel.showModal();
-    };
+  opener.onclick=()=>{panel.showModal();draw(true);if(accounts.signedIn())void perform(()=>accounts.refreshProfile());};
+  accounts.onChange(()=>draw());draw();
+  void accounts.initialize().then(()=>{restoring=false;draw();if(accounts.signedIn())void accounts.refreshProfile().catch(()=>{});}).catch(()=>{
+    restoring=false;opener.hidden=false;opener.innerHTML='<span class="account-trigger-symbol" aria-hidden="true">♙</span><span class="account-trigger-copy"><strong>Mi academia</strong><small>Conexión pendiente</small></span>';
+    opener.onclick=()=>{panel.dataset.view='auth';panel.innerHTML=`<div class="account-empty-shell">${closeButton()}${badge('madera')}<span class="eyebrow">VOLVEREMOS A ENCONTRARNOS</span><h2 id="account-title">La academia está desconectada</h2><p>Recarga para volver a conectar con tu cuenta.</p><p>Continuar como invitado cierra tu cuenta en esta pestaña. Tu sala actual conserva su identidad; las nuevas salas no acumularán XP.</p><button type="button" class="gold-button" id="account-guest">Continuar como invitado</button></div>`;panel.querySelector('.account-close').onclick=()=>panel.close();panel.querySelector('#account-guest').onclick=()=>{accounts.forgetStoredSession();globalThis.location.reload();};panel.showModal();};
   });
 }

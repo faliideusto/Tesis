@@ -4,6 +4,22 @@ import {showActivity} from './feedback.js';
 
 // One cancellable lifetime for every visual operation. No game state is mutated here.
 const animations = new Set(), nodes = new Set(), hidden = new Map();
+const presentations = [];
+// Each ceremony owns its animations; skipping never resets the visual lifetime.
+async function presentation(run) {
+  const group={animations:new Set(),skipped:false};
+  presentations.push(group);
+  try {return await run(group);}
+  finally {presentations.splice(presentations.indexOf(group),1);}
+}
+document.addEventListener('click',event=>{
+  const group=presentations.find(p=>!p.skipped);
+  if(!presentations.length) return;
+  event.preventDefault(); event.stopImmediatePropagation();
+  if(!group) return;
+  group.skipped=true;
+  for(const animation of group.animations) animation.finish();
+},true);
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 let epoch = 0;
 let turnSequences = 0;
@@ -36,16 +52,17 @@ function node(cls, text, anchor) {
   if (anchor) {const p = rect(anchor); n.style.left=`${p.x}px`; n.style.top=`${p.y}px`;}
   document.body.append(n); nodes.add(n); return n;
 }
-async function animate(element, frames, duration=800, readable=false, easing='cubic-bezier(.2,.7,.25,1)') {
-  if (!element?.isConnected || document.hidden) return;
+async function animate(element, frames, duration=800, readable=false, easing='cubic-bezier(.2,.7,.25,1)', group=null) {
+  if (!element?.isConnected || document.hidden || group?.skipped) return;
   const a = element.animate(reduced() ? (readable ? [{opacity:0},{opacity:1,offset:.08},{opacity:1,offset:.92},{opacity:0}] : [{opacity:.45},{opacity:1}]) : frames,
     {duration:reduced() && !readable ? Math.min(duration,180) : duration, easing});
   animations.add(a);
+  group?.animations.add(a);
   try {await a.finished;} catch { /* Cancelled on navigation, resize or backgrounding. */ }
-  finally {animations.delete(a);}
+  finally {animations.delete(a); group?.animations.delete(a);}
 }
-async function ephemeral(n, frames, duration, easing) {
-  try {await animate(n,frames,duration,/fx-label|fx-banner|fx-publication-seal/.test(n.className),easing);} finally {n.remove(); nodes.delete(n);}
+async function ephemeral(n, frames, duration, easing, group=null) {
+  try {await animate(n,frames,duration,/fx-label|fx-banner|fx-publication-seal/.test(n.className),easing,group);} finally {n.remove(); nodes.delete(n);}
 }
 function conceal(element) {
   if (!element || hidden.has(element)) return;
@@ -82,15 +99,15 @@ export function floating(text, anchor, tone='gold') {
   return ephemeral(n,[{opacity:0,transform:'translate(-50%,0) scale(.94)'},
     {opacity:1,offset:.12},{opacity:1,offset:.82}, {opacity:0,transform:'translate(-50%,-38px) scale(1)'}],timing.label);
 }
-function particles(anchor, large=false, tone='gold') {
+function particles(anchor, large=false, tone='gold', group=null) {
   if (reduced() || document.hidden) return Promise.resolve();
   return Promise.all(Array.from({length:large?36:12},(_,i)=>{
     const n=node(`fx-particle fx-${tone}`,'',anchor), angle=i*2.399, radius=(large?Math.min(innerWidth*.4,240):85)+(i%3)*12;
     return ephemeral(n,[{opacity:0,transform:'translate(0,0) rotate(0)'},{opacity:.9,offset:.15},
-      {opacity:0,transform:`translate(${Math.cos(angle)*radius}px,${Math.sin(angle)*radius}px) rotate(${i*35}deg)`}],large?2600:1500);
+      {opacity:0,transform:`translate(${Math.cos(angle)*radius}px,${Math.sin(angle)*radius}px) rotate(${i*35}deg)`}],large?2600:1500,undefined,group);
   }));
 }
-async function flight(art, source, destination, {card=null, coin=false, replace=false, ceremonial=false, privateDraw=false, duration=timing.flight, tone='gold'}={}) {
+async function flight(art, source, destination, {card=null, coin=false, replace=false, ceremonial=false, privateDraw=false, duration=timing.flight, tone='gold',group=null}={}) {
   const from=rect(source), to=rect(destination);
   if (replace) conceal(source);
   const n=node(`fx-flight ${card?'game-card idea-card fx-complete-card':''} ${coin?'fx-coin':''} ${ceremonial?'fx-ceremonial':''} ${privateDraw?'fx-private-draw':''} fx-${tone}`);
@@ -111,7 +128,7 @@ async function flight(art, source, destination, {card=null, coin=false, replace=
   ] : [{opacity:1,transform:'translate(-50%,-50%) scale(1)'},
     {opacity:1,transform:`translate(calc(-50% + ${dx*.25}px),calc(-50% + ${dy*.25-24}px)) rotate(-7deg) scale(1.12)`,offset:.3},
     {opacity:1,transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) rotate(0) scale(${coin?.7:1})`}];
-  try {await animate(n,frames,duration,privateDraw,privateDraw?'linear':undefined);}
+  try {await animate(n,frames,duration,privateDraw,privateDraw?'linear':undefined,group);}
   finally {n.remove(); nodes.delete(n);}
 }
 function ownDrawnCard(event, events, before, after) {
@@ -126,21 +143,24 @@ function ownDrawnCard(event, events, before, after) {
   return after.mano.at(-1);
 }
 function publication(card, source, destination, third) {
+  return presentation(group=>publicationScene(card,source,destination,third,group));
+}
+function publicationScene(card, source, destination, third, group) {
   for(const n of nodes) if(n.className.includes('fx-banner')) n.remove();
   const duration=third?timing.third:timing.publication;
   const center={getBoundingClientRect:()=>({left:innerWidth/2,top:innerHeight*.43,width:1,height:1,right:innerWidth/2+1,bottom:innerHeight*.43+1})};
   const veil=node('fx-veil');
   const seal=node('fx-publication-seal',third?'TERCER ARTÍCULO · PUBLICADO':'PUBLICADO');
-  const tasks=[flight(card.arte,source,destination,{card,replace:true,ceremonial:true,duration}),
-    ephemeral(veil,[{opacity:0},{opacity:1,offset:.2},{opacity:1,offset:.75},{opacity:0}],duration),
+  const tasks=[flight(card.arte,source,destination,{card,replace:true,ceremonial:true,duration,group}),
+    ephemeral(veil,[{opacity:0},{opacity:1,offset:.2},{opacity:1,offset:.75},{opacity:0}],duration,undefined,group),
     ephemeral(seal,[{opacity:0,transform:'translate(-50%,12px) scale(1.2)'},{opacity:1,transform:'translate(-50%,0) scale(1)',offset:.3},
-      {opacity:1,offset:.8},{opacity:0,transform:'translate(-50%,-8px) scale(1)'}],duration)];
+      {opacity:1,offset:.8},{opacity:0,transform:'translate(-50%,-8px) scale(1)'}],duration,undefined,group)];
   if(!reduced()) {
     const halo=node('fx-publication-halo','',center), flash=node('fx-publication-flash');
-    tasks.push(particles(center,true),
+    tasks.push(particles(center,true,'gold',group),
       ephemeral(halo,[{opacity:0,transform:'translate(-50%,-50%) scale(.4) rotate(-25deg)'},{opacity:1,offset:.28},
-        {opacity:.8,offset:.7},{opacity:0,transform:'translate(-50%,-50%) scale(1.3) rotate(25deg)'}],duration),
-      ephemeral(flash,[{opacity:0},{opacity:.6,offset:.27},{opacity:0,offset:.6},{opacity:0}],duration));
+        {opacity:.8,offset:.7},{opacity:0,transform:'translate(-50%,-50%) scale(1.3) rotate(25deg)'}],duration,undefined,group),
+      ephemeral(flash,[{opacity:0},{opacity:.6,offset:.27},{opacity:0,offset:.6},{opacity:0}],duration,undefined,group));
   }
   return Promise.all(tasks);
 }
@@ -181,6 +201,9 @@ export async function chooseVeto(element) {
 }
 
 async function revealVeto(event, state) {
+  return presentation(group=>vetoScene(event,state,group));
+}
+async function vetoScene(event, state, group) {
   showActivity({player:event.actor,title:'El Comité de Ética está resolviendo el veto',detail:'Se está revisando el expediente.'});
   const current=epoch, anchor=player(event.actor,state);
   const veil=node('fx-veil fx-veto-veil');
@@ -188,22 +211,23 @@ async function revealVeto(event, state) {
   file.innerHTML='<span class="ethics-classification">COMITÉ DE ÉTICA · RESOLUCIÓN</span><div class="ethics-file-lines" aria-hidden="true"></div><strong class="ethics-review">Expediente en revisión</strong>';
   try {
     await animate(file,[{opacity:0,transform:'translate(-50%,-45%) rotate(-4deg)'},
-      {opacity:1,transform:'translate(-50%,-50%) rotate(0)'}],600,true);
-    if(current!==epoch) return;
+      {opacity:1,transform:'translate(-50%,-50%) rotate(0)'}],600,true,undefined,group);
+    if(current!==epoch || group.skipped) return;
     const seal=document.createElement('div'); seal.className='ethics-stamp'; seal.textContent='VETADO';
     const message=document.createElement('p'); message.className='ethics-verdict';
     message.textContent=`${event.actor} ha sido vetado por el Comité de Ética`;
     showActivity({player:event.actor,title:'Turno vetado',detail:'La mesa pasa al siguiente turno.'});
     message.setAttribute('role','status'); file.append(seal,message);
     file.querySelector('.ethics-review').textContent='DICTAMEN · TURNO DENEGADO';
+    void glow(anchor,'#af3942');
     await Promise.all([
       animate(seal,[{opacity:0,transform:'rotate(-12deg) scale(2.4)'},
         {opacity:1,transform:'rotate(-12deg) scale(.95)',offset:.7},
-        {opacity:1,transform:'rotate(-12deg) scale(1)'}],400,true),
-      particles(file,false,'review'), glow(anchor,'#af3942'),
-      animate(message,[{opacity:1},{opacity:1}],1800,true)]);
-    if(current!==epoch) return;
-    await animate(file,[{opacity:1},{opacity:1,offset:.85},{opacity:0}],600,true);
+        {opacity:1,transform:'rotate(-12deg) scale(1)'}],400,true,undefined,group),
+      particles(file,false,'review',group),
+      animate(message,[{opacity:1},{opacity:1}],1800,true,undefined,group)]);
+    if(current!==epoch || group.skipped) return;
+    await animate(file,[{opacity:1},{opacity:1,offset:.85},{opacity:0}],600,true,undefined,group);
   } finally {
     file.remove(); veil.remove(); nodes.delete(file); nodes.delete(veil);
   }
@@ -213,6 +237,9 @@ async function revealRole(event, state) {
   // Only the server's explicitly public event payload is eligible, including
   // for the local player: their private role must never authorize a revelation.
   if (!['fase.turno','turno.vetado'].includes(event.tipo) || !event.rolPublico) return;
+  return presentation(group=>roleScene(event,state,group));
+}
+async function roleScene(event, state, group) {
   showActivity({player:event.actor,title:'Revelando personaje',detail:'La carta se presenta a toda la mesa.'});
   const veil=node('fx-veil fx-role-veil');
   const card=node('fx-role-reveal');
@@ -230,7 +257,7 @@ async function revealRole(event, state) {
       {opacity:1,transform:'translate(-50%,-50%) perspective(900px) rotateY(0) scale(1)',offset:600/3850},
       {opacity:1,transform:'translate(-50%,-50%) perspective(900px) rotateY(0) scale(1)',offset:3600/3850,easing:'ease-in'},
       {opacity:0,transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.25)`}
-    ],3850,true,'linear');
+    ],3850,true,'linear',group);
   } finally {
     card.remove(); veil.remove(); nodes.delete(card); nodes.delete(veil);
   }
@@ -250,7 +277,7 @@ async function openTurn(event, state) {
       showActivity({player:event.actor,title:'Comienza su turno',detail:'La mesa da paso a su personaje.'});
       const intro=node(`fx-banner ${event.actor===state.yo?'fx-own-turn':''}`,`Comienza el turno de ${event.actor}`);
       intro.removeAttribute('aria-hidden'); intro.setAttribute('role','status');
-      return ephemeral(intro,turnFrames,timing.turn);
+      return presentation(group=>ephemeral(intro,turnFrames,timing.turn,undefined,group));
     },()=>revealRole(event,state)];
     if(event.tipo==='turno.vetado') stages.push(()=>revealVeto(event,state));
     for(const stage of stages) {
@@ -318,8 +345,9 @@ export async function transition(before, after) {
       }
       if (e.robo) {
         const card=ownDrawnCard(e,events,before,after);
-        tasks.push(flight(card?.arte || 'cartas/reverso_idea.webp',document.querySelector('.idea-deck'),hand(e.actor,before),
-          card ? {card,privateDraw:true,duration:2400} : {}));
+        const draw=group=>flight(card?.arte || 'cartas/reverso_idea.webp',document.querySelector('.idea-deck'),hand(e.actor,before),
+          card ? {card,privateDraw:true,duration:2400,group} : {});
+        tasks.push(card ? presentation(draw) : draw(null));
       }
       if (e.tipo==='accion.iniciar_estudio' && nextStudy) {
         const card=e.actor===after.yo ? before.mano.find(c=>c.nombre===nextStudy.carta.nombre) : null;

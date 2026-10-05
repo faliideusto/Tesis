@@ -23,7 +23,7 @@ export async function runEffectsTests(root) {
         calls.push({element:this,frames,options});
         let resolve;
         const finished=hold ? new Promise(r=>resolve=r) : Promise.resolve();
-        const a={finished,cancelled:false,finish(){resolve?.();},cancel(){this.cancelled=true;resolve?.();}}; pending.push(a); return a;
+        const a={finished,cancelled:false,completed:false,finish(){this.completed=true;resolve?.();},cancel(){this.cancelled=true;resolve?.();}}; pending.push(a); return a;
       }
     }
     const local=new Element('local'), rival=new Element('rival'), counter=new Element('counter'), card=new Element('study');
@@ -51,6 +51,31 @@ export async function runEffectsTests(root) {
   const after=e=>({...before,eventos:[...before.eventos,e]});
   const role={indice:-1,nombre:'Estadístico',orden:2,habilidad:'Añade 1 de prestigio. Una vez por turno.',arte:'personajes/02_estadistico.webp'};
   const tick=async()=>{for(let i=0;i<30;i++) await Promise.resolve();};
+  const click=listeners=>{
+    const event={prevented:false,stopped:false,preventDefault(){this.prevented=true;},stopImmediatePropagation(){this.stopped=true;}};
+    listeners.click(event);return event;
+  };
+  for(const reduce of [false,true]) {
+    const {fx,nodes,calls,pending,listeners}=await setup({hold:true,reduce});
+    const playing=fx.transition(before,after(event('turno.vetado',{rolPublico:role})));
+    await tick();
+    assert(click(listeners).stopped);await tick();
+    assert.equal(calls.length,2,'Un clic pasa del aviso a la carta, sin saltarla');
+    assert(nodes.find(n=>n.className?.includes('fx-role-reveal')).isConnected);
+    assert(click(listeners).prevented);await tick();
+    assert.equal(calls.length,3,'Otro clic pasa de la carta al veto');
+    assert(nodes.find(n=>n.className?.includes('fx-ethics-file')).isConnected);
+    click(listeners);await playing;
+    assert(nodes.every(n=>!n.isConnected));
+    assert(!click(listeners).stopped,'Sin presentación el clic sigue su curso');
+    assert(pending.every(a=>!a.cancelled),'Saltar no equivale a reiniciar efectos');count++;
+  }
+  {
+    const {fx,listeners,pending,card}=await setup({hold:true});
+    const playing=fx.glow(card);
+    assert(!click(listeners).stopped,'Un brillo pequeño no se puede saltar');
+    assert(!pending[0].cancelled && !pending[0].completed);pending[0].finish();await playing;count++;
+  }
   {
     const {fx,calls}=await setup();
     await fx.transition(before,after(event('turno.vetado',{rolPublico:role})));
@@ -131,6 +156,15 @@ export async function runEffectsTests(root) {
   }
   const drawCard={indice:0,nombre:'Cohortes',arte:'articulos/04_cohortes.webp',marco:'cartas/marco_articulo_raro.webp',coste:4,trabajo:3,prestigio:5};
   const ownDraw=()=>({...after(event('accion.pensar',{robo:true,actor:'Yo'})),mano:[drawCard]});
+  {
+    const {fx,listeners,pending,card,nodes}=await setup({hold:true});
+    const small=fx.glow(card), playing=fx.transition(before,ownDraw());
+    click(listeners);await playing;
+    assert(nodes.every(n=>!n.isConnected),'El robo grande desaparece al saltarlo');
+    assert(!pending[0].cancelled && !pending[0].completed);
+    assert.equal(pending.length,2);
+    pending[0].finish();await small;count++;
+  }
   for(const reduce of [false,true]) {
     const {fx,nodes,calls}=await setup({reduce});const next=ownDraw();
     await fx.transition(before,next);
@@ -236,6 +270,17 @@ export async function runEffectsTests(root) {
   }
   const started=()=>({...after(event('accion.iniciar_estudio',{estudio:0})),jugadores:[before.jugadores[0],
     {nombre:'Rival',publicados:0,estudios:[{indice:0,trabajo:0,carta:{nombre:'Idea pública',arte:'idea.webp'}}]}]});
+  {
+    const {fx,nodes,pending,listeners}=await setup({hold:true});
+    const previous=started(), next={...previous,eventos:[...previous.eventos,event('accion.trabajar',{numero:12,estudio:0,cantidad:1,publicacion:true})]};
+    const playing=fx.transition(previous,next);
+    click(listeners);await tick();
+    assert(nodes.filter(n=>/fx-ceremonial|fx-veil|fx-publication|fx-particle/.test(n.className)).every(n=>!n.isConnected),
+      'Una publicación retira juntos carta, fondo, sello y partículas');
+    assert(nodes.some(n=>n.className?.includes('fx-label') && n.isConnected),'Los avisos pequeños continúan');
+    assert(pending.some(a=>!a.completed && !a.cancelled));
+    for(const a of pending) a.finish();await playing;count++;
+  }
   const patentStarted=()=>{
     const next=started();next.jugadores[1].estudios[0].carta.nombre='Patente';return next;
   };

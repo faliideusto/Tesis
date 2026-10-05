@@ -129,6 +129,45 @@ export async function runEffectsTests(root) {
     assert(nodes.every(n=>!n.innerHTML?.includes('SECRETO')));
     assert(nodes.every(n=>!n.isConnected)); count++;
   }
+  const drawCard={indice:0,nombre:'Cohortes',arte:'articulos/04_cohortes.webp',marco:'cartas/marco_articulo_raro.webp',coste:4,trabajo:3,prestigio:5};
+  const ownDraw=()=>({...after(event('accion.pensar',{robo:true,actor:'Yo'})),mano:[drawCard]});
+  for(const reduce of [false,true]) {
+    const {fx,nodes,calls}=await setup({reduce});const next=ownDraw();
+    await fx.transition(before,next);
+    const drawn=nodes.find(n=>n.className?.includes('fx-private-draw'));
+    assert(drawn && drawn.innerHTML.includes(drawCard.marco) && drawn.innerHTML.includes(drawCard.arte));
+    assert(drawn.innerHTML.includes('card-stats'));assert(!drawn.innerHTML.includes('reverso_idea.webp'));
+    const presentation=calls.find(c=>c.element===drawn);assert.equal(presentation.options.duration,2400);
+    if(reduce) {
+      assert(presentation.frames.every(f=>!f.transform));assert.equal(drawn.style.top,`${844*.43}px`);
+    } else {
+      assert.equal(presentation.options.easing,'linear');
+      assert((presentation.frames[2].offset-presentation.frames[1].offset)*2400>=1400,'Tiempo para reconocer la carta');
+    }
+    assert(nodes.every(n=>!n.isConnected));const countBefore=nodes.length;
+    await fx.transition(next,next);await fx.transition(null,next);assert.equal(nodes.length,countBefore);count++;
+  }
+  {
+    const {fx,nodes}=await setup();
+    // Even with a local hand and spoofed public card metadata, a rival draw is a back.
+    await fx.transition({...before,mano:[drawCard]}, {...after(event('accion.pensar',{robo:true,carta:drawCard})),mano:[drawCard]});
+    assert(nodes.some(n=>n.innerHTML?.includes('reverso_idea.webp')));
+    assert(nodes.every(n=>!n.innerHTML?.includes(drawCard.nombre) && !n.innerHTML?.includes(drawCard.arte) && !n.innerHTML?.includes(drawCard.marco)));count++;
+  }
+  for(const kind of ['blocked','changed-viewer','swap','removed','two-draws']) {
+    const {fx,nodes}=await setup();let previous=before;const next=ownDraw();
+    if(kind==='blocked') next.bloqueada=true;
+    if(kind==='changed-viewer') previous={...before,yo:'Otro'};
+    if(kind==='swap') next.eventos.push(event('habilidad.plagiador',{numero:12,objetivo:'Yo'}));
+    if(kind==='removed') previous={...before,mano:[{nombre:'Otra idea'}]};
+    if(kind==='two-draws') {next.eventos.push(event('accion.pensar',{numero:12,robo:true,actor:'Yo'}));next.mano.push({...drawCard,indice:1});}
+    await fx.transition(previous,next);
+    assert(!nodes.some(n=>n.className?.includes('fx-private-draw')),`No adivinar la carta en ${kind}`);count++;
+  }
+  {
+    const {fx,nodes,pending}=await setup({hold:true});const playing=fx.transition(before,ownDraw());
+    fx.resetEffects();await playing;assert(pending.every(a=>a.cancelled));assert(nodes.every(n=>!n.isConnected));count++;
+  }
   {
     const {fx,nodes}=await setup();
     await fx.transition(before,after(event('accion.cobrar',{cantidad:2})));
@@ -197,6 +236,36 @@ export async function runEffectsTests(root) {
   }
   const started=()=>({...after(event('accion.iniciar_estudio',{estudio:0})),jugadores:[before.jugadores[0],
     {nombre:'Rival',publicados:0,estudios:[{indice:0,trabajo:0,carta:{nombre:'Idea pública',arte:'idea.webp'}}]}]});
+  const patentStarted=()=>{
+    const next=started();next.jugadores[1].estudios[0].carta.nombre='Patente';return next;
+  };
+  {
+    const {fx,nodes,calls,pending}=await setup({hold:true});const next=patentStarted();
+    fx.settled(before,next);
+    const sparks=nodes.filter(n=>n.className?.includes('fx-patent-spark'));
+    assert.equal(sparks.length,32);
+    assert.equal(nodes.filter(n=>n.className?.includes('fx-patent-flash')).length,1);
+    for(const call of calls.filter(c=>c.element.className?.includes('fx-patent'))) {
+      assert.equal(call.options.easing,'linear');
+      assert.equal(call.frames[1].opacity,0);
+      assert(Math.abs(call.frames[1].offset*call.options.duration-720*.38)<.01,'El destello empieza al tocar la mesa');
+      assert.equal(call.frames.at(-1).opacity,0);
+    }
+    fx.settled(before,next);assert.equal(nodes.filter(n=>n.className?.includes('fx-patent-spark')).length,32,'El polling no duplica las chispas');
+    fx.resetEffects();await tick();
+    assert(nodes.every(n=>!n.isConnected));assert(pending.every(a=>a.cancelled));
+    fx.settled(before,next);assert.equal(nodes.length,33,'Cancelar no reproduce el destello');count++;
+  }
+  for(const option of [{reduce:true},{hidden:true}]) {
+    const {fx,nodes,document}=await setup(option);document.hidden=!!option.hidden;
+    fx.settled(before,patentStarted());await tick();
+    assert.equal(nodes.length,0,'Sin partículas con movimiento reducido ni en segundo plano');count++;
+  }
+  {
+    const {fx,nodes}=await setup();fx.settled(before,started());await tick();
+    assert.equal(nodes.length,0,'Las cartas comunes conservan su colocación');
+    fx.settled(null,patentStarted());assert.equal(nodes.length,0,'Reconectar no reproduce el destello');count++;
+  }
   {
     const {fx,calls,slot,card}=await setup();const next=started();
     await fx.transition(before,next);

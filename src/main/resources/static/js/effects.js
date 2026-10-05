@@ -44,8 +44,8 @@ async function animate(element, frames, duration=800, readable=false, easing='cu
   try {await a.finished;} catch { /* Cancelled on navigation, resize or backgrounding. */ }
   finally {animations.delete(a);}
 }
-async function ephemeral(n, frames, duration) {
-  try {await animate(n,frames,duration,/fx-label|fx-banner|fx-publication-seal/.test(n.className));} finally {n.remove(); nodes.delete(n);}
+async function ephemeral(n, frames, duration, easing) {
+  try {await animate(n,frames,duration,/fx-label|fx-banner|fx-publication-seal/.test(n.className),easing);} finally {n.remove(); nodes.delete(n);}
 }
 function conceal(element) {
   if (!element || hidden.has(element)) return;
@@ -90,14 +90,20 @@ function particles(anchor, large=false, tone='gold') {
       {opacity:0,transform:`translate(${Math.cos(angle)*radius}px,${Math.sin(angle)*radius}px) rotate(${i*35}deg)`}],large?2600:1500);
   }));
 }
-async function flight(art, source, destination, {card=null, coin=false, replace=false, ceremonial=false, duration=timing.flight, tone='gold'}={}) {
+async function flight(art, source, destination, {card=null, coin=false, replace=false, ceremonial=false, privateDraw=false, duration=timing.flight, tone='gold'}={}) {
   const from=rect(source), to=rect(destination);
   if (replace) conceal(source);
-  const n=node(`fx-flight ${card?'game-card idea-card fx-complete-card':''} ${coin?'fx-coin':''} ${ceremonial?'fx-ceremonial':''} fx-${tone}`);
+  const n=node(`fx-flight ${card?'game-card idea-card fx-complete-card':''} ${coin?'fx-coin':''} ${ceremonial?'fx-ceremonial':''} ${privateDraw?'fx-private-draw':''} fx-${tone}`);
   n.innerHTML=card ? ideaCardContents(card) : img(art); n.style.left=`${from.x}px`; n.style.top=`${from.y}px`;
+  if(privateDraw && reduced()) {n.style.left=`${innerWidth/2}px`;n.style.top=`${innerHeight*.43}px`;}
   const dx=to.x-from.x, dy=to.y-from.y;
   const cx=innerWidth/2-from.x, cy=innerHeight*.43-from.y;
-  const frames=ceremonial ? [
+  const frames=privateDraw ? [
+    {opacity:0,transform:'translate(-50%,-50%) scale(.4)',easing:'ease-out'},
+    {opacity:1,transform:`translate(calc(-50% + ${cx}px),calc(-50% + ${cy}px)) scale(1)`,offset:.2},
+    {opacity:1,transform:`translate(calc(-50% + ${cx}px),calc(-50% + ${cy}px)) scale(1)`,offset:.82,easing:'ease-in'},
+    {opacity:0,transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.45)`}
+  ] : ceremonial ? [
     {opacity:0,transform:'translate(-50%,-50%) scale(.55)'},
     {opacity:1,transform:`translate(calc(-50% + ${cx}px),calc(-50% + ${cy}px)) rotate(-3deg) scale(1.08)`,offset:.24},
     {opacity:1,transform:`translate(calc(-50% + ${cx}px),calc(-50% + ${cy}px)) rotate(0) scale(1.13)`,offset:.74},
@@ -105,7 +111,19 @@ async function flight(art, source, destination, {card=null, coin=false, replace=
   ] : [{opacity:1,transform:'translate(-50%,-50%) scale(1)'},
     {opacity:1,transform:`translate(calc(-50% + ${dx*.25}px),calc(-50% + ${dy*.25-24}px)) rotate(-7deg) scale(1.12)`,offset:.3},
     {opacity:1,transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) rotate(0) scale(${coin?.7:1})`}];
-  await ephemeral(n,frames,duration);
+  try {await animate(n,frames,duration,privateDraw,privateDraw?'linear':undefined);}
+  finally {n.remove(); nodes.delete(n);}
+}
+function ownDrawnCard(event, events, before, after) {
+  // Never read card data from public events or a rival. The server appends a
+  // draw to this viewer's private hand. Bursts with edits/swaps are ambiguous.
+  if(event.actor!==after.yo || before.yo!==after.yo || before.bloqueada || after.bloqueada
+    || events.filter(e=>e.robo && e.actor===after.yo).length!==1
+    || events.some(e=>e.tipo==='accion.iniciar_estudio' && e.actor===after.yo
+      || e.tipo==='habilidad.plagiador' && [e.actor,e.objetivo].includes(after.yo))
+    || after.mano.length!==before.mano.length+1
+    || !before.mano.every((c,i)=>c.nombre===after.mano[i].nombre)) return null;
+  return after.mano.at(-1);
 }
 function publication(card, source, destination, third) {
   for(const n of nodes) if(n.className.includes('fx-banner')) n.remove();
@@ -298,7 +316,11 @@ export async function transition(before, after) {
         tasks.push(flight('recursos/moneda.webp',document.querySelector('.idea-deck'),counter,{coin:true})
           .then(()=>current===epoch ? Promise.all([glow(counter),floating(`+${e.cantidad}`,counter)]) : undefined));
       }
-      if (e.robo) tasks.push(flight('cartas/reverso_idea.webp',document.querySelector('.idea-deck'),hand(e.actor,before)));
+      if (e.robo) {
+        const card=ownDrawnCard(e,events,before,after);
+        tasks.push(flight(card?.arte || 'cartas/reverso_idea.webp',document.querySelector('.idea-deck'),hand(e.actor,before),
+          card ? {card,privateDraw:true,duration:2400} : {}));
+      }
       if (e.tipo==='accion.iniciar_estudio' && nextStudy) {
         const card=e.actor===after.yo ? before.mano.find(c=>c.nombre===nextStudy.carta.nombre) : null;
         const source=card ? document.querySelector(`#hand [data-index="${card.indice}"]`) : hand(e.actor,before);
@@ -350,19 +372,61 @@ export function settled(before, after) {
         const destination=[...document.querySelectorAll('#board .table-study[data-player][data-index]')]
           .find(n=>n.dataset.player===e.actor && Number(n.dataset.index)===e.estudio);
         const slot=destination?.closest('.table-study-slot');
-        if(slot) void landStudy(slot).catch(()=>{});
+        if(slot) void landStudy(slot,destination,next.carta.nombre==='Patente').catch(()=>{});
       }
     }
-    if (e.estudio != null) void glow(study(e.objetivo || e.actor,e.estudio));
+    if (e.estudio != null) {
+      const placed=e.tipo==='accion.iniciar_estudio'
+        ? after.jugadores.find(p=>p.nombre===e.actor)?.estudios.find(s=>s.indice===e.estudio) : null;
+      void glow(study(e.objetivo || e.actor,e.estudio),placed?.carta.nombre==='Patente'?'#c282ff':undefined);
+    }
     if (e.cantidad>0 && e.tipo!=='accion.trabajar') void glow(player(e.actor,after)?.querySelector('.resources .resource b'));
     if (e.robo && e.actor===after.yo) void glow(document.querySelector('#hand .game-card:last-child'));
   }
   for(const number of placementEpochs.keys()) if(number<=placementNumber) placementEpochs.delete(number);
 }
-function landStudy(slot) {
+function patentSparks(anchor) {
+  if(reduced() || document.hidden) return Promise.resolve();
+  // The first contact is 38% into the 720 ms landing. Use animation offsets
+  // rather than timers so resetEffects also cancels a burst before impact.
+  const impact=720*.38, duration=2400, contact=impact/duration;
+  const origin=rect(anchor), board=document.getElementById('board')?.getBoundingClientRect();
+  const left=Math.max(12,board?.left ?? 12), right=Math.min(innerWidth-12,board?.right ?? innerWidth-12);
+  const top=Math.max(12,board?.top ?? 12), bottom=Math.min(innerHeight-12,board?.bottom ?? innerHeight-12);
+  const flash=node('fx-patent-flash','',anchor);
+  const tasks=[ephemeral(flash,[
+    {opacity:0,transform:'translate(-50%,-50%) scale(.25)'},
+    {opacity:0,transform:'translate(-50%,-50%) scale(.25)',offset:contact},
+    {opacity:1,transform:'translate(-50%,-50%) scale(.8)',offset:contact+.035},
+    {opacity:0,transform:'translate(-50%,-50%) scale(1.6)',offset:contact+.22},
+    {opacity:0,transform:'translate(-50%,-50%) scale(1.6)'}
+  ],duration,'linear')];
+  for(let i=0;i<32;i++) {
+    const n=node(`fx-particle fx-patent-spark ${i%4===0?'fx-patent-star':''}`,'',anchor);
+    const lifetime=duration+(i%4)*120, sparkContact=impact/lifetime;
+    const angle=i*2.399, radius=55+(i%5)*22;
+    const dx=Math.max(left,Math.min(right,origin.x+Math.cos(angle)*radius))-origin.x;
+    const dy=Math.max(top,Math.min(bottom,origin.y+Math.sin(angle)*radius*.45-24))-origin.y;
+    // After the burst, embers drift upward and towards the middle of the table.
+    const x=Math.max(left,Math.min(right,origin.x+dx+(innerWidth/2-origin.x)*.18))-origin.x;
+    const y=Math.max(top,Math.min(bottom,origin.y+dy-55-(i%4)*22))-origin.y;
+    tasks.push(ephemeral(n,[
+      {opacity:0,transform:'translate(-50%,-50%) scale(.2)'},
+      {opacity:0,transform:'translate(-50%,-50%) scale(.2)',offset:sparkContact},
+      {opacity:1,transform:'translate(-50%,-50%) scale(1.3)',offset:sparkContact+.025},
+      {opacity:.9,transform:`translate(${dx}px,${dy}px) rotate(${i*31}deg) scale(1)`,offset:.32},
+      {opacity:.55,transform:`translate(${x*.85}px,${y*.8}px) rotate(${i*31+60}deg) scale(.75)`,offset:.7},
+      {opacity:0,transform:`translate(${x}px,${y}px) rotate(${i*31+100}deg) scale(.15)`}
+    ],lifetime,'linear'));
+  }
+  return Promise.all(tasks);
+}
+function landStudy(slot, card, patent=false) {
   // Only the outer slot moves: the card retains its CSS perspective and hover.
   // Two decreasing rebounds and a tightening shadow suggest a light paper card.
-  return animate(slot,[
+  // Measure the impact point before the slot is lifted for its landing.
+  const sparks=patent ? patentSparks(card) : null;
+  const landing=animate(slot,[
     {transform:'translate3d(0,-22px,0) scale(1.008)',filter:'drop-shadow(0 18px 12px #0005)',easing:'ease-in'},
     {transform:'translate3d(0,0,0) scale(1)',filter:'drop-shadow(0 2px 2px #0009)',offset:.38,easing:'ease-out'},
     {transform:'translate3d(0,-4px,0) scale(1.002)',filter:'drop-shadow(0 7px 5px #0007)',offset:.55,easing:'ease-in'},
@@ -371,6 +435,7 @@ function landStudy(slot) {
     {transform:'translate3d(0,0,0) scale(1)',filter:'drop-shadow(0 1px 1px #0006)',offset:.93},
     {transform:'translate3d(0,0,0) scale(1)',filter:'drop-shadow(0 0 0 #0000)'}
   ],720,false,'linear');
+  return sparks ? Promise.all([landing,sparks]) : landing;
 }
 export function victory() {
   void animate(document.querySelector('#modal .final-result'),[{opacity:0,transform:'translateY(20px) scale(.94)'},{opacity:1,transform:'translateY(0) scale(1)'}],1200);

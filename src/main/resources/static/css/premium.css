@@ -68,6 +68,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline-color:#f3c
  /* Keep the side academies outside the local research lanes. */
  .board .rivals[data-count="3"]>.rival-seat:nth-child(n+2),.board .rivals[data-count="4"]>.rival-seat:nth-child(n+3){left:2%;width:28%;top:max(36svh,calc(6svh + 8.8vw + clamp(108px,14.25svh,162px) + 50px))}
  .board .rivals[data-count="3"]>.rival-seat:last-child,.board .rivals[data-count="4"]>.rival-seat:last-child{left:70%}
+ /* Four-player side seats share no horizontal space with the opposite academy. */
+ .board .rivals[data-count="3"]>.rival-seat:nth-child(n+2){top:28svh;left:6%}
+ .board .rivals[data-count="3"]>.rival-seat:last-child{left:66%}
  .board .rivals[data-count="3"]>.rival-seat:first-child{top:6svh}
  .board[data-players="4"] .decks{top:max(39svh,calc(6svh + 8.213vw + clamp(108px,14.25svh,162px) + 50px))}
  .board[data-players="3"] .decks,.board[data-players="5"] .decks{width:min(calc(12vw + 24px),300px)}

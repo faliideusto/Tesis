@@ -38,10 +38,19 @@ try {
  await page.evaluate(async()=>{window.__emit('TOKEN_REFRESHED',window.__session);const {accounts}=await import('/js/auth.js');window.__profile={...window.__profile,xp:450};await accounts.refreshProfile();});
  assert.equal(await page.locator('#account-rename input').inputValue(),'Mi borrador');
  await page.locator('#account-rename button').click();await page.locator('.profile-identity h3').filter({hasText:'Mi borrador'}).waitFor();
- await page.keyboard.press('Escape');assert.equal(await page.locator('#account-panel').evaluate(el=>el.open),false);
+ assert.equal(await page.locator('#account-panel').evaluate(el=>el.tagName),'SECTION');
+ assert.equal(await page.locator('#app').evaluate(el=>el.hidden&&el.inert),true);
+ await page.keyboard.press('Escape');await page.locator('#account-panel').waitFor({state:'hidden'});
  assert.equal(await page.locator('#account-open').evaluate(el=>el===document.activeElement),true,'Escape devuelve el foco');
  await page.evaluate(async()=>{window.__profile={...window.__profile,nombre:'Fali03',nivel:78,xp:38850};const {accounts}=await import('/js/auth.js');await accounts.refreshProfile();});
  await page.locator('#account-open').click();await page.locator('.profile-shell.tier-eterno').waitFor();await page.screenshot({path:dir+'/profile-eterno-desktop.png'});
+ assert.equal(new URL(page.url()).hash,'#perfil');
+ await page.goBack();await page.locator('#account-panel').waitFor({state:'hidden'});
+ await page.goForward();await page.locator('.profile-shell.tier-eterno').waitFor();
+ await page.reload();await page.locator('.profile-shell.tier-madera').waitFor();
+ await page.evaluate(async()=>{window.__profile={...window.__profile,nivel:78,xp:38850};const {accounts}=await import('/js/auth.js');await accounts.refreshProfile();});
+ await page.locator('.profile-shell.tier-eterno').waitFor();
+ assert.equal(await page.locator('#account-panel').evaluate(el=>el.getBoundingClientRect().width===innerWidth),true,'Página ocupa todo el ancho');
  for(const width of [390,360]){
   await page.setViewportSize({width,height:844});await noOverflow(page);
   await page.screenshot({path:dir+`/profile-eterno-${width}.png`,fullPage:true});
@@ -66,15 +75,23 @@ try {
  await players[0].page.screenshot({path:dir+'/lobby-desktop.png'});
  await players[0].page.locator('#account-open').click();await players[0].page.locator('#account-login input[name=email]').fill('draft@example.com');
  await players[0].page.waitForTimeout(1200);assert.equal(await players[0].page.locator('#account-login input[name=email]').inputValue(),'draft@example.com');
- await players[0].page.keyboard.press('Escape');await players[0].page.locator('[data-command=start-game]').click();
+ const roomToken=await players[0].page.evaluate(()=>sessionStorage.getItem('tesis.sala'));
+ await players[0].page.evaluate(async()=>{const {api}=await import('/js/api.js');const room=await api.state();await api.start(room.revision);});
+ await players[0].page.waitForFunction(()=>Boolean(document.querySelector('#board')));
+ assert.equal(await players[0].page.locator('#modal').evaluate(el=>el.open),false,'Un avance de fase no abre un modal sobre el perfil');
+ assert.equal(await players[0].page.locator('#app').evaluate(el=>el.hidden),true);
+ assert.equal(await players[0].page.locator('#account-login input[name=email]').inputValue(),'draft@example.com');
+ await players[0].page.locator('.account-close').click();await players[0].page.locator('#account-panel').waitFor({state:'hidden'});
+ assert.equal(await players[0].page.evaluate(()=>sessionStorage.getItem('tesis.sala')),roomToken);
  await players[0].page.locator('#board .utility #account-open').waitFor();
  if(await players[0].page.locator('#modal').evaluate(el=>el.open))await players[0].page.keyboard.press('Escape');
- await players[0].page.locator('#account-open').click();await players[0].page.locator('#account-login').waitFor();await players[0].page.keyboard.press('Escape');
+ await players[0].page.locator('#account-open').click();await players[0].page.locator('#account-login').waitFor();await players[0].page.keyboard.press('Escape');await players[0].page.locator('#account-panel').waitFor({state:'hidden'});
+ if(await players[0].page.locator('#modal').evaluate(el=>el.open))await players[0].page.keyboard.press('Escape');
  await players[0].page.screenshot({path:dir+'/board-desktop.png'});
  const mobile=await open({width:360,height:800},{guest:true});
  assert.equal(await mobile.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  const nav=await mobile.page.locator('.home-nav').evaluate(el=>{const a=el.children[0].getBoundingClientRect(),b=el.children[1].getBoundingClientRect();return a.right<=b.left});assert.equal(nav,true,'Cabecera móvil sin solapamiento');
  await mobile.page.screenshot({path:dir+'/home-mobile.png',fullPage:true});
  const failed=await open({width:390,height:844},{failure:true,guest:true});await failed.page.locator('#account-open').click();await failed.page.locator('#account-guest').waitFor();await noOverflow(failed.page);await failed.page.screenshot({path:dir+'/error-mobile.png'});
- assert.deepEqual(errors,[]);console.log('QA perfil: escritorio, 390/360px, Eterno, XP accesible, alias conservado/guardado, Escape/foco, login/registro min6, fallo configuración, 3 invitados lobby/polling/tablero. Sin Supabase real.');
+ assert.deepEqual(errors,[]);console.log('QA perfil página: desktop, 390/360px, ancho completo sin modal, hash/back/forward/recarga, Eterno, XP accesible, alias protegido/guardado, Escape/foco, login/registro min6, fallo configuración, 3 invitados y token conservado, fases avanzan detrás del perfil y selección al volver. Sin Supabase real.');
 }finally{await browser.close();}

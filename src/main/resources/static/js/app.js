@@ -108,9 +108,10 @@ async function applyRoom(next, force=false) {
     document.body.append(accountOpener,progress);
     board(state); feedback(sameRoom ? before : null,state); settled(sameRoom ? before : null,state);
     accountOpener.classList.add('in-board');document.querySelector('#board .utility').append(accountOpener,progress);
-    if (state.fase==='SELECCION_ROLES' && state.seleccion.length && (!before || before.fase!=='SELECCION_ROLES' || before.actual!==state.actual) && !document.getElementById('modal').open) phaseDialog(state);
-    if (state.fase==='FIN_RONDA' && (!before || before.fase!=='FIN_RONDA')) phaseDialog(state);
-    if (state.fase==='FIN_PARTIDA' && (!before || before.fase!=='FIN_PARTIDA') && !informationalDialogOpen()) { phaseDialog(state); if(before) victory(); }
+    const accountPageOpen=!document.getElementById('account-panel').hidden;
+    if (!accountPageOpen && state.fase==='SELECCION_ROLES' && state.seleccion.length && (!before || before.fase!=='SELECCION_ROLES' || before.actual!==state.actual) && !document.getElementById('modal').open) phaseDialog(state);
+    if (!accountPageOpen && state.fase==='FIN_RONDA' && (!before || before.fase!=='FIN_RONDA')) phaseDialog(state);
+    if (!accountPageOpen && state.fase==='FIN_PARTIDA' && (!before || before.fase!=='FIN_PARTIDA') && !informationalDialogOpen()) { phaseDialog(state); if(before) victory(); }
   } finally {visualBusy=false; document.body.classList.remove('visual-busy');}
 }
 function handleError(error) {
@@ -294,5 +295,8 @@ async function boot() {
     if (screen!=='home') app.innerHTML='<div class="connection-error"><h1>Recuperando tu academia</h1><p>Volveremos a conectar automáticamente.</p><button class="text-button" data-command="home">Volver al inicio</button></div>';
   } finally { schedulePoll(); }
 }
+document.addEventListener('tesis:account-return',()=>{
+  if(state && !document.getElementById('modal').open && ['SELECCION_ROLES','FIN_RONDA','FIN_PARTIDA'].includes(state.fase))phaseDialog(state);
+});
 initAccountPanel();
 boot();

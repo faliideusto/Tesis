@@ -4,9 +4,9 @@ import {preview} from './decisions.js';
 
 function playerBadge(p, local = false) {
   const name = local ? `<h2>${esc(p.nombre)}</h2>` : `<strong>${esc(p.nombre)}</strong>`;
-  return `<span class="rival-portrait">${img(p.rol?.arte || 'cartas/reverso_personaje.webp')}</span>
-    <span class="rival-body">${name}<span class="rival-role">${p.rol ? esc(p.rol.nombre) : 'Personaje reservado'}</span>
-    <span class="resources">${resource('moneda', p.monedas, 'Monedas')}${resource('prestigio', p.prestigio, 'Prestigio')}<span class="hand-count" aria-label="${p.cartas} ideas en mano">${img('cartas/reverso_idea.webp')} ${p.cartas}</span></span></span>`;
+  return `<span class="rival-portrait ${p.rol ? '' : 'reserved-portrait'}">${img(p.rol?.arte || 'visual-v2/reserved-scholar.webp')}</span>
+    <span class="rival-body"><span class="rival-title">${name}${resource('prestigio', p.prestigio, 'Prestigio')}</span><span class="rival-role">${p.rol ? esc(p.rol.nombre) : 'Personaje reservado'}</span>
+    <span class="resources">${resource('moneda', p.monedas, 'Monedas')}<span class="hand-count" aria-label="${p.cartas} ideas en mano">${img('cartas/reverso_idea.webp')} ${p.cartas}</span></span></span>`;
 }
 export function rival(p, state = {}) {
   return `<section class="rival-seat" aria-label="Academia de ${esc(p.nombre)}"><button class="rival ${p.activo ? 'active' : ''}" data-command="rival" data-player="${esc(p.nombre)}" aria-label="Ver estudios de ${esc(p.nombre)}">${playerBadge(p)}${actionBolts(p,state)}</button>${rolePreview(p)}${tableStudies(p)}</section>`;
@@ -15,9 +15,9 @@ export function rival(p, state = {}) {
 export function tableStudies(p, own = false) {
   const group = (published, label) => {
     const entries = p.estudios.filter(e => e.publicado === published);
-    const emptySlots = Array.from({length:Math.max(0,3-entries.length)}, () =>
+    const emptySlots = Array.from({length:entries.length ? 0 : 2}, () =>
       '<div class="article-placeholder" aria-hidden="true"><span>+</span></div>').join('');
-    return `<section class="article-group ${published ? 'publications' : 'development'}" aria-label="${label} de ${esc(p.nombre)}: ${entries.length}"><div class="article-support"><div class="article-heading"><h3>${label}<span class="sr-only">: ${entries.length}</span></h3></div><div class="article-scroll" tabindex="0" aria-label="${label}: ${entries.length} artículos${entries.length > 3 ? ', desplaza para ver todos' : ''}"><div class="article-track">${entries.map(e => `<div class="table-study-slot"><button class="game-card idea-card table-study ${published ? 'published' : ''}" data-command="${own ? 'study' : 'public-study'}" data-player="${esc(p.nombre)}" data-index="${e.indice}" aria-label="${esc(e.carta.nombre)}, ${published ? 'publicado' : `${e.trabajo} de ${e.carta.trabajo} trabajo`}">${ideaCardContents(e.carta)}</button><span class="table-study-status">${published ? `${e.carta.prestigio + (e.prestigioExtra || 0)} prestigio` : `${e.trabajo} / ${e.carta.trabajo}`}</span>${published ? '' : `<progress value="${e.trabajo}" max="${e.carta.trabajo}" aria-label="Trabajo de ${esc(e.carta.nombre)}"></progress>`}</div>`).join('')}${emptySlots}</div></div></div></section>`;
+    return `<section class="article-group ${published ? 'publications' : 'development'}" style="--article-count:${entries.length || 2}" aria-label="${label} de ${esc(p.nombre)}: ${entries.length}"><div class="article-support"><div class="article-heading"><h3>${label}<span class="sr-only">: ${entries.length}</span></h3></div><div class="article-scroll" aria-label="${label}: ${entries.length} artículos"><div class="article-track">${entries.map(e => `<div class="table-study-slot"><button class="game-card idea-card table-study ${published ? 'published' : ''}" data-command="${own ? 'study' : 'public-study'}" data-player="${esc(p.nombre)}" data-index="${e.indice}" aria-label="${esc(e.carta.nombre)}, ${published ? 'publicado' : `${e.trabajo} de ${e.carta.trabajo} trabajo`}">${ideaCardContents(e.carta)}</button><span class="table-study-status">${published ? `${e.carta.prestigio + (e.prestigioExtra || 0)} prestigio` : `${e.trabajo} / ${e.carta.trabajo}`}</span>${published ? '' : `<progress value="${e.trabajo}" max="${e.carta.trabajo}" aria-label="Trabajo de ${esc(e.carta.nombre)}"></progress>`}</div>`).join('')}${emptySlots}</div></div></div></section>`;
   };
   return `<div class="rival-studies academy-tray">${group(false, 'En desarrollo')}${group(true, 'Publicados')}</div>`;
 }

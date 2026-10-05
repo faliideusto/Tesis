@@ -286,7 +286,7 @@ export async function transition(before, after) {
           {opacity:1,transform:'scale(1)'},{opacity:0,transform:'translateY(-18px) scale(1.09)'}],550));
       }
       if (e.cantidad > 0 && ['accion.cobrar','habilidad.editorial.inicio','articulo.ingresos'].includes(e.tipo)) {
-        const counter=actor?.querySelector('.resource');
+        const counter=actor?.querySelector('.resources .resource');
         tasks.push(flight('recursos/moneda.webp',document.querySelector('.idea-deck'),counter,{coin:true})
           .then(()=>current===epoch ? Promise.all([glow(counter),floating(`+${e.cantidad}`,counter)]) : undefined));
       }
@@ -331,7 +331,7 @@ export function settled(before, after) {
   const events=freshEvents(before,after);
   for (const e of events) {
     if (e.estudio != null) void glow(study(e.objetivo || e.actor,e.estudio));
-    if (e.cantidad>0 && e.tipo!=='accion.trabajar') void glow(player(e.actor,after)?.querySelector('.resource b'));
+    if (e.cantidad>0 && e.tipo!=='accion.trabajar') void glow(player(e.actor,after)?.querySelector('.resources .resource b'));
     if (e.robo && e.actor===after.yo) void glow(document.querySelector('#hand .game-card:last-child'));
   }
 }

@@ -1,0 +1,227 @@
+/* Tesis 2.1 · midnight academy.
+   Presentation overrides for table.css; effects.css retains the existing motion. */
+:root{--gold:#e8bd86;--light:#f4ead9;--muted:#b9b5ae;--navy:#091522;--line:#9c7959;--premium-copper:#c39870;--premium-ink:#0a1825;--premium-paper:#f5eddf}
+body{background:#08121c}
+button:focus-visible,input:focus-visible,select:focus-visible{outline-color:#f3ca91;outline-offset:4px}
+::selection{background:#c39870;color:#081522}
+
+/* Preserve the original scene's warm light and rich marble. */
+.board{background-image:url('/assets/Tesis-assets/tablero/mesa_referencia.webp');color:var(--light)}
+.board:after{content:none}
+.board .board-header{border:0;background:none}
+.board .turn-panel{background:linear-gradient(110deg,#10283ce8,#091724f5);border:1px solid #c3987066;border-left:3px solid #dbb381;border-radius:5px;padding:8px 18px;box-shadow:0 8px 24px #0005,inset 0 1px #e8c79d12;filter:none;gap:5px}
+.board .turn-panel>span{font:600 9px/1.2 var(--ui);letter-spacing:.23em;color:#c6b398}
+.board .turn-panel>strong{font:400 18px/1.15 var(--serif);color:#f7eddf;max-width:100%}
+.board .utility{gap:8px}
+.board .utility>button{border:1px solid #baa18444;border-radius:5px;background:#102234bf;color:#ddd3c3;font:500 11px var(--ui);padding:10px 13px;box-shadow:inset 0 1px #fff1;transition:background .18s,border-color .18s}
+.board .utility>button:hover{background:#1c3448;border-color:#d6b185}
+
+/* New materials on the same 3:1 identity plaques. Text and portrait anchors remain. */
+.board .rival-seat .rival,.board .local-panel{isolation:isolate;background:none;border:1px solid transparent;border-radius:7px;box-shadow:none;filter:drop-shadow(0 3px 4px #0005)}
+/* The old illustrated plaque had a transparent lower quarter. Keep that clearance
+   so the existing negative tray margin never hides a research-lane heading. */
+.board .rival-seat .rival:before,.board .local-panel:before{content:'';position:absolute;inset:0 0 25%;z-index:-1;background-image:url('/assets/Tesis-assets/visual-v2/frame-academia.webp'),radial-gradient(ellipse at 15% 40%,#bd945421,transparent 65%),linear-gradient(125deg,#1c3044f5,#0b1c2df9 57%,#152b3df5);background-size:100% 100%;background-repeat:no-repeat;border:1px solid #b2946b70;border-radius:7px;box-shadow:0 8px 18px #0006,inset 0 1px #fff1;pointer-events:none}
+.board .rival-seat .rival:after,.board .local-panel:after{content:'';position:absolute;top:20%;bottom:29%;left:24%;width:1px;background:linear-gradient(transparent,#d0b08a66,transparent);pointer-events:none}
+.board .rival-seat .rival:hover:before{border-color:#eed19a;box-shadow:0 8px 18px #0006,inset 0 0 22px #d8b77418}
+.board .rival-portrait{top:9.5%;box-shadow:0 0 0 2px #081522,0 0 0 3px #dbc084,0 0 0 5px #82623866,0 4px 12px #0007;background:#0a1828}
+.board .rival-body{top:10%;height:55%;width:54%}
+.board .rival-title{display:flex;align-items:center;gap:2cqw;min-width:0}
+.board .rival-body .rival-title>strong,.board .rival-body .rival-title>h2{flex:1;min-width:0;padding-right:0}
+.board .rival-title>.resource{flex:none;gap:3px}
+.board .rival-body .rival-title>.resource img{width:4.5cqw;height:4.5cqw}
+.board .rival-portrait img{object-position:50% 26%}
+.board .reserved-portrait img{object-fit:cover;object-position:center}
+.board .rival-body strong,.board .rival-body h2{font-weight:400;color:#f7eddf;letter-spacing:.015em;text-shadow:0 2px 4px #0006}
+.board .rival-role{color:#b8c3c8;letter-spacing:.02em}
+.board .rival-body .resource b,.board .rival-body .hand-count{font-family:var(--ui);font-weight:600;color:#f2ddbc;font-variant-numeric:tabular-nums}
+.board .rival.active,.board .local-panel.active,.board .local-panel.active.fx-active{border-color:transparent;box-shadow:none;filter:drop-shadow(0 0 4px #6eac9966)}
+.board .rival.active:before,.board .local-panel.active:before{border-color:#86b7ae;box-shadow:inset 3px 0 #93c7b6,inset 0 1px #d8f3e01a,0 8px 24px #0005}
+.board .rival.active .rival-role,.board .local-panel.active .rival-role{color:#b7d8ce}
+.board .action-bolts{right:6%;top:14%;gap:6px}
+.board .action-bolt{width:clamp(15px,5cqw,22px);height:clamp(22px,7cqw,31px);stroke:#d0b28c;fill:#122b3b}
+.board .action-bolt.available{fill:#efd09b;stroke:#fff0d0;filter:drop-shadow(0 0 3px #d6b07f44)}
+.board .action-bolt.spent{opacity:.35}
+.board .local-role-button{inset:0 0 25%;border-radius:7px}
+.board .local-role-button:hover{box-shadow:none}
+.board .local-panel:has(>.local-role-button:is(:hover,:focus-visible)):before{border-color:#e8bd86;box-shadow:inset 0 0 18px #d7bb851a,0 8px 18px #0006}
+
+/* All articles stay visible; each lane scales independently with its count. */
+.board .academy-tray:before{background:none;box-shadow:none}
+.article-support{background:linear-gradient(145deg,#142b3aeF,#091826f5);border:1px solid #b094706b;border-radius:6px;box-shadow:inset 0 1px #e2d2b11a,0 8px 18px #0005}
+.article-heading{background:linear-gradient(90deg,#213b4cbb,#2a4153bb);border:0;border-bottom:1px solid #b69b716b;border-radius:3px;box-shadow:none}
+.article-group h3{font-family:var(--ui);font-weight:500;color:#e9ddc8;letter-spacing:.035em;text-shadow:none}
+.publications .article-heading{background:linear-gradient(90deg,#70543938,#99724438);border-bottom-color:#d1ac7b8c}
+.publications h3{color:#edd3a9}
+.article-placeholder{background:linear-gradient(145deg,#07152188,#14273544);border:1px dashed #b69b7045;box-shadow:inset 0 0 18px #03101a66;border-radius:4px;color:#c0a58380}
+.article-placeholder>span{font:300 24px var(--ui);opacity:.6}
+.board .article-group{--article-count:2;--card-ceiling:160px;--article-gap:min(7px,calc(16cqw / var(--article-count)));--display-card:min(var(--card-ceiling),calc((100cqw - 14px - (var(--article-count) - 1)*var(--article-gap))/var(--article-count)))}
+.board .article-scroll{overflow:visible;scrollbar-width:none}
+.board .article-track{width:100%;min-width:0;gap:var(--article-gap);justify-content:center}
+.board .table-study-status{font-size:clamp(6px,calc(var(--display-card)/8),12px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(min-width:1000px) and (min-height:650px){
+ .board .article-group{--card-ceiling:130px}
+ .board .rival-seat .article-group{--card-ceiling:clamp(85px,12svh,130px)}
+ .board[data-players="4"] .rival-seat .article-group,.board[data-players="5"] .rival-seat .article-group{--card-ceiling:clamp(72px,9.5svh,108px)}
+ /* Keep the side academies outside the local research lanes. */
+ .board .rivals[data-count="3"]>.rival-seat:nth-child(n+2),.board .rivals[data-count="4"]>.rival-seat:nth-child(n+3){left:2%;width:28%;top:max(36svh,calc(6svh + 8.8vw + clamp(108px,14.25svh,162px) + 50px))}
+ .board .rivals[data-count="3"]>.rival-seat:last-child,.board .rivals[data-count="4"]>.rival-seat:last-child{left:70%}
+ .board .rivals[data-count="3"]>.rival-seat:first-child{top:6svh}
+ .board[data-players="4"] .decks{top:max(39svh,calc(6svh + 8.213vw + clamp(108px,14.25svh,162px) + 50px))}
+ .board[data-players="3"] .decks,.board[data-players="5"] .decks{width:min(calc(12vw + 24px),300px)}
+}
+.board .table-study-status{font-family:var(--ui);font-weight:500;color:#d8c5a4;text-shadow:0 1px 3px #000;letter-spacing:.02em}
+.table-study-slot progress{height:3px;border-radius:99px;background:#05111d}
+.table-study-slot progress::-webkit-progress-value{background:linear-gradient(90deg,#6cacae,#b7d6cd)}
+.table-study-slot progress::-moz-progress-bar{background:linear-gradient(90deg,#6cacae,#b7d6cd)}
+.board .table-study.published{box-shadow:0 0 0 1px #d8b58350;border-radius:5px}
+.board .table-activity{border:1px solid #a78d6b66;border-radius:6px;background:linear-gradient(135deg,#1d3449ed,#102438f5);box-shadow:0 5px 18px #0005,inset 0 1px #fff1;padding:10px 14px}
+.board .activity-move strong{font-family:var(--serif);font-weight:400;color:#f6e5c8}
+.board .activity-move p{color:#c2c9cb}
+.board .narrator-link{color:#e8c496;font:500 10px var(--ui);letter-spacing:.06em;border-bottom-color:#c3987060}
+.table-notice{border:1px solid #bbaa815c;border-left:3px solid #caa073;border-radius:5px;background:#102537f2;color:#eddfc9;box-shadow:0 8px 22px #0005}
+.empty-hand{color:#d5c5a6a6;font-size:18px}
+.empty-hand small{color:#adb5b8}
+
+/* Crisp controls: the icons remain the existing illustrated game assets. */
+.board .actions{gap:7px}
+.board .action-button{--action-surface:linear-gradient(135deg,#21384b,#0b1d2e 60%,#172e40);isolation:isolate;background:none;border:0;border-radius:5px;box-shadow:0 4px 12px #0006;filter:none}
+.board .action-button:before,.board .action-button:after{content:'';position:absolute;pointer-events:none;clip-path:polygon(5% 0,95% 0,100% 50%,95% 100%,5% 100%,0 50%)}
+.board .action-button:before{inset:0;z-index:-2;background:linear-gradient(145deg,#705126,#f4d598 24%,#a77b3e 46%,#f5dba5 73%,#76522b);box-shadow:inset 0 0 0 1px #edd7a9}
+.board .action-button:after{inset:2px;z-index:-1;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 40' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%23d7b578' stroke-width='.6' opacity='.7'%3E%3Cpath d='M12 3H94M106 3H188L196 20 188 37H106M94 37H12L4 20Z'/%3E%3Cpath d='m97 3 3-2 3 2-3 2Zm0 34 3-2 3 2-3 2ZM8 15l3 5-3 5M192 15l-3 5 3 5'/%3E%3C/g%3E%3C/svg%3E"),var(--action-surface);background-size:100% 100%;box-shadow:inset 0 0 8px #0008}
+.board .action-content{inset:7px 10px;grid-template-columns:27px 1fr;gap:7px;z-index:1}
+.board .action-content img{width:27px;height:30px;filter:drop-shadow(0 2px 2px #0006)}
+.board .action-label{font:600 11px/1.2 var(--ui);letter-spacing:.04em;text-transform:none;color:#f5e8d2;text-shadow:0 1px 3px #000}
+.board .action-button.end-turn{--action-surface:linear-gradient(135deg,#75512e,#463018 60%,#694923)}
+.board .end-turn .action-label{color:#fff0d4;font-weight:650}
+.board .action-button.ability-action{--action-surface:linear-gradient(135deg,#39364f,#1b2137 60%,#302c44)}
+.board .action-button:not(:disabled):hover{filter:brightness(1.14);border-color:#efd5af}
+.board .action-button[aria-disabled=true]{opacity:.55;filter:saturate(.35)}
+.board .action-button:disabled{opacity:.55;filter:saturate(.15)}
+.board .phase-action .action-content{display:flex;justify-content:center}
+.board .action-button:focus-visible{outline:2px solid #f8d7a3;outline-offset:3px}
+.player-role-preview{background:linear-gradient(145deg,#20384a,#0b1b2c);border-color:#c1a079;border-radius:8px;box-shadow:0 20px 45px #000b,inset 0 1px #fff1}
+.player-role-preview p{color:#d8e0e0}
+.board .game-card.valid-target,.eligible-option>.game-card{outline-color:#ae8857;box-shadow:0 0 0 6px #ca9f641c}
+
+/* Decisions feel like archival folios, with a clear reading surface. */
+dialog{background:radial-gradient(ellipse at top left,#fffaf0,#f0e6d5 75%);color:#22313c;border:1px solid #be9b73;border-radius:10px;padding:42px 42px 34px;box-shadow:0 0 0 1px #081522,0 28px 100px #000a,0 0 70px #9f74411a}
+dialog:before{inset:9px;border-color:#b3926333;border-radius:5px}
+dialog::backdrop{background:#04101bd1;backdrop-filter:blur(10px) saturate(.65)}
+.dialog-heading{position:relative;padding-bottom:22px;border-bottom:1px solid #a0804a3a;margin-bottom:28px}
+.dialog-heading:after{content:'◆';position:absolute;bottom:-8px;left:calc(50% - 12px);width:24px;background:#f4ebdd;color:#a5835a;font-size:10px}
+.dialog-heading .eyebrow{color:#806344;font-weight:650;letter-spacing:.22em}
+.dialog-heading h1{font-size:clamp(28px,3vw,40px);letter-spacing:-.02em;color:#172f40}
+.dialog-heading p{color:#59626a;line-height:1.6;max-width:700px;margin:auto}
+.dialog-close{right:20px;top:17px;color:#53616b;border:1px solid #ac967266;border-radius:4px;padding:7px 10px;background:#fff8ed60}
+.dialog-close:hover{color:#172f40;background:#fffaf3}
+dialog .gold-button{background:linear-gradient(115deg,#b9915f,#e8c797);border-color:#b99568;border-radius:5px;color:#1a2b36;box-shadow:0 3px 0 #92714d,0 6px 15px #59412026,inset 0 1px #fff7;font-weight:650}
+dialog .plain-button{border:1px solid #9a856570;border-radius:5px;background:#fffaf166;color:#394951;box-shadow:inset 0 1px #fff9}
+dialog .plain-button:hover{background:#fffaf1;border-color:#82694e}
+dialog .text-button{color:#72532e;border-color:#ab835244}
+.role-selection{gap:22px 18px;padding:8px 0 4px}
+dialog .role-cadence{color:#68717a;font-size:10px;letter-spacing:.025em}
+.selection-caption{color:#65727a;letter-spacing:.04em}
+.role-confirm h2,.card-detail h2{color:#173248;font-size:30px}
+.role-confirm p,.card-detail p,.rules-copy{color:#3e505c}
+.card-detail dl{background:#fffaf04d;border:1px solid #a8907040;border-radius:6px;padding:6px 14px}
+.card-detail dl div{border-color:#a78b5c30}
+.card-detail dl div:last-child{border:0}
+.card-detail dd{color:#183248}
+.idea-option small{color:#596772}
+.decision-copy{color:#455660}
+.action-preview{background:#d1af7620;border:1px solid #ac845650;border-left:3px solid #b88d5b;border-radius:5px;color:#364955;font-size:13px}
+.target-button{border:1px solid #a8907055;border-radius:6px;background:linear-gradient(110deg,#fffaf0,#eae1d3);color:#263b48;box-shadow:0 2px 4px #5a482011;font-size:19px}
+.target-button span{color:#736347;font-size:11px}
+.target-button:hover{background:#fffbf4;border-color:#ab8559;box-shadow:0 0 0 2px #b28a591a}
+.article-choice{padding:14px;border:1px solid #9d85523a;border-radius:8px;background:#fffaf059;color:#3b515e}
+.article-choice .article-owner{color:#243d4d;font-weight:400;border-bottom-color:#a8907044}
+dialog .study-row{background:linear-gradient(110deg,#fff9ef,#e7ded0);border-color:#a38e7066;color:#273e4b;border-radius:6px;box-shadow:0 2px 4px #6b533018}
+dialog .study-row:hover{background:#fffaf2;border-color:#ae8455}
+dialog .study-status{color:#667078}
+dialog .study-row.published{border-color:#ac855a}
+.chronicle{list-style-type:decimal-leading-zero;padding-left:30px;color:#3b4f5d}
+.chronicle li{padding:13px 8px;border-bottom-color:#a8907033}
+.chronicle li::marker{font:10px var(--ui);color:#9b7952}
+.chronicle li.publication{color:#70516d}
+.ranking{border-top-color:#a8907060}
+.ranking li{border-bottom-color:#a8907040;color:#344a57}
+.round-summary .ranking{background:#fffaf06b;border-color:#aa906844;box-shadow:0 5px 20px #5e472514,inset 0 1px #fff}
+.round-summary .ranking li:first-child{color:#825c2e}
+.round-summary-kicker,.round-transition{color:#8d6843}
+.round-summary>p{color:#5b6970}
+.round-transition-track{background:#b9a3874a;box-shadow:inset 0 1px 2px #533a2622}
+.round-transition-track span{background:linear-gradient(90deg,#b58a59,#e4c395)}
+.final-result h2{color:#173248}
+.final-result>p{color:#5c6870}
+
+/* Feedback has the same material language, preserving all existing animation rules. */
+.toast{background:linear-gradient(110deg,#203849f7,#0c2133fa);border:1px solid #bda07999;border-left:3px solid #ddbd8b;border-radius:7px;padding:16px 20px;box-shadow:0 12px 30px #0007,inset 0 1px #fff1;color:#f3e7d2}
+.toast.error{background:linear-gradient(110deg,#482c35f7,#291d2bf7);border-color:#d7978e}
+.toast.publication{background:linear-gradient(110deg,#35324bf7,#192c3ef7);border-color:#c1a6ca;box-shadow:0 12px 30px #0007,0 0 22px #a87ab51f}
+#tooltip{border:1px solid #c7aa7d99;border-image:none;border-radius:7px;background:linear-gradient(135deg,#fff7e8,#ebdfcb);color:#263a48;padding:15px 18px;filter:drop-shadow(0 8px 14px #0008);font-size:12px;line-height:1.65}
+
+/* Academia: subtle editorial details on the existing responsive account page. */
+.profile-shell{background:radial-gradient(ellipse at 18% 35%,color-mix(in srgb,var(--rank-glow) 16%,transparent),transparent 45%),linear-gradient(130deg,#182e40,#091825 60%,#122638)}
+.academy-navigation{border-bottom-color:#d5b68b33}
+.academy-wordmark{color:#e9c99d;letter-spacing:.23em}
+.profile-heading h2{color:#f6ecdf;letter-spacing:-.035em}
+.profile-record{background:linear-gradient(135deg,#19304436,#07152222);border-radius:8px}
+.profile-stat-grid{border-color:#ccae8340}
+.profile-stat-grid>div{border-color:#ccae832b}
+.profile-stat-grid strong{color:#f2e4ce;font-variant-numeric:tabular-nums}
+.xp-track{background:#04121d;border:1px solid #af99714a;box-shadow:inset 0 2px 4px #0008}
+.next-rank-card{border-radius:0 6px 6px 0;background:linear-gradient(90deg,#bf996e1c,#152e4122)}
+.rank-step.current{background:radial-gradient(ellipse at 50% 20%,color-mix(in srgb,var(--rank-glow) 16%,transparent),transparent 80%)}
+.account-auth-shell{background:radial-gradient(ellipse at 18% 42%,#a5805428,transparent 46%),linear-gradient(120deg,#1a3448,#081925 75%)}
+#account-panel input{border-color:#bca17b66;border-radius:5px;background:#071522a6;box-shadow:inset 0 2px 6px #0002}
+#account-panel .gold-button{background:linear-gradient(115deg,#b68c59,#e1be8a);border-color:#dbb78a;color:#142735;box-shadow:0 3px 0 #695133,inset 0 1px #fff5;border-radius:5px}
+.auth-tabs{border-bottom-color:#c5a5793d}
+.auth-tabs button[aria-pressed=true]{color:#eed2a8;border-bottom-color:#c6a06b}
+
+@media(min-width:1000px) and (min-height:650px){
+ .board .board-header{margin-inline:-3vw;padding-inline:3vw}
+ /* The desktop logo is painted in the scene: match its actual location. */
+ .board .brand{top:3svh;width:16vw;height:10svh;clip-path:polygon(8% 0,92% 0,100% 50%,92% 100%,8% 100%,0 50%);border-radius:20%}
+ .board .brand:is(:hover,:focus-visible){background:#ffe2a512;box-shadow:inset 0 0 16px #f1c66e44;outline:0}
+ .board .brand:focus-visible{background:#ffe2a52b;box-shadow:inset 0 0 0 2px #f1c66e,inset 0 0 16px #f1c66e44}
+ .board .turn-panel{left:3vw;top:8px;width:245px;min-height:49px;height:49px}
+ .board .utility{padding-block:10px}
+ .board .actions{padding:5px;background:#071522bc;border:1px solid #bba07645;border-radius:9px;box-shadow:0 8px 25px #0008;gap:5px}
+ .board .action-content{inset:3px 8px;grid-template-columns:25px 1fr;gap:6px}
+ .board .action-content img{width:25px;height:26px}
+ .board .action-label{font-size:11px}
+ .board .actions.single-action{height:48px}
+}
+@media(max-width:999px),(max-height:649px){
+ .board,.board[data-players]{background-image:url('/assets/Tesis-assets/tablero/fondo_partida_4players.webp')}
+ .board .board-header{border:0}
+ .board .turn-panel{min-height:64px;padding:10px 20px}
+ .board footer{background:linear-gradient(transparent,#061421ed 15%);padding-top:14px}
+ .board .actions{gap:6px}
+ .board .action-label{font-size:11px}
+ .board .rival-body strong,.board .rival-body h2{color:#f7eddf}
+}
+@media(max-width:600px){
+ .board .action-content{inset:4px 5px;grid-template-columns:23px 1fr;gap:3px}
+ .board .action-content img{width:23px;height:26px}
+ .board .action-label{font-size:10px;letter-spacing:0}
+ .board .turn-panel{width:220px;padding:8px 12px}
+ .board .turn-panel>strong{font-size:17px}
+ .board .utility{gap:5px}
+ .board .utility>button{padding:9px 10px;font-size:10px}
+ .board .article-group h3{font-size:11px}
+ dialog{padding:38px 22px 26px;border-radius:8px}
+ .dialog-heading{padding-bottom:19px;margin-bottom:23px}
+ .dialog-heading h1{font-size:29px}
+ .dialog-heading p{font-size:12px}
+ .dialog-close{right:17px;top:13px;font-size:9px}
+ .role-selection{gap:18px 12px}
+ .role-confirm h2,.card-detail h2{font-size:26px}
+ .article-choice{padding:10px}
+ .target-button{padding:15px 14px;font-size:17px}
+ #notifications{right:12px;bottom:calc(110px + 12svh);max-width:min(340px,calc(100vw - 24px))}
+ .toast{padding:13px 15px;font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+ .board .utility>button{transition:none}
+}

@@ -40,9 +40,10 @@ function home() {
   stopPolling(); resetEffects(); screen='home'; closeDialog(); resetFeedback(); connectionStatus();
   state=null; room=null;
   const accountOpener=document.getElementById('account-open');
-  accountOpener.classList.remove('in-board');document.body.append(accountOpener);
-  document.getElementById('account-progress').hidden=true;
-  app.innerHTML = `<section class="home-screen"><nav class="home-nav"><span>UNA MESA. MUCHAS IDEAS.</span><button class="text-button" data-command="help">Cómo jugar</button></nav>
+  const progress=document.getElementById('account-progress');
+  accountOpener.classList.remove('in-board');document.body.append(accountOpener,progress);
+  progress.hidden=true;
+  app.innerHTML = `<section class="home-screen"><nav class="home-nav"><span>UNA MESA. MUCHAS IDEAS.</span><div class="home-nav-actions"><button class="text-button" data-command="help">Cómo jugar</button><div class="home-account-slot"></div></div></nav>
     <div class="home-copy">${academyIntro()}</div>
     <section class="setup-panel"><span class="eyebrow">LAS PUERTAS ESTÁN ABIERTAS</span><h2>Reúne a tu academia</h2><p>Solo necesitas tu nombre y un código de sala.</p>
       <form id="create-room" class="room-form"><label>Tu nombre<input name="nombre" maxlength="24" required autocomplete="nickname" placeholder="Fali"></label><button class="gold-button" type="submit">Crear sala</button></form>
@@ -50,11 +51,16 @@ function home() {
       <form id="join-room" class="room-form"><label>Código de sala<input name="codigo" maxlength="5" minlength="5" required autocomplete="off" placeholder="A7K3Q" class="code-input"></label><label>Tu nombre<input name="nombre" maxlength="24" required autocomplete="nickname" placeholder="Jefe"></label><button class="gold-button" type="submit">Unirse a sala</button></form>
       ${api.identity() ? '<button class="text-button resume" data-command="resume">Volver a mi sala</button>' : ''}
     </section><div class="home-footer">INVESTIGAR <span>·</span> TRANSFORMAR <span>·</span> MEJORAR</div></section>`;
+  document.querySelector?.('.home-account-slot')?.append(accountOpener);
 }
 function lobby() {
-  app.innerHTML = `<section class="home-screen lobby-screen"><div class="home-copy">${academyIntro()}<button class="text-button" data-command="home">Volver al inicio</button></div>
+  const accountOpener=document.getElementById('account-open'),progress=document.getElementById('account-progress');
+  accountOpener.classList.remove('in-board');document.body.append(accountOpener,progress);
+  app.innerHTML = `<section class="home-screen lobby-screen"><nav class="home-nav"><span>UNA MESA. MUCHAS IDEAS.</span><div class="home-nav-actions"><button class="text-button" data-command="help">Cómo jugar</button><div class="home-account-slot"></div></div></nav><div class="home-copy">${academyIntro()}<button class="text-button" data-command="home">Volver al inicio</button></div>
     <section class="setup-panel lobby-panel"><span class="eyebrow">CÓDIGO DE SALA</span><h2 class="room-code">${esc(room.codigo)}</h2><p>Tu identidad: <strong>${esc(room.yo)}</strong></p><h3>Jugadores · ${room.jugadores.length} / 5</h3><ul class="lobby-players">${room.jugadores.map(n=>`<li>${n===room.anfitrion?'♛ ':''}${esc(n)}${n===room.yo?' · tú':''}<small>${n===room.anfitrion?'Anfitrión':''}</small></li>`).join('')}</ul>
     ${room.soyAnfitrion ? `<button class="gold-button" data-command="start-game" ${(room.jugadores.length<3 || room.jugadores.length>5)?'disabled':''}>Iniciar partida</button><p class="setup-note">${(room.jugadores.length<3 || room.jugadores.length>5)?'Esperando jugadores. Se necesitan entre 3 y 5.':'Todo preparado. Puedes iniciar la partida.'}</p>` : `<p class="waiting-copy">Esperando a que ${esc(room.anfitrion)} inicie la partida…</p>`}</section></section>`;
+  document.querySelector?.('.home-account-slot')?.append(accountOpener);
+  document.querySelector?.('.lobby-panel')?.append(progress);
 }
 function renderRoom(next, force=false) {
   const requestedGeneration=generation;
@@ -98,9 +104,10 @@ async function applyRoom(next, force=false) {
     room=next; screen=room.fase==='LOBBY'?'lobby':'game';
     if (screen==='lobby') { state=null; lobby(); return; }
     state=after; selectedRole=null; pendingAction=null; selectedTarget=null; clearTargets(); reconcileDialog(sameRoom);
+    const accountOpener=document.getElementById('account-open'),progress=document.getElementById('account-progress');
+    document.body.append(accountOpener,progress);
     board(state); feedback(sameRoom ? before : null,state); settled(sameRoom ? before : null,state);
-    const accountOpener=document.getElementById('account-open');
-    accountOpener.classList.add('in-board');document.querySelector('#board .utility').append(accountOpener);
+    accountOpener.classList.add('in-board');document.querySelector('#board .utility').append(accountOpener,progress);
     if (state.fase==='SELECCION_ROLES' && state.seleccion.length && (!before || before.fase!=='SELECCION_ROLES' || before.actual!==state.actual) && !document.getElementById('modal').open) phaseDialog(state);
     if (state.fase==='FIN_RONDA' && (!before || before.fase!=='FIN_RONDA')) phaseDialog(state);
     if (state.fase==='FIN_PARTIDA' && (!before || before.fase!=='FIN_PARTIDA') && !informationalDialogOpen()) { phaseDialog(state); if(before) victory(); }

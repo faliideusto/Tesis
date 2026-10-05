@@ -34,12 +34,19 @@ function authView(mode) {
   return `<div class="account-auth-shell">${closeButton()}<section class="auth-art"><span class="eyebrow">TU HISTORIA EN LA ACADEMIA</span><h2>Las partidas pasan.<br><em>Tu legado permanece.</em></h2><p>Entra en tu perfil para conservar tus logros y escribir la siguiente página.</p><div class="auth-featured-badge">${badge('oro')}<span>SIETE RANGOS POR DESCUBRIR</span></div><div class="auth-rank-preview">${badge('madera',{small:true})}<span>✦</span>${badge('diamante',{small:true})}<span>✦</span>${badge('eterno',{small:true})}</div><div class="auth-benefit-line"><span>Tu investigador</span><span>Tus victorias</span><span>Tu progreso</span></div></section><section class="auth-form-panel"><span class="eyebrow">MI PERFIL · TESIS</span><h2 id="account-title">${register?'Comienza tu legado':'Bienvenido de nuevo.'}</h2><p class="auth-intro">${register?'Crea tu cuenta y conserva cada paso de tu progreso.':'Inicia sesión y continúa tu trayectoria en la academia.'}</p><div class="auth-tabs" aria-label="Acceso de cuenta"><button type="button" data-auth-mode="login" aria-pressed="${!register}">Iniciar sesión</button><button type="button" id="account-switch" data-auth-mode="register" aria-pressed="${register}">Crear cuenta</button></div>
     <form id="account-${mode}">${register?'<label>Nombre de tu investigador<input name="nombre" maxlength="24" required autocomplete="nickname" placeholder="Así te conocerá la academia"></label>':''}<label>Correo electrónico<input name="email" type="email" required autocomplete="email" placeholder="tu@correo.com"></label><label>Contraseña<input name="password" type="password" minlength="6" required autocomplete="${register?'new-password':'current-password'}" placeholder="Mínimo 6 caracteres"></label><button class="gold-button">${register?'Crear mi academia':'Entrar en Tesis'} <span aria-hidden="true">→</span></button></form><p id="account-message" class="account-message" role="status"></p><button type="button" class="account-link auth-guest" id="account-dismiss">Seguir jugando como invitado</button><p class="auth-fine-print">No verificamos el correo. Sin recuperación pública por email: conserva tu contraseña. Entrar como invitado no acumula XP en esa partida.</p></section></div>`;
 }
+function disconnectedView() {
+  return `<div class="account-empty-shell">${closeButton()}${badge('madera')}<span class="eyebrow">VOLVEREMOS A ENCONTRARNOS</span><h2 id="account-title">La academia está desconectada</h2><p>Recarga para volver a conectar con tu cuenta.</p><p>Continuar como invitado cierra tu cuenta en esta pestaña. Tu sala actual conserva su identidad; las nuevas salas no acumularán XP.</p><button type="button" class="gold-button" id="account-guest">Continuar como invitado</button></div>`;
+}
 export function initAccountPanel() {
   const panel=document.getElementById('account-panel'),opener=document.getElementById('account-open');
-  let mode='login',working=false,lastView='',restoring=true,pushed=false,returnFocus=null,returnScroll=0;
+  let mode='login',working=false,loginIdentityPending=false,lastView='',restoring=true,connectionFailed=false,returnFocus=null,returnScroll=0,operation=0;
   let academyPage='profile',community=null,lastIdentity=accounts.identity();
+  const routes={'#perfil':'profile','#amigos':'friends','#ranking':'ranking','#misiones':'missions'};
+  const hashes=Object.fromEntries(Object.entries(routes).map(([hash,page])=>[page,hash]));
+  const labels={profile:'Mi perfil',friends:'Amigos',ranking:'Ranking global',missions:'Misiones'};
   const app=document.getElementById('app');
   function leave() {
+    operation++;working=false;panel.removeAttribute('aria-busy');
     community?.destroy();community=null;lastView='';
     panel.hidden=true;app.inert=false;app.hidden=false;document.body.classList.remove('account-page-active');
     document.title='Tesis · La mesa del conocimiento';
@@ -48,28 +55,50 @@ export function initAccountPanel() {
     document.dispatchEvent(new Event('tesis:account-return'));
   }
   function enter() {
-    if(!panel.hidden)return;
+    if(!panel.hidden){draw(true);return;}
     returnFocus=document.activeElement;returnScroll=window.scrollY;
     panel.hidden=false;app.inert=true;app.hidden=true;document.body.classList.add('account-page-active');
     document.title='Mi academia · Tesis';window.scrollTo(0,0);draw(true);panel.focus();
     if(accounts.signedIn())void perform(()=>accounts.refreshProfile());
   }
-  function openPage() {
-    if(location.hash!=='#perfil'){history.pushState(null,'','#perfil');pushed=true;}
+  function openPage(page='profile',source=opener) {
+    if(!hashes[page])return;
+    if(academyPage!==page){operation++;working=false;panel.removeAttribute('aria-busy');}
+    if(panel.hidden) {
+      returnFocus=source;
+      if(location.hash!==hashes[page])history.pushState({...history.state,tesisAcademyReturn:location.pathname+location.search+location.hash},'',hashes[page]);
+    } else if(location.hash!==hashes[page])history.replaceState(history.state,'',hashes[page]);
+    academyPage=page;
     enter();
+    returnFocus=source;
   }
   function closePage() {
-    if(pushed&&location.hash==='#perfil'){pushed=false;history.back();}
+    if(history.state?.tesisAcademyReturn&&routes[location.hash])history.back();
     else {history.replaceState(null,'',location.pathname+location.search);leave();}
   }
-  function followLocation(){if(location.hash==='#perfil')enter();else if(!panel.hidden)leave();}
+  function followLocation(){
+    const page=routes[location.hash];
+    if(page){if(!panel.hidden&&academyPage===page)return;operation++;working=false;panel.removeAttribute('aria-busy');academyPage=page;enter();}
+    else if(!panel.hidden)leave();
+  }
+  document.addEventListener('click',event=>{
+    const link=event.target.closest?.('a[href]');
+    const page=routes[link?.getAttribute('href')];
+    if(!page||event.defaultPrevented||event.button>0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+    event.preventDefault();openPage(page,link);
+  });
   window.addEventListener('popstate',followLocation);window.addEventListener('hashchange',followLocation);
   panel.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();closePage();}});
   function draw(force=false) {
     opener.hidden=false;
     const profile=accounts.profile();
     const identity=accounts.identity();
-    if(identity!==lastIdentity){lastIdentity=identity;academyPage='profile';community?.destroy();community=null;lastView='';}
+    if(identity!==lastIdentity){
+      const completingLogin=working&&loginIdentityPending&&!lastIdentity&&identity;
+      lastIdentity=identity;loginIdentityPending=false;
+      if(!completingLogin){operation++;working=false;panel.removeAttribute('aria-busy');}
+      community?.destroy();community=null;lastView='';
+    }
     if(accounts.signedIn()) {
       const p=progression(profile||{});opener.classList.add('has-profile');
       opener.dataset.rank=p.rank.id;
@@ -78,13 +107,22 @@ export function initAccountPanel() {
     } else {
       opener.classList.remove('has-profile');delete opener.dataset.rank;opener.innerHTML='<span class="account-trigger-monogram guest-monogram" aria-hidden="true">T</span><span class="account-trigger-copy"><strong>Mi perfil</strong><small>Iniciar sesión</small></span><span class="account-chevron" aria-hidden="true">↗</span>';opener.setAttribute('aria-label','Mi perfil · Iniciar sesión');
     }
+    if(connectionFailed)opener.innerHTML='<span class="account-trigger-monogram guest-monogram" aria-hidden="true">T</span><span class="account-trigger-copy"><strong>Mi perfil</strong><small>Conexión pendiente</small></span>';
     if(panel.hidden||working)return;
+    panel.dataset.page=academyPage;
+    document.title=`${labels[academyPage]} · Tesis`;
     // Una recompensa/renovación en segundo plano no debe borrar el alias en edición.
     if(!force&&accounts.signedIn()&&profile&&panel.querySelector('#account-rename:not([hidden])'))return;
     const unavailable=!accounts.enabled()&&!restoring;
-    const view=accounts.signedIn()?`${academyPage}:${academyPage==='profile'||!profile?JSON.stringify(profile):identity}`:unavailable?'unavailable':mode;
+    const view=connectionFailed?'disconnected':accounts.signedIn()?`${academyPage}:${academyPage==='profile'||!profile?JSON.stringify(profile):identity}`:unavailable?'unavailable':mode;
     if(!force&&lastView===view)return;lastView=view;
     community?.destroy();community=null;
+    if(connectionFailed){
+      panel.innerHTML=disconnectedView();panel.dataset.view='auth';panel.setAttribute('aria-labelledby','account-title');
+      panel.querySelector('.account-close').onclick=closePage;
+      panel.querySelector('#account-guest').onclick=()=>{accounts.forgetStoredSession();globalThis.location.reload();};
+      panel.querySelector('.account-close').focus();return;
+    }
     if(accounts.signedIn()&&profile)panel.innerHTML=profileView(profile);
     else if(accounts.signedIn())panel.innerHTML=`<div class="account-empty-shell">${closeButton()}${badge('madera')}<span class="eyebrow">TU ACADEMIA</span><h2 id="account-title">Preparando tu perfil</h2><p>Conectando con tu legado…</p><p id="account-message" class="account-message" role="status"></p><button type="button" class="account-link" id="account-refresh">Volver a intentar</button><button type="button" class="account-link" id="account-logout">Cerrar sesión</button></div>`;
     else panel.innerHTML=unavailable?unavailableView():authView(mode);
@@ -98,7 +136,7 @@ export function initAccountPanel() {
         panel.setAttribute('aria-labelledby','community-title');
         community=mountCommunity(panel.querySelector('.community-panel'),{accounts,page:academyPage,onReward:()=>{void accounts.refreshProfile().catch(()=>{});}});
       } else panel.setAttribute('aria-labelledby','account-title');
-      panel.querySelectorAll('[data-academy-page]').forEach(button=>button.onclick=()=>{academyPage=button.dataset.academyPage;draw(true);panel.querySelector(`[data-academy-page="${academyPage}"]`)?.focus();});
+      panel.querySelectorAll('[data-academy-page]').forEach(button=>button.onclick=()=>{openPage(button.dataset.academyPage,returnFocus);panel.querySelector(`[data-academy-page="${academyPage}"]`)?.focus();});
     } else panel.setAttribute('aria-labelledby','account-title');
     panel.dataset.view=accounts.signedIn()?'profile':unavailable?'unavailable':'auth';
     panel.querySelector('.account-close').onclick=closePage;
@@ -109,14 +147,14 @@ export function initAccountPanel() {
     const logout=panel.querySelector('#account-logout');if(logout)logout.onclick=()=>perform(()=>accounts.logout());
     if(!panel.contains(document.activeElement))panel.querySelector('input,.account-close')?.focus();
   }
-  async function perform(task) {
-    if(working)return;working=true;panel.setAttribute('aria-busy','true');
+  async function perform(task,{login=false}={}) {
+    if(working)return;working=true;loginIdentityPending=login;const current=++operation;panel.setAttribute('aria-busy','true');
     const controls=Array.from(panel.querySelectorAll('button,input'));controls.forEach(el=>{if(!el.classList.contains('account-close'))el.disabled=true;});
     const messageNode=panel.querySelector('#account-message');if(messageNode)messageNode.textContent='Conectando…';
     let message='',success=false;
     try {const result=await task();message=typeof result==='string'?result:'';success=true;}
     catch(error){message=error.message||'No se pudo completar la operación.';}
-    finally {working=false;panel.removeAttribute('aria-busy');controls.forEach(el=>el.disabled=false);draw(success);const target=panel.querySelector('#account-message');if(target)target.textContent=message;}
+    finally {if(current===operation){working=false;loginIdentityPending=false;panel.removeAttribute('aria-busy');controls.forEach(el=>el.disabled=false);draw(success);const target=panel.querySelector('#account-message');if(target)target.textContent=message;}}
   }
   panel.addEventListener('submit',event=>{
     if(!event.target.id.startsWith('account-'))return;
@@ -127,14 +165,12 @@ export function initAccountPanel() {
       if(mode==='register'){const active=await accounts.register(email,password,String(fields.get('nombre')).trim());if(!active)return 'Cuenta creada sin sesión. Revisa la confirmación de correo del proyecto.';}
       else await accounts.login(email,password);
       try{await accounts.refreshProfile();}catch{return 'Sesión iniciada. No se pudo cargar tu perfil; pulsa Volver a intentar.';}
-    });
+    },{login:form.id!=='account-rename'});
   });
-  opener.onclick=openPage;
+  opener.onclick=()=>openPage('profile');
   accounts.onChange(()=>draw());draw();
   void accounts.initialize().then(()=>{restoring=false;draw();if(accounts.signedIn())void accounts.refreshProfile().catch(()=>{});}).catch(()=>{
-    restoring=false;opener.hidden=false;opener.innerHTML='<span class="account-trigger-monogram guest-monogram" aria-hidden="true">T</span><span class="account-trigger-copy"><strong>Mi perfil</strong><small>Conexión pendiente</small></span>';
-    const disconnected=()=>{panel.dataset.view='auth';panel.innerHTML=`<div class="account-empty-shell">${closeButton()}${badge('madera')}<span class="eyebrow">VOLVEREMOS A ENCONTRARNOS</span><h2 id="account-title">La academia está desconectada</h2><p>Recarga para volver a conectar con tu cuenta.</p><p>Continuar como invitado cierra tu cuenta en esta pestaña. Tu sala actual conserva su identidad; las nuevas salas no acumularán XP.</p><button type="button" class="gold-button" id="account-guest">Continuar como invitado</button></div>`;panel.querySelector('.account-close').onclick=closePage;panel.querySelector('#account-guest').onclick=()=>{accounts.forgetStoredSession();globalThis.location.reload();};};
-    opener.onclick=()=>{openPage();disconnected();};if(!panel.hidden)disconnected();
+    restoring=false;connectionFailed=true;draw(true);
   });
   followLocation();
 }

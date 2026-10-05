@@ -6,6 +6,8 @@ Comprobación de solo lectura en `supabase/tests/verificar_comunidad_instalacion
 
 La comunidad amplía las cuentas opcionales de Tesis. El juego como invitado sigue disponible. Amigos, ranking y misiones requieren sesión y la segunda migración de Supabase.
 
+La pantalla de inicio ofrece tres accesos a Amigos, Ranking global y Misiones, además del botón existente de Mi perfil. Los enlaces `#amigos`, `#ranking` y `#misiones` permiten abrir y recargar cada sección directamente; si es necesario iniciar sesión, conservan el destino elegido. Volver al juego restaura el foco y la posición de la portada.
+
 ## Amigos
 
 Cada perfil tiene un código público y estable para compartir. Introducir el código de otra persona envía una solicitud; solo su destinatario puede aceptarla. Ambas personas pueden eliminar una amistad. Se pueden rechazar solicitudes recibidas y cancelar las enviadas. Los nombres pueden repetirse: el código identifica el perfil.

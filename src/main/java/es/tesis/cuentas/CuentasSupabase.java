@@ -18,6 +18,13 @@ public final class CuentasSupabase implements AutoCloseable {
         @Override public String toString() { return "ConfiguracionSupabase[claves ocultas]"; }
     }
     public record Perfil(String nombre, long xp, int nivel, long partidasTerminadas, long victorias) {}
+    public record Amigo(String codigo, String nombre, int nivel) {}
+    public record Comunidad(String codigo, List<Amigo> amigos, List<Amigo> recibidas, List<Amigo> enviadas) {}
+    public record EntradaRanking(long posicion, String codigo, String nombre, int nivel, long xp,
+                                 long victorias, long partidas, boolean yo) {}
+    public record Ranking(String criterio, List<EntradaRanking> entradas, EntradaRanking propia) {}
+    public record Mision(String id, String titulo, long objetivo, long progreso, long xp, boolean completada, boolean reclamada) {}
+    public record Misiones(List<Mision> diarias, List<Mision> semanales, String reinicioDiario, String reinicioSemanal) {}
     public record Participante(int seat, UUID user_id, String display_name, int prestige, boolean winner) {}
 
     private static final Gson JSON = new GsonBuilder().serializeNulls().create();
@@ -161,6 +168,121 @@ public final class CuentasSupabase implements AutoCloseable {
         } catch (RuntimeException e) { throw indisponible(); }
     }
 
+    public Comunidad comunidad(String jwt) { return leerComunidad(rpc(jwt, "comunidad", new JsonObject())); }
+
+    public Comunidad amistad(String jwt, String codigo, String accion) {
+        if (codigo == null || !codigo.matches("[A-Fa-f0-9]{16}"))
+            throw new ExcepcionCuenta(400, "Indica un código de amistad válido.");
+        if (!Set.of("solicitar", "aceptar", "rechazar", "cancelar", "eliminar").contains(accion == null ? "" : accion))
+            throw new ExcepcionCuenta(400, "Acción de amistad no válida.");
+        JsonObject cuerpo = new JsonObject();
+        cuerpo.addProperty("p_codigo", codigo.toUpperCase(Locale.ROOT)); cuerpo.addProperty("p_accion", accion);
+        return leerComunidad(rpc(jwt, "amistad", cuerpo));
+    }
+
+    public Ranking ranking(String jwt, String criterio) {
+        if (!Set.of("xp", "victorias", "partidas").contains(criterio == null ? "" : criterio))
+            throw new ExcepcionCuenta(400, "Criterio de ranking no válido.");
+        JsonObject cuerpo = new JsonObject(); cuerpo.addProperty("p_criterio", criterio);
+        JsonObject dato = rpc(jwt, "ranking", cuerpo);
+        try {
+            if (!criterio.equals(cadena(dato, "criterio", 16))) throw indisponible();
+            List<EntradaRanking> entradas = new ArrayList<>();
+            for (JsonElement fila : lista(dato, "entradas", 50)) entradas.add(leerEntrada(fila.getAsJsonObject()));
+            JsonElement propia = dato.get("propia");
+            if (propia == null) throw indisponible();
+            EntradaRanking personal = propia.isJsonNull() ? null : leerEntrada(propia.getAsJsonObject());
+            if (personal != null && !personal.yo()) throw indisponible();
+            return new Ranking(criterio, List.copyOf(entradas), personal);
+        } catch (RuntimeException e) { throw indisponible(); }
+    }
+
+    public Misiones misiones(String jwt) { return leerMisiones(rpc(jwt, "misiones", new JsonObject())); }
+
+    public Misiones reclamarMision(String jwt, String id) {
+        if (id == null || !id.matches("(diarias|semanales):[a-z0-9]+:[0-9]{4}-[0-9]{2}-[0-9]{2}") || id.length() > 64)
+            throw new ExcepcionCuenta(400, "Identificador de misión no válido.");
+        JsonObject cuerpo = new JsonObject(); cuerpo.addProperty("p_id", id);
+        return leerMisiones(rpc(jwt, "reclamar_mision", cuerpo));
+    }
+
+    private JsonObject rpc(String jwt, String nombre, JsonObject cuerpo) {
+        autenticar(jwt);
+        try { return JsonParser.parseString(pedir("/rest/v1/rpc/" + nombre, "POST", jwt, JSON.toJson(cuerpo), false)).getAsJsonObject(); }
+        catch (ExcepcionCuenta e) { throw e; }
+        catch (RuntimeException e) { throw indisponible(); }
+    }
+
+    private Comunidad leerComunidad(JsonObject dato) {
+        try { return new Comunidad(codigo(dato), amigos(dato, "amigos"), amigos(dato, "recibidas"), amigos(dato, "enviadas")); }
+        catch (RuntimeException e) { throw indisponible(); }
+    }
+    private List<Amigo> amigos(JsonObject dato, String campo) {
+        List<Amigo> resultado = new ArrayList<>();
+        for (JsonElement fila : lista(dato, campo, 100)) {
+            JsonObject amigo = fila.getAsJsonObject();
+            resultado.add(new Amigo(codigo(amigo), cadena(amigo, "nombre", 24), nivel(amigo)));
+        }
+        return List.copyOf(resultado);
+    }
+    private EntradaRanking leerEntrada(JsonObject dato) {
+        long posicion = numero(dato, "posicion"), xp = numero(dato, "xp"), victorias = numero(dato, "victorias"), partidas = numero(dato, "partidas");
+        if (posicion < 1 || victorias > partidas) throw indisponible();
+        return new EntradaRanking(posicion, codigo(dato), cadena(dato, "nombre", 24), nivel(dato), xp, victorias, partidas, booleano(dato, "yo"));
+    }
+    private Misiones leerMisiones(JsonObject dato) {
+        try {
+            String diario = cadena(dato, "reinicioDiario", 64), semanal = cadena(dato, "reinicioSemanal", 64);
+            OffsetDateTime.parse(diario); OffsetDateTime.parse(semanal);
+            return new Misiones(listaMisiones(dato, "diarias"), listaMisiones(dato, "semanales"), diario, semanal);
+        } catch (RuntimeException e) { throw indisponible(); }
+    }
+    private List<Mision> listaMisiones(JsonObject dato, String campo) {
+        List<Mision> resultado = new ArrayList<>();
+        Set<String> ids = new HashSet<>();
+        for (JsonElement fila : lista(dato, campo, 20)) {
+            JsonObject m = fila.getAsJsonObject(); String id = cadena(m, "id", 64);
+            long objetivo = numero(m, "objetivo"), progreso = numero(m, "progreso");
+            boolean completa = booleano(m, "completada"), reclamada = booleano(m, "reclamada");
+            if (!ids.add(id) || objetivo < 1 || completa != (progreso >= objetivo) || (reclamada && !completa)) throw indisponible();
+            resultado.add(new Mision(id, cadena(m, "titulo", 120), objetivo, progreso, numero(m, "xp"), completa, reclamada));
+        }
+        return List.copyOf(resultado);
+    }
+    private static JsonArray lista(JsonObject dato, String campo, int maximo) {
+        JsonArray lista = dato.getAsJsonArray(campo);
+        if (lista == null || lista.size() > maximo) throw indisponible();
+        return lista;
+    }
+    private static String cadena(JsonObject dato, String campo, int maximo) {
+        JsonElement valor = dato.get(campo);
+        if (valor == null || !valor.isJsonPrimitive() || !valor.getAsJsonPrimitive().isString()) throw indisponible();
+        String texto = valor.getAsString();
+        if (texto.isBlank() || texto.length() > maximo || texto.codePoints().anyMatch(Character::isISOControl)) throw indisponible();
+        return texto;
+    }
+    private static String codigo(JsonObject dato) {
+        String codigo = cadena(dato, "codigo", 32);
+        if (!codigo.matches("[A-F0-9]{16}")) throw indisponible();
+        return codigo;
+    }
+    private static int nivel(JsonObject dato) {
+        long nivel = numero(dato, "nivel");
+        if (nivel < 1 || nivel > Integer.MAX_VALUE) throw indisponible();
+        return (int)nivel;
+    }
+    private static long numero(JsonObject dato, String campo) {
+        JsonElement valor = dato.get(campo);
+        if (valor == null || !valor.isJsonPrimitive() || !valor.getAsJsonPrimitive().isNumber()
+                || !valor.getAsString().matches("[0-9]+")) throw indisponible();
+        return Long.parseLong(valor.getAsString());
+    }
+    private static boolean booleano(JsonObject dato, String campo) {
+        JsonElement valor = dato.get(campo);
+        if (valor == null || !valor.isJsonPrimitive() || !valor.getAsJsonPrimitive().isBoolean()) throw indisponible();
+        return valor.getAsBoolean();
+    }
+
     public void registrarResultado(UUID matchId, String hash, Instant completedAt, List<Participante> participantes) {
         exigirHabilitado();
         Objects.requireNonNull(matchId); Objects.requireNonNull(hash); Objects.requireNonNull(completedAt);
@@ -191,6 +313,21 @@ public final class CuentasSupabase implements AutoCloseable {
             if (respuesta.body().length > 65536) throw indisponible();
             int estado = respuesta.statusCode();
             if (!privilegiada && (estado == 401 || estado == 403)) throw invalida();
+            if (!privilegiada && ruta.startsWith("/rest/v1/rpc/") && estado == 400) {
+                // Únicamente errores de negocio conocidos: nunca publicar hints, detalles o secretos remotos.
+                try {
+                    JsonObject error = JsonParser.parseString(new String(respuesta.body(), java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
+                    String mensaje = error.get("message").getAsString();
+                    if ("22023".equals(error.get("code").getAsString()) && Set.of(
+                            "Código o acción de amistad inválidos", "No existe una cuenta con ese código",
+                            "No puedes agregarte a ti mismo", "Se ha alcanzado el límite de cien amistades y solicitudes",
+                            "Solo el receptor puede aceptar una solicitud", "No puedes rechazar esta solicitud",
+                            "No puedes cancelar esta solicitud", "La amistad aún no ha sido aceptada",
+                            "Criterio de ranking inválido", "Misión inválida", "La misión no existe o ha caducado",
+                            "La misión todavía no está completada").contains(mensaje)) throw new ExcepcionCuenta(400, mensaje + ".");
+                } catch (ExcepcionCuenta e) { throw e; }
+                catch (RuntimeException e) { /* Respuesta desconocida: fallo genérico sin datos remotos. */ }
+            }
             if (privilegiada && estado >= 400 && estado < 500 && estado != 408 && estado != 429)
                 throw new ExcepcionCuenta(estado, "No se pudo registrar el resultado. Revisa la configuración del servicio.");
             if (estado < 200 || estado >= 300) throw indisponible();

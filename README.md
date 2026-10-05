@@ -1,5 +1,10 @@
 # Tesis
 
+Amigos, ranking global y misiones diarias/semanales amplían las cuentas opcionales:
+solicitudes por código, clasificaciones por XP/victorias/partidas y recompensas
+de XP verificadas a partir de resultados del servidor. Instalación de la nueva
+migración y funcionamiento en [Comunidad y misiones](docs/COMUNIDAD_MISIONES.md).
+
 La versión 2.1.0 renueva la portada, sala de espera, mesa y diálogos con una
 estética de academia nocturna, arte propio y animaciones decorativas accesibles.
 «Mi perfil» tiene acceso visible, carnet de investigador, estadísticas y rangos.

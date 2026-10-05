@@ -1,6 +1,8 @@
 .fx { position:fixed; pointer-events:none; z-index:90; }
 .fx-flight { width:clamp(82px,10vw,140px); filter:drop-shadow(0 0 22px #d7b66baa); }
 .fx-flight img { width:100%; display:block; border-radius:7px; }
+.fx-flight.fx-complete-card{position:fixed;aspect-ratio:2/3;}
+.fx-flight.fx-complete-card .card-art{width:87%;}
 .fx-coin { width:28px; }
 .resource b { display:inline-block; }
 .fx-label { transform:translateX(-50%); max-width:min(400px,85vw); padding:12px 20px; border:1px solid #d7b66baa; background:#101d2ef2; color:#ffe4a8; border-radius:5px; font:600 clamp(15px,1.3vw,20px) Georgia,serif; text-align:center; box-shadow:0 8px 28px #0008,0 0 22px #e4b85a33; }

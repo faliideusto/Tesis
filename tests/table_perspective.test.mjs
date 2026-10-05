@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFile} from 'node:fs/promises';
+
+const module = new vm.SourceTextModule(await readFile(new URL('../src/main/resources/static/js/table-perspective.js',import.meta.url),'utf8'));
+await module.link(() => {throw new Error('Este módulo de presentación no depende del motor');});
+await module.evaluate();
+const {studySkew} = module.namespace;
+const table = {left:0,top:0,width:1800,height:900};
+const card = (x,y) => ({left:x-60,top:y-70,width:120,height:140});
+assert.equal(studySkew(card(900,300),table),0);
+assert(studySkew(card(350,300),table)<0);
+assert(studySkew(card(1450,300),table)>0);
+assert(Math.abs(studySkew(card(350,300),table)+studySkew(card(1450,300),table))<1e-10);
+assert(studySkew(card(350,300),table)<studySkew(card(600,300),table),'Dos cartas de la misma fila siguen rayos distintos');
+assert(Math.abs(studySkew(card(350,700),table))<Math.abs(studySkew(card(350,300),table)),'La dirección también depende de la profundidad');
+const shifted = {left:100,top:-400,width:1800,height:900};
+assert.equal(studySkew(card(450,-100),shifted),studySkew(card(350,300),table),'El scroll no cambia el plano de una carta');
+assert.equal(studySkew(card(700,600),{left:0,top:0,width:3600,height:1800}),studySkew(card(350,300),table),'El plano escala con el tablero');
+assert(Math.abs(studySkew(card(-100000,300),table))<=18);
+assert.equal(studySkew(card(350,300),{...table,height:0}),0);
+console.log('Perspectiva: posición individual, simetría, profundidad, scroll, escala y límites verificados');

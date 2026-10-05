@@ -1,5 +1,5 @@
 import {img} from './dom.js';
-import {roleCard} from './cards.js';
+import {ideaCardContents, roleCard} from './cards.js';
 import {showActivity} from './feedback.js';
 
 // One cancellable lifetime for every visual operation. No game state is mutated here.
@@ -7,6 +7,10 @@ const animations = new Set(), nodes = new Set(), hidden = new Map();
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 let epoch = 0;
 let turnSequences = 0;
+// Kept across cancellation so a resize/background cycle cannot replay a landing.
+// Initial boards establish a new room's watermark without staging its history.
+let placementNumber = 0;
+const placementEpochs = new Map();
 const timing={flight:900, label:1800, glow:950, turn:3600, publication:2800, third:3400};
 const turnFrames=[{opacity:0,transform:'translate(-50%,-16px) scale(.96)'},
   {opacity:1,transform:'translate(-50%,0) scale(1)',offset:.12},
@@ -55,8 +59,11 @@ export function resetEffects() {
   nodes.clear(); restore();
 }
 export function glow(element, color='#e6c578') {
-  return animate(element,[{boxShadow:`0 0 0 1px ${color}, 0 0 30px ${color}88`,transform:'scale(1.025)'},
-    {boxShadow:'0 0 0 transparent',transform:'scale(1)'}],timing.glow);
+  // Table cards already have a composed CSS perspective, tilt and hover lift.
+  // Their existing glow remains a light effect; only the outer slot may move.
+  const tableCard=element?.matches?.('.table-study');
+  return animate(element,[{boxShadow:`0 0 0 1px ${color}, 0 0 30px ${color}88`,...(tableCard?{}:{transform:'scale(1.025)'})},
+    {boxShadow:'0 0 0 transparent',...(tableCard?{}:{transform:'scale(1)'})}],timing.glow);
 }
 async function progressTo(element, value) {
   if (!element || value == null) return;
@@ -83,11 +90,11 @@ function particles(anchor, large=false, tone='gold') {
       {opacity:0,transform:`translate(${Math.cos(angle)*radius}px,${Math.sin(angle)*radius}px) rotate(${i*35}deg)`}],large?2600:1500);
   }));
 }
-async function flight(art, source, destination, {coin=false, replace=false, ceremonial=false, duration=timing.flight, tone='gold'}={}) {
+async function flight(art, source, destination, {card=null, coin=false, replace=false, ceremonial=false, duration=timing.flight, tone='gold'}={}) {
   const from=rect(source), to=rect(destination);
   if (replace) conceal(source);
-  const n=node(`fx-flight ${coin?'fx-coin':''} ${ceremonial?'fx-ceremonial':''} fx-${tone}`);
-  n.innerHTML=img(art); n.style.left=`${from.x}px`; n.style.top=`${from.y}px`;
+  const n=node(`fx-flight ${card?'game-card idea-card fx-complete-card':''} ${coin?'fx-coin':''} ${ceremonial?'fx-ceremonial':''} fx-${tone}`);
+  n.innerHTML=card ? ideaCardContents(card) : img(art); n.style.left=`${from.x}px`; n.style.top=`${from.y}px`;
   const dx=to.x-from.x, dy=to.y-from.y;
   const cx=innerWidth/2-from.x, cy=innerHeight*.43-from.y;
   const frames=ceremonial ? [
@@ -100,13 +107,13 @@ async function flight(art, source, destination, {coin=false, replace=false, cere
     {opacity:1,transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) rotate(0) scale(${coin?.7:1})`}];
   await ephemeral(n,frames,duration);
 }
-function publication(art, source, destination, third) {
+function publication(card, source, destination, third) {
   for(const n of nodes) if(n.className.includes('fx-banner')) n.remove();
   const duration=third?timing.third:timing.publication;
   const center={getBoundingClientRect:()=>({left:innerWidth/2,top:innerHeight*.43,width:1,height:1,right:innerWidth/2+1,bottom:innerHeight*.43+1})};
   const veil=node('fx-veil');
   const seal=node('fx-publication-seal',third?'TERCER ARTÍCULO · PUBLICADO':'PUBLICADO');
-  const tasks=[flight(art,source,destination,{replace:true,ceremonial:true,duration}),
+  const tasks=[flight(card.arte,source,destination,{card,replace:true,ceremonial:true,duration}),
     ephemeral(veil,[{opacity:0},{opacity:1,offset:.2},{opacity:1,offset:.75},{opacity:0}],duration),
     ephemeral(seal,[{opacity:0,transform:'translate(-50%,12px) scale(1.2)'},{opacity:1,transform:'translate(-50%,0) scale(1)',offset:.3},
       {opacity:1,offset:.8},{opacity:0,transform:'translate(-50%,-8px) scale(1)'}],duration)];
@@ -245,6 +252,7 @@ async function openTurn(event, state) {
 
 export async function transition(before, after) {
   const events=freshEvents(before,after);
+  for(const e of events) if(e.tipo==='accion.iniciar_estudio') placementEpochs.set(e.numero,epoch);
   // A background tab keeps its last painted board until it can show the verdict.
   // Initial loads still skip history because freshEvents(null, ...) is empty.
   if(events.some(e=>['fase.turno','turno.vetado'].includes(e.tipo))) await whenVisible();
@@ -294,7 +302,7 @@ export async function transition(before, after) {
       if (e.tipo==='accion.iniciar_estudio' && nextStudy) {
         const card=e.actor===after.yo ? before.mano.find(c=>c.nombre===nextStudy.carta.nombre) : null;
         const source=card ? document.querySelector(`#hand [data-index="${card.indice}"]`) : hand(e.actor,before);
-        tasks.push(flight(nextStudy.carta.arte,source,e.actor===after.yo?document.getElementById('studies'):actor,{replace:!!card}));
+        tasks.push(flight(nextStudy.carta.arte,source,e.actor===after.yo?document.getElementById('studies'):actor,{card:nextStudy.carta,replace:!!card}));
       }
       if (['accion.trabajar','habilidad.pre_doctoral'].includes(e.tipo)) {
         const predoc=e.tipo==='habilidad.pre_doctoral';
@@ -306,8 +314,8 @@ export async function transition(before, after) {
         const third=nextPlayer.publicados>=3 && before.jugadores.find(p=>p.nombre===owner)?.publicados<3
           && visibleEvents.filter(item=>item.publicacion && item.actor===e.actor).at(-1)===e;
         const destination=third ? document.querySelector('.table-activity') : owner===after.yo
-          ? document.querySelector('#studies .publications h3') : actor;
-        tasks.push(publication(nextStudy.carta.arte,study(owner,e.estudio),destination,third));
+          ? document.querySelector('#studies .publications') : actor;
+        tasks.push(publication(nextStudy.carta,study(owner,e.estudio),destination,third));
         tasks.push(floating(`+${nextStudy.carta.prestigio + (nextStudy.prestigioExtra || 0)} prestigio`,player(owner,before)));
       }
       if (identities[e.tipo]) {
@@ -329,11 +337,40 @@ export function settled(before, after) {
   document.getElementById('local')?.classList.toggle('fx-active',active && after.actual===after.yo);
   for (const n of document.querySelectorAll('#board .rival')) n.classList.toggle('fx-active',active && n.dataset.player===after.actual);
   const events=freshEvents(before,after);
+  const previousPlacement=placementNumber;
+  placementNumber=Math.max(placementNumber,after.eventos.at(-1)?.numero || 0);
+  if(!before) {placementNumber=after.eventos.at(-1)?.numero || 0;placementEpochs.clear();}
   for (const e of events) {
+    if(e.tipo==='accion.iniciar_estudio' && e.numero>previousPlacement && e.estudio!=null
+      && (!placementEpochs.has(e.numero) || placementEpochs.get(e.numero)===epoch)) {
+      const previous=before.jugadores.find(p=>p.nombre===e.actor)?.estudios;
+      const next=after.jugadores.find(p=>p.nombre===e.actor)?.estudios.find(s=>s.indice===e.estudio);
+      // An existing article changing status is never a newly placed card.
+      if(next && previous && !previous.some(s=>s.indice===e.estudio)) {
+        const destination=[...document.querySelectorAll('#board .table-study[data-player][data-index]')]
+          .find(n=>n.dataset.player===e.actor && Number(n.dataset.index)===e.estudio);
+        const slot=destination?.closest('.table-study-slot');
+        if(slot) void landStudy(slot).catch(()=>{});
+      }
+    }
     if (e.estudio != null) void glow(study(e.objetivo || e.actor,e.estudio));
     if (e.cantidad>0 && e.tipo!=='accion.trabajar') void glow(player(e.actor,after)?.querySelector('.resources .resource b'));
     if (e.robo && e.actor===after.yo) void glow(document.querySelector('#hand .game-card:last-child'));
   }
+  for(const number of placementEpochs.keys()) if(number<=placementNumber) placementEpochs.delete(number);
+}
+function landStudy(slot) {
+  // Only the outer slot moves: the card retains its CSS perspective and hover.
+  // Two decreasing rebounds and a tightening shadow suggest a light paper card.
+  return animate(slot,[
+    {transform:'translate3d(0,-22px,0) scale(1.008)',filter:'drop-shadow(0 18px 12px #0005)',easing:'ease-in'},
+    {transform:'translate3d(0,0,0) scale(1)',filter:'drop-shadow(0 2px 2px #0009)',offset:.38,easing:'ease-out'},
+    {transform:'translate3d(0,-4px,0) scale(1.002)',filter:'drop-shadow(0 7px 5px #0007)',offset:.55,easing:'ease-in'},
+    {transform:'translate3d(0,0,0) scale(1)',filter:'drop-shadow(0 2px 2px #0009)',offset:.71,easing:'ease-out'},
+    {transform:'translate3d(0,-1.5px,0) scale(1)',filter:'drop-shadow(0 3px 3px #0008)',offset:.82,easing:'ease-in'},
+    {transform:'translate3d(0,0,0) scale(1)',filter:'drop-shadow(0 1px 1px #0006)',offset:.93},
+    {transform:'translate3d(0,0,0) scale(1)',filter:'drop-shadow(0 0 0 #0000)'}
+  ],720,false,'linear');
 }
 export function victory() {
   void animate(document.querySelector('#modal .final-result'),[{opacity:0,transform:'translateY(20px) scale(.94)'},{opacity:1,transform:'translateY(0) scale(1)'}],1200);

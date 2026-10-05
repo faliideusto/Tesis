@@ -13,7 +13,8 @@ export async function runEffectsTests(root) {
     class Element {
       constructor(name='') {this.name=name; this.style={visibility:''}; this.dataset={}; this.isConnected=true; this.classList={toggle(){}};}
       setAttribute() {} removeAttribute() {}
-      closest() {return null;}
+      matches(selector) {return this===card && selector==='.table-study';}
+      closest(selector) {return this===card && selector==='.table-study-slot' ? slot : null;}
       getBoundingClientRect() {return {left:10,top:20,width:100,height:80,bottom:100,right:110};}
       querySelector(selector) {return selector.includes('resource') || selector==='.ethics-review' || selector==='button' ? counter : null;}
       append(...children) {nodes.push(...children);}
@@ -22,10 +23,11 @@ export async function runEffectsTests(root) {
         calls.push({element:this,frames,options});
         let resolve;
         const finished=hold ? new Promise(r=>resolve=r) : Promise.resolve();
-        const a={finished,finish(){resolve?.();},cancel(){resolve?.();}}; pending.push(a); return a;
+        const a={finished,cancelled:false,finish(){resolve?.();},cancel(){this.cancelled=true;resolve?.();}}; pending.push(a); return a;
       }
     }
     const local=new Element('local'), rival=new Element('rival'), counter=new Element('counter'), card=new Element('study');
+    const slot=new Element('table-study-slot');
     rival.dataset.player='Rival'; card.dataset={player:'Rival',index:'0'};
     const hand=new Element('hand');
     const document={hidden:false,body:{append(n){nodes.push(n);}},createElement(){return new Element();},
@@ -36,12 +38,12 @@ export async function runEffectsTests(root) {
     const context=vm.createContext({document,innerWidth:390,innerHeight:844,matchMedia:()=>({matches:reduce}),
       performance:{now:()=>0},requestAnimationFrame:fn=>fn(600),window:{addEventListener(name,fn){listeners[name]=fn;}}});
     const mod=new vm.SourceTextModule(source,{context});
-    const dom=new vm.SourceTextModule('export const img = path => `<img src="${path}">`; export const esc = value => String(value);', {context});
+    const dom=new vm.SourceTextModule('export const img = (path, cls="") => `<img src="${path}" class="${cls}">`; export const esc = value => String(value);', {context});
     const cards=new vm.SourceTextModule(await readFile(`${root}/src/main/resources/static/js/cards.js`,'utf8'), {context});
     const feedback=new vm.SourceTextModule('export function showActivity() {}', {context});
     await mod.link(specifier=>specifier==='./cards.js' ? cards : specifier==='./feedback.js' ? feedback : dom);
     await mod.evaluate();
-    return {fx:mod.namespace,nodes,calls,pending,document,listeners,card};
+    return {fx:mod.namespace,nodes,calls,pending,document,listeners,card,slot};
   }
   const before={yo:'Yo',fase:'TURNO_JUGADOR',actual:'Yo',ronda:1,mano:[],eventos:[{numero:10}],
     jugadores:[{nombre:'Yo',estudios:[]},{nombre:'Rival',publicados:0,estudios:[]}]};
@@ -192,6 +194,74 @@ export async function runEffectsTests(root) {
     assert(nodes.some(n=>n.textContent===(tipo==='habilidad.pre_doctoral'?'+1 trabajo · Pre-Doctoral':'+1 trabajo')));
     assert.equal(nodes.some(n=>n.textContent?.includes('Pre-Doctoral')),tipo==='habilidad.pre_doctoral');
     count++;
+  }
+  const started=()=>({...after(event('accion.iniciar_estudio',{estudio:0})),jugadores:[before.jugadores[0],
+    {nombre:'Rival',publicados:0,estudios:[{indice:0,trabajo:0,carta:{nombre:'Idea pública',arte:'idea.webp'}}]}]});
+  {
+    const {fx,calls,slot,card}=await setup();const next=started();
+    await fx.transition(before,next);
+    assert(!calls.some(c=>c.element===slot),'El destino todavía no se ha renderizado durante transition');
+    fx.settled(before,next);
+    const landings=()=>calls.filter(c=>c.element===slot);
+    assert.equal(landings().length,1);assert.equal(landings()[0].options.duration,720);
+    const frames=landings()[0].frames;
+    assert(frames[0].transform.includes('-22px'));assert(frames[2].transform.includes('-4px'));
+    assert(frames[4].transform.includes('-1.5px'));assert(frames.every(f=>f.filter.includes('drop-shadow')));
+    const cardGlow=calls.find(c=>c.element===card);
+    assert(cardGlow && cardGlow.frames.every(f=>!f.transform),'El brillo deja intactas perspectiva, inclinación y hover CSS de la carta');
+    assert(cardGlow.frames.some(f=>f.boxShadow),'El brillo existente de la carta se conserva');
+    fx.settled(before,next);fx.settled(next,next);fx.resetEffects();fx.settled(before,next);
+    assert.equal(landings().length,1,'Ni polling duplicado ni cancelación repiten el aterrizaje');count++;
+  }
+  {
+    const {fx,calls,slot}=await setup({reduce:true});fx.settled(before,started());
+    const landing=calls.find(c=>c.element===slot);assert(landing);
+    assert.equal(landing.options.duration,180);assert(landing.frames.every(f=>!f.transform&&!f.filter));count++;
+  }
+  {
+    const {fx,calls,slot,document}=await setup();const next=started();
+    fx.settled(null,next);fx.settled(before,next);
+    assert(!calls.some(c=>c.element===slot),'La reconexión inicial omite historial y lo deduplica');
+    const newer={...next,eventos:[...next.eventos,event('accion.iniciar_estudio',{numero:12,estudio:1})]};
+    document.hidden=true;fx.settled(next,newer);assert(!calls.some(c=>c.element===slot));count++;
+  }
+  {
+    const {fx,calls,slot,card}=await setup();const next=started();
+    card.dataset.player='Yo';fx.settled(before,next);
+    assert(!calls.some(c=>c.element===slot),'El índice coincidente de otro jugador no es el destino');
+    card.dataset.player='Rival';card.dataset.index='1';fx.resetEffects();fx.settled(null,before);fx.settled(before,next);
+    assert(!calls.some(c=>c.element===slot),'Una carta de otro índice tampoco aterriza');
+    card.dataset.index='0';fx.settled(null,before);fx.settled({...before,jugadores:next.jugadores},next);
+    assert(!calls.some(c=>c.element===slot),'Los estudios existentes no se colocan otra vez');count++;
+  }
+  {
+    const {fx,calls,slot,pending}=await setup({hold:true});const next=started();
+    fx.settled(before,next);const index=calls.findIndex(c=>c.element===slot);
+    assert(index>=0);fx.resetEffects();await tick();
+    assert(pending[index].cancelled,'resetEffects cancela la animación del wrapper');
+    assert.equal(slot.style.transform,undefined,'No quedan transformaciones inline tras cancelar');count++;
+  }
+  {
+    const {fx,calls,slot,document}=await setup();const next=started();document.hidden=true;
+    fx.settled(before,next);document.hidden=false;fx.settled(before,next);
+    assert(!calls.some(c=>c.element===slot),'Una colocación recibida en segundo plano no se reproduce al volver');count++;
+  }
+  {
+    const {fx,calls,slot}=await setup({hold:true});const next=started();
+    const transitioning=fx.transition(before,next);fx.resetEffects();await transitioning;
+    fx.settled(before,next);
+    assert(!calls.some(c=>c.element===slot),'Cancelar el vuelo impide un aterrizaje tardío de la misma transición');count++;
+  }
+  for (const legendaria of [false,true]) {
+    const {fx,nodes}=await setup();const next=started();
+    next.jugadores[1].estudios[0].carta={nombre:legendaria?'Patente':'Artículo',arte:legendaria?'patente.webp':'foto.webp',marco:legendaria?'patente.webp':'marco.webp',legendaria,coste:2,trabajo:3,prestigio:4};
+    await fx.transition(before,next);
+    const flying=nodes.find(n=>n.className?.includes('fx-complete-card'));
+    assert(flying,'El vuelo lleva una carta completa');
+    assert.equal((flying.innerHTML.match(/class="card-frame"/g)||[]).length,1);
+    assert.equal((flying.innerHTML.match(/class="card-art"/g)||[]).length,legendaria?0:1);
+    assert.equal((flying.innerHTML.match(/patente.webp/g)||[]).length,legendaria?1:0,'Patente usa una única imagen integrada');
+    assert(flying.innerHTML.includes('card-stats'));count++;
   }
   return `${count} pruebas de efectos superadas`;
 }

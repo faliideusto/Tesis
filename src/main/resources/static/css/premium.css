@@ -47,19 +47,22 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline-color:#f3c
 
 /* All articles stay visible; each lane scales independently with its count. */
 .board .academy-tray:before{background:none;box-shadow:none}
-.article-support{background:linear-gradient(145deg,#142b3aeF,#091826f5);border:1px solid #b094706b;border-radius:6px;box-shadow:inset 0 1px #e2d2b11a,0 8px 18px #0005}
-.article-heading{background:linear-gradient(90deg,#213b4cbb,#2a4153bb);border:0;border-bottom:1px solid #b69b716b;border-radius:3px;box-shadow:none}
-.article-group h3{font-family:var(--ui);font-weight:500;color:#e9ddc8;letter-spacing:.035em;text-shadow:none}
-.publications .article-heading{background:linear-gradient(90deg,#70543938,#99724438);border-bottom-color:#d1ac7b8c}
-.publications h3{color:#edd3a9}
-.article-placeholder{background:linear-gradient(145deg,#07152188,#14273544);border:1px dashed #b69b7045;box-shadow:inset 0 0 18px #03101a66;border-radius:4px;color:#c0a58380}
-.article-placeholder>span{font:300 24px var(--ui);opacity:.6}
+.board .article-support{background:none;border:1px solid transparent;border-radius:0;box-shadow:none;padding-top:37px}
+.board .article-support>.sr-only{padding:0;}
+.board .article-heading{background:none;border:0;border-radius:0;box-shadow:none}
+.board .article-group h3{font-family:var(--ui);font-weight:600;color:#e9ddc8;letter-spacing:.09em;text-shadow:0 1px 2px #000,0 2px 6px #000,0 0 12px #07131ee6}
+.board .publications .article-heading{background:none;border:0}
+.board .publications h3{color:#edd3a9}
+.board .article-placeholder{background:none;border:1px solid transparent;box-shadow:none;border-radius:0;color:#ead4ae50}
+.board .article-placeholder>span{font:300 18px var(--ui);opacity:.75;text-shadow:0 1px 2px #0008}
 .board .article-group{--article-count:2;--card-ceiling:160px;--article-gap:min(7px,calc(16cqw / var(--article-count)));--display-card:min(var(--card-ceiling),calc((100cqw - 14px - (var(--article-count) - 1)*var(--article-gap))/var(--article-count)))}
 .board .article-scroll{overflow:visible;scrollbar-width:none}
 .board .article-track{width:100%;min-width:0;gap:var(--article-gap);justify-content:center}
 .board .table-study-status{font-size:clamp(6px,calc(var(--display-card)/8),12px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(min-width:1000px) and (min-height:650px){
  .board .article-group{--card-ceiling:130px}
+ /* Reserve the space above the fixed hand and action dock for the local cards. */
+ .board #studies .article-group{--card-ceiling:clamp(60px,calc(30svh - 6.23vw - 62px),130px)}
  .board .rival-seat .article-group{--card-ceiling:clamp(85px,12svh,130px)}
  .board[data-players="4"] .rival-seat .article-group,.board[data-players="5"] .rival-seat .article-group{--card-ceiling:clamp(72px,9.5svh,108px)}
  /* Keep the side academies outside the local research lanes. */
@@ -69,11 +72,38 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline-color:#f3c
  .board[data-players="4"] .decks{top:max(39svh,calc(6svh + 8.213vw + clamp(108px,14.25svh,162px) + 50px))}
  .board[data-players="3"] .decks,.board[data-players="5"] .decks{width:min(calc(12vw + 24px),300px)}
 }
-.board .table-study-status{font-family:var(--ui);font-weight:500;color:#d8c5a4;text-shadow:0 1px 3px #000;letter-spacing:.02em}
-.table-study-slot progress{height:3px;border-radius:99px;background:#05111d}
+.board .table-study-status{font-family:var(--ui);font-weight:600;color:#e7d6b8;text-shadow:0 1px 2px #000,0 2px 5px #000,0 0 8px #07131e;letter-spacing:.02em}
+.board .table-study-status>span{display:block;line-height:1.2}
+.board .publications .table-study-status{font-size:clamp(6px,calc(var(--display-card)/9),11px);color:#efd09b}
+/* The card itself lies on marble. The slot remains free for one-shot landings. */
+.board .article-group{--study-skew:0deg;--study-face-scale:.8;--study-face-width:calc(var(--display-card)*var(--study-face-scale))}
+.board #studies .development{--study-skew:-6deg;--study-face-scale:.9}
+.board #studies .publications{--study-skew:6deg;--study-face-scale:.9}
+.board .article-group:has(.article-track>.table-study-slot:only-child){--study-face-width:min(var(--card-ceiling),calc((100cqw - 14px)*.8))}
+.board .table-study-slot{height:calc(var(--study-face-width)*1.13 + 30px)}
+.board .article-placeholder{height:calc(var(--study-face-width)*1.13)}
+.board .table-study.game-card{width:var(--study-face-width);height:calc(var(--study-face-width)*1.5);margin-inline:auto;transform:translateY(-23%) perspective(900px) rotateX(40deg) skewX(var(--study-skew)) rotateZ(var(--study-angle,0deg));transform-origin:50% 75%;border:0;box-shadow:0 1px 1px #291908bd,0 2px 3px #0009;filter:none;transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}
+.board .table-study.game-card:hover,.board .table-study.game-card:focus-visible{transform:translateY(calc(-23% - 2px)) perspective(900px) rotateX(38deg) skewX(var(--study-skew)) rotateZ(var(--study-angle,0deg));box-shadow:0 1px 1px #291908bd,0 3px 4px #0008;filter:brightness(1.05)}
+@media(min-width:1000px) and (min-height:650px){
+ .board .rivals[data-count="2"]>.rival-seat:first-child .article-group,
+ .board .rivals[data-count="3"]>.rival-seat:nth-child(2) .article-group,
+ .board .rivals[data-count="4"]>.rival-seat:nth-child(odd) .article-group{--study-skew:-13deg}
+ .board .rivals[data-count="2"]>.rival-seat:last-child .article-group,
+ .board .rivals[data-count="3"]>.rival-seat:nth-child(3) .article-group,
+ .board .rivals[data-count="4"]>.rival-seat:nth-child(even) .article-group{--study-skew:13deg}
+ .board .rivals[data-count="1"] .article-group,
+ .board .rivals[data-count="3"]>.rival-seat:first-child .article-group{--study-face-scale:.98}
+}
+@media(max-width:999px),(max-height:649px){
+ .board .rival-seat .article-group{--study-face-scale:.9;--study-skew:-8deg}
+ .board .rival-seat:nth-child(even) .article-group{--study-skew:8deg}
+}
+.board .table-study.game-card:focus-visible{outline:2px solid #f8dfb0;outline-offset:3px}
+.board.is-projecting .table-study.game-card{transition:none}
+.table-study-slot progress{height:3px;border-radius:99px;background:#05111d;box-shadow:0 1px 2px #000a}
 .table-study-slot progress::-webkit-progress-value{background:linear-gradient(90deg,#6cacae,#b7d6cd)}
 .table-study-slot progress::-moz-progress-bar{background:linear-gradient(90deg,#6cacae,#b7d6cd)}
-.board .table-study.published{box-shadow:0 0 0 1px #d8b58350;border-radius:5px}
+.board .table-study.published{border-radius:5px}
 .board .table-activity{border:1px solid #a78d6b66;border-radius:6px;background:linear-gradient(135deg,#1d3449ed,#102438f5);box-shadow:0 5px 18px #0005,inset 0 1px #fff1;padding:10px 14px}
 .board .activity-move strong{font-family:var(--serif);font-weight:400;color:#f6e5c8}
 .board .activity-move p{color:#c2c9cb}
@@ -192,6 +222,9 @@ dialog .study-row.published{border-color:#ac855a}
  .board .action-label{font-size:11px}
  .board .actions.single-action{height:48px}
 }
+@media(min-width:1000px) and (max-width:1199px) and (min-height:650px){
+ .board #studies .article-group{--card-ceiling:clamp(60px,calc(30svh - 6.23vw - 82px),130px)}
+}
 @media(max-width:999px),(max-height:649px){
  .board,.board[data-players]{background-image:url('/assets/Tesis-assets/tablero/fondo_partida_4players.webp')}
  .board .board-header{border:0}
@@ -224,4 +257,5 @@ dialog .study-row.published{border-color:#ac855a}
 }
 @media(prefers-reduced-motion:reduce){
  .board .utility>button{transition:none}
+ .board .table-study.game-card{transition:none}
 }

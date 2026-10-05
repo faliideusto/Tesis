@@ -1,6 +1,7 @@
 import {api} from './api.js';
 import {accounts} from './auth.js';
 import {initAccountPanel, progressText} from './account-panel.js';
+import {homeCommunity} from './home-community.js';
 import {img, esc} from './dom.js';
 import {board} from './board.js';
 import {ideaCard, ideaCardContents, roleCard} from './cards.js';
@@ -17,10 +18,10 @@ let timer, screen = 'home', generation = 0;
 const app = document.getElementById('app');
 const connection = document.createElement('div');
 const homeMessage = 'Reúne a tu academia. Cada persona juega desde su dispositivo, con su mano privada y una mesa compartida.';
-const academyIntro = () => `<div class="academy-brand">${img('Logo/logo_tesis.webp','home-logo','Tesis')}<span>EL JUEGO DE LA INVESTIGACIÓN</span></div><span class="eyebrow"><i aria-hidden="true"></i> La diferencia está en la ciencia</span>
+const academyIntro = (community=false) => `<div class="academy-brand">${img('Logo/logo_tesis.webp','home-logo','Tesis')}<span>EL JUEGO DE LA INVESTIGACIÓN</span></div><span class="eyebrow"><i aria-hidden="true"></i> La diferencia está en la ciencia</span>
     <h1>Construye tu<br><em>legado científico.</em></h1><p>${homeMessage}</p>
     <div class="home-features"><span><strong>3–5</strong> jugadores</span><span><strong>Una</strong> mesa compartida</span><span><strong>Tu</strong> mano privada</span></div>
-    <div class="academy-showcase" aria-label="Personajes de Tesis"><div class="showcase-cards" aria-hidden="true">${img('personajes/02_estadistico.webp','showcase-card showcase-card-one')}${img('personajes/04_investigador_principal.webp','showcase-card showcase-card-two')}${img('personajes/05_decana.webp','showcase-card showcase-card-three')}</div><div class="showcase-caption"><span class="eyebrow">CADA PERSONAJE, UNA ESTRATEGIA</span><p>Una academia.<br>Muchas ambiciones.</p><span class="showcase-rule" aria-hidden="true"></span></div></div>`;
+    ${community?homeCommunity():''}<div class="academy-showcase" aria-label="Personajes de Tesis"><div class="showcase-cards" aria-hidden="true">${img('personajes/02_estadistico.webp','showcase-card showcase-card-one')}${img('personajes/04_investigador_principal.webp','showcase-card showcase-card-two')}${img('personajes/05_decana.webp','showcase-card showcase-card-three')}</div><div class="showcase-caption"><span class="eyebrow">CADA PERSONAJE, UNA ESTRATEGIA</span><p>Una academia.<br>Muchas ambiciones.</p><span class="showcase-rule" aria-hidden="true"></span></div></div>`;
 connection.className='network-status'; connection.setAttribute('role','status'); connection.hidden=true;
 document.body.append(connection);
 function connectionStatus(text='') { connection.textContent=text; connection.hidden=!text; }
@@ -45,7 +46,7 @@ function home() {
   accountOpener.classList.remove('in-board');document.body.append(accountOpener,progress);
   progress.hidden=true;
   app.innerHTML = `<section class="home-screen"><div class="academy-atmosphere" aria-hidden="true"><span></span><span></span><span></span><span></span></div><nav class="home-nav" aria-label="Navegación principal"><span class="home-nav-wordmark">TESIS <small>· EDICIÓN 2.1.0</small></span><div class="home-nav-actions"><button class="text-button" data-command="help">Cómo jugar <span aria-hidden="true">↗</span></button><div class="home-account-slot"></div></div></nav>
-    <div class="home-copy">${academyIntro()}</div>
+    <div class="home-copy">${academyIntro(true)}</div>
     <section class="setup-panel" aria-labelledby="academy-access-title"><div class="setup-heading"><span class="eyebrow">LAS PUERTAS ESTÁN ABIERTAS</span><span class="setup-seal" aria-hidden="true">T</span></div><h2 id="academy-access-title">Tu próxima gran<br>idea empieza aquí.</h2><p>Crea una mesa e invita a tu academia,<br>o entra con el código de tus amigos.</p>
       <form id="create-room" class="room-form"><label for="create-name">Tu nombre<input id="create-name" name="nombre" maxlength="24" required autocomplete="nickname" placeholder="¿Cómo te llamas?"></label><button class="gold-button" type="submit">Crear una sala <span aria-hidden="true">→</span></button></form>
       <div class="room-divider"><span>¿YA TIENES UNA INVITACIÓN?</span></div>

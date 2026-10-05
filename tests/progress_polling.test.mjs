@@ -11,6 +11,7 @@ const context=vm.createContext({document,setTimeout,clearTimeout,console});
 const exports={
   api:{identity:()=>null},accounts:{signedIn:()=>true,refreshProfile:async()=>{profileReads++;}},
   initAccountPanel:()=>{},progressText:p=>p?.estado==='CONFIRMADA'?`Guardado ${p.xp}`:p?.estado || '',
+  homeCommunity:()=>'',
   img:()=>'',esc:String,board:()=>{},ideaCard:()=>{},ideaCardContents:()=>'',roleCard:()=>{},studies:()=>{},articleChoices:()=>{},
   dialog:()=>{},closeDialog:()=>{},phaseDialog:()=>{phaseDialogs++;},reconcileDialog:()=>{},informationalDialogOpen:()=>false,
   endTurnWarning:()=>{},preview:()=>{},ideaUnavailableReason:()=>{},highlightTargets:()=>{},clearTargets:()=>{},

@@ -14,7 +14,14 @@ async function open(viewport,{level=1,guest=false,failure=false}={}) {
  await page.route('**/api/cuentas/config',route=>failure?route.fulfill({status:503,json:{error:'QA indisponible'}}):route.fulfill({json:{habilitado:true,url:'https://qa.invalid',publishableKey:'qa-public'}}));
  await page.route('https://qa.invalid/**',route=>route.abort());
  await page.route('**/api/perfil',async route=>{
-   const value=await page.evaluate(()=>globalThis.__profile);
+   // Una consulta de la página anterior puede coincidir con reload/back.
+   // El navegador invalida ese contexto; la nueva página conserva su fixture inicial.
+   let value;
+   try{value=await page.evaluate(()=>globalThis.__profile);}
+   catch(error){
+     if(route.request().method()!=='GET'||!String(error.message).includes('Execution context was destroyed'))throw error;
+     value={nombre:'Fali03',nivel:level,xp:(level-1)*500+350,partidasTerminadas:84,victorias:37};
+   }
    if(route.request().method()==='POST'){value.nombre=route.request().postDataJSON().nombre;await page.evaluate(p=>globalThis.__profile=p,value);}
    await route.fulfill({json:value});
  });
@@ -65,8 +72,8 @@ try {
  const players=[];
  for(const name of ['Ana','Bruno','Clara']){
   const entry=await open({width:1440,height:1000},{guest:true});players.push(entry);
-  if(name==='Ana'){await entry.page.locator('#create-room input').fill(name);await entry.page.locator('#create-room button').click();}
-  else{const code=await players[0].page.locator('.room-code').innerText();await entry.page.locator('#join-room input[name=codigo]').fill(code);await entry.page.locator('#join-room input[name=nombre]').fill(name);await entry.page.locator('#join-room button').click();}
+  if(name==='Ana'){await entry.page.locator('[data-command=private-create]').click();await entry.page.locator('#create-room input').fill(name);await entry.page.locator('#create-room button').click();}
+  else{const code=await players[0].page.locator('.room-code').innerText();await entry.page.locator('[data-command=private-join]').click();await entry.page.locator('#join-room input[name=codigo]').fill(code);await entry.page.locator('#join-room input[name=nombre]').fill(name);await entry.page.locator('#join-room button').click();}
   await entry.page.locator('.lobby-panel').waitFor();await entry.page.locator('.home-account-slot #account-open').waitFor();
  }
  await players[0].page.locator('.lobby-players li').filter({hasText:'Clara'}).waitFor();
@@ -90,7 +97,7 @@ try {
  await players[0].page.screenshot({path:dir+'/board-desktop.png'});
  const mobile=await open({width:360,height:800},{guest:true});
  assert.equal(await mobile.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
- const nav=await mobile.page.locator('.home-nav').evaluate(el=>{const a=el.children[0].getBoundingClientRect(),b=el.children[1].getBoundingClientRect();return a.right<=b.left});assert.equal(nav,true,'Cabecera móvil sin solapamiento');
+ const nav=await mobile.page.locator('.home-nav').evaluate(el=>{const boxes=[...el.children].map(child=>child.getBoundingClientRect());return boxes.every((a,i)=>boxes.slice(i+1).every(b=>Math.min(a.right,b.right)<=Math.max(a.left,b.left)+1||Math.min(a.bottom,b.bottom)<=Math.max(a.top,b.top)+1));});assert.equal(nav,true,'Cabecera móvil sin solapamiento');
  await mobile.page.screenshot({path:dir+'/home-mobile.png',fullPage:true});
  const failed=await open({width:390,height:844},{failure:true,guest:true});await failed.page.locator('#account-open').click();await failed.page.locator('#account-guest').waitFor();await noOverflow(failed.page);await failed.page.screenshot({path:dir+'/error-mobile.png'});
  assert.deepEqual(errors,[]);console.log('QA perfil página: desktop, 390/360px, ancho completo sin modal, hash/back/forward/recarga, Eterno, XP accesible, alias protegido/guardado, Escape/foco, login/registro min6, fallo configuración, 3 invitados y token conservado, fases avanzan detrás del perfil y selección al volver. Sin Supabase real.');

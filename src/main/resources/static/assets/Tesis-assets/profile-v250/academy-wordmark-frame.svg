@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 108">
+  <defs><linearGradient id="gold"><stop stop-color="#9f7137"/><stop offset=".5" stop-color="#f9d396"/><stop offset="1" stop-color="#9f7137"/></linearGradient><linearGradient id="ink"><stop stop-color="#05111e" stop-opacity=".92"/><stop offset=".5" stop-color="#071722" stop-opacity=".98"/><stop offset="1" stop-color="#05111e" stop-opacity=".92"/></linearGradient></defs>
+  <path d="M4 72L23 67Q31 65 37 56L54 27L78 24L80 20L132 18L160 11L188 18L240 20L242 24L266 27L283 56Q289 65 297 67L316 72L297 76Q289 77 281 82L258 94L196 94L177 98L160 103L143 98L124 94L62 94L39 82Q31 77 23 76Z" fill="url(#ink)" stroke="url(#gold)" stroke-width="1.25"/>
+  <g fill="none" stroke="url(#gold)" stroke-width="1.15"><path d="M3 72L14 66L25 72L14 77Z M295 72L306 66L317 72L306 77Z"/><path d="M11 72L14 70L18 72L14 74Z M302 72L306 70L309 72L306 74Z"/><path d="M151 10L160 1L169 10L160 19Z M151 98L160 89L169 98L160 107Z"/></g>
+  <g fill="#f5cf8f"><path d="M156 10L160 5L164 10L160 15Z M156 98L160 93L164 98L160 103Z"/></g>
+</svg>

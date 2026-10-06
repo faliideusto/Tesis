@@ -340,7 +340,7 @@ public final class ServidorWeb implements AutoCloseable {
             }
             try (InputStream archivo = ServidorWeb.class.getResourceAsStream("/static" + ruta)) {
                 if (archivo == null) { enviar(x, 404, "text/plain", new byte[0]); return; }
-                String tipo = ruta.endsWith(".webp") ? "image/webp" : ruta.endsWith(".png") ? "image/png" : ruta.endsWith(".css") ? "text/css; charset=utf-8"
+                String tipo = ruta.endsWith(".webp") ? "image/webp" : ruta.endsWith(".png") ? "image/png" : ruta.endsWith(".svg") ? "image/svg+xml" : ruta.endsWith(".css") ? "text/css; charset=utf-8"
                         : ruta.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8";
                 x.getResponseHeaders().set("Cache-Control", ruta.endsWith(".png") || ruta.endsWith(".webp") ? "public, max-age=86400" : "no-cache");
                 x.getResponseHeaders().set("Content-Security-Policy", "default-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'"

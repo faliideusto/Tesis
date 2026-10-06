@@ -22,12 +22,12 @@ const homeMessage = 'Reúne a tu academia. Cada persona juega desde su dispositi
 const academyIntro = (community=false) => `${community?'':`<div class="academy-brand">${img('Logo/logo_tesis.webp','home-logo','Tesis')}<span>EL JUEGO DE LA INVESTIGACIÓN</span></div>`}<span class="eyebrow"><i aria-hidden="true"></i> La diferencia está en la ciencia</span>
     <h1>Construye tu<br><em>legado científico.</em></h1><p>${homeMessage}</p>
     <div class="home-features"><span><strong>3–5</strong> jugadores</span><span><strong>Una</strong> mesa compartida</span><span><strong>Tu</strong> mano privada</span></div>
-    ${community?homeCommunity():''}<div class="academy-showcase" aria-label="Personajes de Tesis"><div class="showcase-cards" aria-hidden="true">${img('personajes/02_estadistico.webp','showcase-card showcase-card-one')}${img('personajes/04_investigador_principal.webp','showcase-card showcase-card-two')}${img('personajes/05_decana.webp','showcase-card showcase-card-three')}</div><div class="showcase-caption"><span class="eyebrow">CADA PERSONAJE, UNA ESTRATEGIA</span><p>Una academia.<br>Muchas ambiciones.</p><span class="showcase-rule" aria-hidden="true"></span></div></div>`;
+    <div class="academy-showcase" aria-label="Personajes de Tesis"><div class="showcase-cards" aria-hidden="true">${img('personajes/02_estadistico.webp','showcase-card showcase-card-one')}${img('personajes/04_investigador_principal.webp','showcase-card showcase-card-two')}${img('personajes/05_decana.webp','showcase-card showcase-card-three')}</div><div class="showcase-caption"><span class="eyebrow">CADA PERSONAJE, UNA ESTRATEGIA</span><p>Una academia.<br>Muchas ambiciones.</p><span class="showcase-rule" aria-hidden="true"></span></div></div>`;
 connection.className='network-status'; connection.setAttribute('role','status'); connection.hidden=true;
 document.body.append(connection);
 function connectionStatus(text='') { connection.textContent=text; connection.hidden=!text; }
 const matchmaking=createMatchmaking({api,panel:()=>document.querySelector('.setup-panel'),
-  onRoom:next=>run(()=>next),onHome:home,status:connectionStatus});
+  onRoom:next=>run(()=>next),onHome:()=>home('play',true),status:connectionStatus});
 function openMatchmaking() {
   home();screen='matchmaking';
   document.querySelector('.setup-panel')?.setAttribute('aria-labelledby','match-title');
@@ -46,29 +46,34 @@ function schedulePoll() {
     finally { if (current === generation) schedulePoll(); }
   },900);
 }
-function home() {
+function home(mode='play',restoreFocus=false) {
   stopPolling(); resetEffects(); screen='home'; closeDialog(); resetFeedback(); connectionStatus();
   state=null; room=null;
   const accountOpener=document.getElementById('account-open');
   const progress=document.getElementById('account-progress');
   accountOpener.classList.remove('in-board');document.body.append(accountOpener,progress);
   progress.hidden=true;
-  app.innerHTML = `<section class="home-screen"><div class="academy-atmosphere" aria-hidden="true"><span></span><span></span><span></span><span></span></div><nav class="home-nav" aria-label="Navegación principal"><span class="home-nav-wordmark">${img('Logo/logo_tesis.webp','home-header-logo','')}<span>TESIS <small>· EDICIÓN 2.1.0</small></span></span><div class="home-nav-actions"><button class="text-button" data-command="help">Cómo jugar <span aria-hidden="true">↗</span></button><div class="home-account-slot"></div></div></nav>
-    <div class="home-copy">${academyIntro(true)}</div>
-    <section class="setup-panel" aria-labelledby="academy-access-title"><div class="setup-heading"><span class="eyebrow">LAS PUERTAS ESTÁN ABIERTAS</span><span class="setup-seal" aria-hidden="true">T</span></div><h2 id="academy-access-title">Tu próxima gran<br>idea empieza aquí.</h2><p>Crea una mesa e invita a tu academia,<br>o entra con el código de tus amigos.</p>
-      <form id="create-room" class="room-form"><label for="create-name">Tu nombre<input id="create-name" name="nombre" maxlength="24" required autocomplete="nickname" placeholder="¿Cómo te llamas?"></label><button class="gold-button" type="submit">Crear una sala <span aria-hidden="true">→</span></button></form>
-      <div class="room-divider"><span>¿YA TIENES UNA INVITACIÓN?</span></div>
-      <form id="join-room" class="room-form"><label for="join-code">Código de sala<input id="join-code" name="codigo" maxlength="5" minlength="5" required autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="A7K3Q" class="code-input"></label><label for="join-name">Tu nombre<input id="join-name" name="nombre" maxlength="24" required autocomplete="nickname" placeholder="Tu nombre en la mesa"></label><button class="gold-button join-button" type="submit">Entrar en la academia <span aria-hidden="true">↗</span></button></form>
-      ${api.identity() ? '<button class="text-button resume" data-command="resume">Volver a mi sala</button>' : ''}
-      <button class="gold-button match-entry" data-command="matchmaking">Buscar partidas</button>
-      <p class="access-note"><span aria-hidden="true">◇</span> Cada persona juega desde su dispositivo.</p>
-    </section><div class="home-footer"><span class="footer-motto">INVESTIGAR. TRANSFORMAR. MEJORAR.</span><span class="footer-edition">UNA MESA. MUCHAS IDEAS.</span></div></section>`;
+  app.innerHTML = `<section class="home-screen home-hub"><div class="academy-atmosphere" aria-hidden="true"><span></span><span></span><span></span><span></span></div><nav class="home-nav" aria-label="Navegación principal"><span class="home-nav-wordmark">${img('Logo/logo_tesis.webp','home-header-logo','')}<span>TESIS <small>· EDICIÓN 2.4.0</small></span></span><div class="home-nav-actions"><button class="text-button" data-command="help">Cómo jugar <span aria-hidden="true">↗</span></button><div class="home-account-slot"></div></div></nav>
+    <div class="home-layout"><aside class="home-sidebar">${homeCommunity()}</aside><div class="home-copy">${academyIntro(true)}</div>
+    <section class="setup-panel ${mode==='play'?'play-menu':'private-panel'}" aria-labelledby="academy-access-title" data-home-mode="${mode}">${homeAccess(mode)}</section></div><div class="home-footer"><span class="footer-motto">INVESTIGAR. TRANSFORMAR. MEJORAR.</span><span class="footer-edition">UNA MESA. MUCHAS IDEAS.</span></div></section>`;
   document.querySelector?.('.home-account-slot')?.append(accountOpener);
+  if(mode!=='play' || restoreFocus) document.getElementById('academy-access-title')?.focus({preventScroll:true});
+}
+function homeAccess(mode) {
+  const resume=api.identity()?'<button class="text-button resume" data-command="resume">↪ Reanudar mi sala</button>':'';
+  if(mode==='play') return `<div class="play-menu-heading"><span class="eyebrow">TU PRÓXIMA PARTIDA</span><h2 id="academy-access-title" tabindex="-1">Elige tu mesa.</h2><p>Un lugar para cada idea. Una forma de jugar para ti.</p></div>
+    <div class="play-featured"><span class="play-featured-icon" aria-hidden="true">✦</span><span class="eyebrow">PARTIDA ONLINE</span><h3>Encuentra tu academia</h3><p>Conoce a otros investigadores en una mesa de 3, 4 o 5 personas.</p><button class="gold-button match-entry" data-command="matchmaking">Buscar partida <span aria-hidden="true">→</span></button></div>
+    <div class="private-options"><div class="room-divider"><span>CON TUS AMIGOS</span></div><button class="plain-button private-option" data-command="private-create"><span><strong>Crear sala privada</strong><small>Invita con tu propio código</small></span><span aria-hidden="true">＋</span></button><button class="plain-button private-option" data-command="private-join"><span><strong>Tengo un código</strong><small>Únete a una sala privada</small></span><span aria-hidden="true">↗</span></button></div>${resume}<p class="access-note">Puedes jugar como invitado o iniciar sesión para guardar tu progreso.</p>`;
+  const creating=mode==='private-create';
+  return `<div class="setup-heading"><span class="eyebrow">SALA PRIVADA</span><button class="text-button mode-back" data-command="home" aria-label="Volver a elegir mesa">← Inicio</button></div><nav class="play-mode-tabs" aria-label="Opciones de sala privada"><button data-command="private-create" aria-pressed="${creating}">Crear sala</button><button data-command="private-join" aria-pressed="${!creating}">Tengo un código</button></nav>
+    <h2 id="academy-access-title" tabindex="-1">${creating?'Reúne a tu academia.':'Tu mesa te espera.'}</h2><p>${creating?'Crea una sala y comparte el código con tus amigos. Cada persona entra desde su dispositivo.':'Introduce la invitación de tus amigos y el nombre que usarás en la mesa.'}</p>
+    ${creating?'<form id="create-room" class="room-form"><label for="create-name">Tu nombre<input id="create-name" name="nombre" maxlength="24" required autocomplete="nickname" placeholder="Tu nombre en la mesa"></label><button class="gold-button" type="submit">Crear sala privada <span aria-hidden="true">→</span></button></form>':'<form id="join-room" class="room-form"><label for="join-code">Código de sala<input id="join-code" name="codigo" maxlength="5" minlength="5" required autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="A7K3Q" class="code-input"></label><label for="join-name">Tu nombre<input id="join-name" name="nombre" maxlength="24" required autocomplete="nickname" placeholder="Tu nombre en la mesa"></label><button class="gold-button join-button" type="submit">Entrar en la sala <span aria-hidden="true">→</span></button></form>'}
+    ${resume}<p class="access-note">3–5 personas · Cada identidad y mano son privadas.</p>`;
 }
 function lobby() {
   const accountOpener=document.getElementById('account-open'),progress=document.getElementById('account-progress');
   accountOpener.classList.remove('in-board');document.body.append(accountOpener,progress);
-  app.innerHTML = `<section class="home-screen lobby-screen"><div class="academy-atmosphere" aria-hidden="true"><span></span><span></span><span></span><span></span></div><nav class="home-nav" aria-label="Navegación principal"><span class="home-nav-wordmark">TESIS <small>· EDICIÓN 2.1.0</small></span><div class="home-nav-actions"><button class="text-button" data-command="help">Cómo jugar <span aria-hidden="true">↗</span></button><div class="home-account-slot"></div></div></nav><div class="home-copy">${academyIntro()}<button class="text-button lobby-back" data-command="home">← Volver al inicio</button></div>
+  app.innerHTML = `<section class="home-screen lobby-screen"><div class="academy-atmosphere" aria-hidden="true"><span></span><span></span><span></span><span></span></div><nav class="home-nav" aria-label="Navegación principal"><span class="home-nav-wordmark">TESIS <small>· EDICIÓN 2.4.0</small></span><div class="home-nav-actions"><button class="text-button" data-command="help">Cómo jugar <span aria-hidden="true">↗</span></button><div class="home-account-slot"></div></div></nav><div class="home-copy">${academyIntro()}<button class="text-button lobby-back" data-command="home">← Volver al inicio</button></div>
     <section class="setup-panel lobby-panel" aria-labelledby="lobby-title"><div class="setup-heading"><span class="eyebrow">LA ACADEMIA SE REÚNE</span><span class="lobby-live"><i aria-hidden="true"></i> Sala abierta</span></div><h2 id="lobby-title">Tu mesa está lista.</h2><div class="room-code-box"><span class="eyebrow">COMPARTE ESTE CÓDIGO</span><h2 class="room-code">${esc(room.codigo)}</h2><p>Tu identidad: <strong>${esc(room.yo)}</strong></p></div><div class="lobby-roster-heading"><h3>La academia</h3><span>${room.jugadores.length} / 5 jugadores</span></div><ul class="lobby-players">${room.jugadores.map((n,i)=>`<li><span class="lobby-avatar" aria-hidden="true">${String(i+1).padStart(2,'0')}</span><div class="lobby-player-name">${esc(n)}${n===room.yo?'<span class="lobby-you">tú</span>':''}<small>${n===room.anfitrion?'Anfitrión':'Investigador'}</small></div><span class="lobby-player-status" aria-label="En la sala">${n===room.anfitrion?'♛':'✓'}</span></li>`).join('')}</ul>
     ${room.soyAnfitrion ? `<button class="gold-button" data-command="start-game" ${(room.jugadores.length<3 || room.jugadores.length>5)?'disabled':''}>Iniciar partida</button><p class="setup-note">${(room.jugadores.length<3 || room.jugadores.length>5)?'Esperando jugadores. Se necesitan entre 3 y 5.':'Todo preparado. Puedes iniciar la partida.'}</p>` : `<p class="waiting-copy">Esperando a que ${esc(room.anfitrion)} inicie la partida…</p>`}</section></section>`;
   document.querySelector?.('.home-account-slot')?.append(accountOpener);
@@ -257,7 +262,9 @@ document.addEventListener('click', async e => {
   const index = Number(button.dataset.index);
   switch (button.dataset.command) {
     case 'matchmaking': openMatchmaking(); break;
-    case 'home': home(); break;
+    case 'private-create': home('private-create'); break;
+    case 'private-join': home('private-join'); break;
+    case 'home': home('play',true); break;
     case 'resume': screen='connecting'; run(() => api.state()); break;
     case 'start-game': run(() => api.start(room.revision)); break;
     case 'help': help(); break;

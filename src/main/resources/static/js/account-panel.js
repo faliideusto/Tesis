@@ -139,6 +139,8 @@ export function initAccountPanel() {
       panel.querySelectorAll('[data-academy-page]').forEach(button=>button.onclick=()=>{openPage(button.dataset.academyPage,returnFocus);panel.querySelector(`[data-academy-page="${academyPage}"]`)?.focus();});
     } else panel.setAttribute('aria-labelledby','account-title');
     panel.dataset.view=accounts.signedIn()?'profile':unavailable?'unavailable':'auth';
+    const sectionLabel=panel.querySelector('.academy-section-label');
+    if(sectionLabel)sectionLabel.textContent=labels[academyPage].toLocaleUpperCase('es-ES');
     panel.querySelector('.account-close').onclick=closePage;
     panel.querySelectorAll('[data-auth-mode]').forEach(button=>button.onclick=()=>{mode=button.dataset.authMode;draw(true);});
     const dismiss=panel.querySelector('#account-dismiss');if(dismiss)dismiss.onclick=closePage;

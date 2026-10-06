@@ -1,0 +1,103 @@
+/* A common academy masthead: navigation remains attached to its original actions. */
+:root{--masthead-gold:#d9ad66;--masthead-light:#ffe0a4}
+body.account-page-active{height:auto;min-height:100dvh;overflow:auto}
+#account-panel{height:auto;min-height:100dvh;overflow:visible}
+#account-panel :is(.account-auth-shell,.account-empty-shell)>.academy-navigation{
+  position:absolute;top:0;left:clamp(20px,4vw,64px);right:clamp(20px,4vw,64px);width:auto;transform:none;
+}
+#account-panel :is(.account-auth-shell,.account-empty-shell){height:auto;min-height:100dvh;padding-top:100px}
+#account-panel .academy-navigation,.home-screen .home-nav{
+  position:relative;display:flex;justify-content:space-between;align-items:center;
+  width:100%;max-width:none;min-height:67px;margin:0;padding:0 0 5px;gap:20px;
+  border-bottom:1px solid #bc8b4e;z-index:2;
+}
+#account-panel .academy-navigation:before,.home-screen .home-nav:before{
+  content:"";position:absolute;bottom:-2px;left:0;right:0;height:3px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,#f5ce8855 3%,transparent 40%,transparent 60%,#f5ce8855 97%,transparent);
+}
+#account-panel .academy-wordmark,.home-screen .home-nav-wordmark{
+  position:absolute;left:50%;top:6px;transform:translateX(-50%);display:grid;
+  place-content:center;text-align:center;gap:2px;width:282px;height:91px;max-width:none;
+  font:34px/1.15 var(--serif);letter-spacing:9px;color:var(--masthead-light);
+  background:none;
+  border:0;isolation:isolate;text-shadow:0 2px 5px #000;
+}
+#account-panel .academy-wordmark:before,.home-screen .home-nav-wordmark:before{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:url('/assets/Tesis-assets/profile-v250/academy-wordmark-frame.svg') center/100% 100% no-repeat;
+}
+#account-panel .academy-wordmark small,.home-screen .home-nav-wordmark small{
+  display:block;margin:0;color:#dcb67a;font:9px/1.5 var(--serif);letter-spacing:4px;
+}
+#account-panel .account-close,.home-screen .home-header-help{
+  display:flex;align-items:center;gap:15px;min-height:44px;padding:0 4px;
+  background:none;border:0;font:18px/1.2 var(--serif);color:#ffe3ae;
+}
+#account-panel .account-close>span{font-size:29px;font-weight:400}
+#account-panel .academy-section-label{
+  display:flex;align-items:center;gap:13px;white-space:nowrap;color:#f5eee3;
+  font:600 12px var(--serif);letter-spacing:1px;
+}
+#account-panel .academy-section-label:after{
+  content:"";display:block;width:28px;height:28px;border:1px solid #c9a267;border-radius:50%;
+  background:url('/assets/Tesis-assets/profile-v250/user-icon.svg') center/20px no-repeat;
+}
+#account-panel .community-tabs{
+  display:flex;align-items:center;flex-wrap:nowrap;width:100%;max-width:none;min-height:56px;
+  margin:9px 0 4px;padding:0 7px;gap:9px;border:0;
+}
+#account-panel .community-tabs button{
+  display:flex;align-items:center;justify-content:center;gap:15px;min-height:48px;
+  padding:10px 23px;border:1px solid #61717c66;border-radius:4px;background:#03101de0;
+  font:18px/1.2 var(--serif);color:#c9d9e6;box-shadow:inset 0 0 0 3px #11253570,0 2px 4px #0008;
+}
+#account-panel .community-tabs button[aria-current]{
+  color:#ffe5b0;border-color:#dfb570;background:linear-gradient(180deg,#15202a,#262316 75%,#594321);
+  box-shadow:inset 0 0 0 3px #b3843240,inset 0 -2px #ffdc91,0 3px 8px #e2a74245;
+}
+#account-panel .community-tabs button:hover{border-color:#ddba82;color:#fff1d6;background-color:#172737}
+.academy-tab-icon{width:23px;height:23px;flex:none;fill:currentColor}
+.home-screen.home-hub{padding-top:0}
+.home-screen.home-hub .home-nav,.home-screen.lobby-screen .home-nav{
+  position:relative;inset:auto;min-height:67px;padding:0 0 5px;border-bottom-color:#bc8b4e;
+}
+.home-screen.home-hub .home-nav-wordmark,.home-screen.lobby-screen .home-nav-wordmark{
+  display:grid;gap:2px;font:34px/1.15 var(--serif);letter-spacing:9px;color:var(--masthead-light);
+}
+.home-screen.home-hub .home-nav-wordmark small,.home-screen.lobby-screen .home-nav-wordmark small{
+  margin:0;font:9px/1.5 var(--serif);letter-spacing:4px;color:#dcb67a;
+}
+.home-screen .home-nav-actions{display:flex;align-items:center;margin-left:auto;min-width:0}
+.home-screen .home-account-slot{width:auto}
+.home-screen .home-account-slot .account-opener{
+  background:none;border:0;box-shadow:none;padding:0;min-height:44px;width:auto;flex-direction:row-reverse;
+}
+.home-screen .home-account-slot .account-trigger-copy strong{font-size:14px}
+.home-screen .home-account-slot .account-trigger-copy small{font-size:8px}
+.home-screen .home-account-slot .account-chevron{display:none}
+.home-screen.home-hub .home-nav .home-header-help{font:18px/1.2 var(--serif);color:#ffe3ae;padding:0 4px}
+.home-screen.lobby-screen{padding-top:0}
+.home-screen.lobby-screen .home-nav{grid-column:1/-1}
+@media(max-width:900px){
+  #account-panel .academy-navigation,.home-screen .home-nav{min-height:68px;gap:10px}
+  #account-panel .academy-wordmark,.home-screen .home-nav-wordmark,.home-screen.home-hub .home-nav-wordmark,.home-screen.lobby-screen .home-nav-wordmark{width:205px;height:65px;top:10px;font-size:29px;letter-spacing:7px}
+  #account-panel .account-close,.home-screen.home-hub .home-nav .home-header-help,.home-screen .home-header-help{font-size:15px;gap:8px}
+  #account-panel .academy-section-label{font-size:10px;gap:8px}
+  #account-panel .community-tabs button{font-size:16px;padding:10px 17px;gap:10px}
+}
+@media(max-width:600px){
+  #account-panel :is(.account-auth-shell,.account-empty-shell){padding-top:110px}
+  #account-panel .academy-navigation,.home-screen .home-nav,.home-screen.home-hub .home-nav,.home-screen.lobby-screen .home-nav{min-height:100px;align-items:flex-start;padding-top:10px;padding-bottom:8px}
+  #account-panel .academy-wordmark,.home-screen .home-nav-wordmark,.home-screen.home-hub .home-nav-wordmark,.home-screen.lobby-screen .home-nav-wordmark{top:40px;height:60px;width:190px;font-size:26px;letter-spacing:6px}
+  #account-panel .account-close,.home-screen.home-hub .home-nav .home-header-help,.home-screen .home-header-help{min-height:30px;font-size:14px;gap:7px}
+  #account-panel .account-close>span{font-size:23px}
+  #account-panel .academy-section-label{min-height:30px;font-size:9px}
+  #account-panel .academy-section-label:after{width:24px;height:24px}
+  #account-panel .community-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:0;margin-top:10px;margin-bottom:9px;min-height:0}
+  #account-panel .community-tabs button{min-height:42px;font-size:15px;padding:8px 10px;gap:10px}
+  .academy-tab-icon{width:20px;height:20px}
+  .home-screen .home-account-slot .account-opener{min-height:32px;gap:7px}
+  .home-screen .home-account-slot .account-trigger-monogram{width:27px;height:27px;font-size:18px}
+  .home-screen .home-account-slot .account-trigger-copy strong{font-size:12px;max-width:110px}
+  .home-screen .home-account-slot .account-trigger-copy small{display:none}
+}

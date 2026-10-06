@@ -2,7 +2,13 @@ import {esc} from './dom.js';
 
 const integer=value=>Math.max(0,Math.floor(Number(value)||0));
 const format=value=>integer(value).toLocaleString('es-ES');
-export const academyTabs=active=>`<nav class="community-tabs" aria-label="Secciones de tu academia">${[['profile','Mi perfil'],['friends','Amigos'],['ranking','Ranking global'],['missions','Misiones']].map(([id,title])=>`<button type="button" data-academy-page="${id}" ${active===id?'aria-current="page"':''}>${title}</button>`).join('')}</nav>`;
+const academyTabIcons={
+  profile:'<circle cx="12" cy="7" r="4"/><path d="M4 22v-4a8 8 0 0 1 16 0v4z"/>',
+  friends:'<circle cx="12" cy="7" r="3"/><circle cx="4" cy="9" r="2.5"/><circle cx="20" cy="9" r="2.5"/><path d="M7 22v-6a5 5 0 0 1 10 0v6zM0 21v-5a4 4 0 0 1 5-4v9zM19 21v-9a4 4 0 0 1 5 4v5z"/>',
+  ranking:'<path d="M8 3h8v8a4 4 0 0 1-8 0zM10 16h4v5h-4zM7 21h10v2H7z"/><path d="M8 5H3v3a5 5 0 0 0 5 5m8-8h5v3a5 5 0 0 1-5 5" fill="none" stroke="currentColor" stroke-width="2"/>',
+  missions:'<path d="M2 4q5-2 10 1 5-3 10-1v16q-5-2-10 1-5-3-10-1zM12 5v16M5 8h4M5 11h4M5 14h4M15 8h4M15 11h4M15 14h4" fill="none" stroke="currentColor" stroke-width="1.5"/>'
+};
+export const academyTabs=active=>`<nav class="community-tabs" aria-label="Secciones de tu academia">${[['profile','Mi perfil'],['friends','Amigos'],['ranking','Ranking global'],['missions','Misiones']].map(([id,title])=>`<button type="button" data-academy-page="${id}" ${active===id?'aria-current="page"':''}><svg class="academy-tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${academyTabIcons[id]}</svg><span>${title}</span></button>`).join('')}</nav>`;
 const action=(code,value,label)=>`<button type="button" class="community-action" data-friend-action="${value}" data-code="${esc(code)}">${label}</button>`;
 function people(title,items,kind) {
   return `<section class="community-card"><h3>${title} <small>${items.length}</small></h3>${items.length?`<ul class="community-people">${items.map(person=>`<li><span class="community-avatar" aria-hidden="true">${esc(Array.from(person.nombre||'?')[0].toUpperCase())}</span><div><strong>${esc(person.nombre)}</strong><span>Nivel ${format(person.nivel)} · ${esc(person.codigo)}</span></div><div class="community-person-actions">${kind==='friends'?action(person.codigo,'eliminar','Eliminar'):kind==='received'?action(person.codigo,'aceptar','Aceptar')+action(person.codigo,'rechazar','Rechazar'):action(person.codigo,'cancelar','Cancelar')}</div></li>`).join('')}</ul>`:`<p class="community-empty">${kind==='friends'?'Todavía no tienes amigos. Comparte tu código o envía una solicitud para empezar.':kind==='received'?'No tienes solicitudes pendientes de aceptar.':'No tienes solicitudes enviadas pendientes.'}</p>`}</section>`;

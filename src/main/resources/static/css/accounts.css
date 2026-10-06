@@ -49,3 +49,151 @@
 @media(max-width:700px){.account-opener{padding:0 0 0 10px;gap:9px;min-height:42px}.account-trigger-monogram{width:34px;height:34px;font-size:21px}.account-trigger-monogram>span{font-size:7px}.account-trigger-copy strong{font-size:13px;max-width:105px}.account-trigger-copy small{font-size:7px;letter-spacing:0}.home-nav-actions{gap:14px}.account-chevron{display:none}
 .profile-shell{padding:0 22px 30px}.academy-navigation{padding:17px 0;gap:10px}.academy-wordmark{font-size:21px;letter-spacing:4px}.academy-wordmark small{font-size:6px;letter-spacing:2px}.academy-section-label{display:none}#account-panel .account-close{font-size:10px;gap:8px}.profile-heading{margin:28px auto 18px}.profile-heading .eyebrow{font-size:8px;letter-spacing:2px}.profile-heading h2{font-size:38px;margin-top:8px}.profile-main{grid-template-columns:1fr;gap:28px;padding-bottom:27px}.profile-emblem{width:220px}.profile-identity:before{width:235px;height:235px;top:0}.emblem-level{bottom:10px;font-size:9px;padding:6px 17px}.emblem-level b{font-size:20px}.rank-kicker{font-size:9px}.profile-identity h3{font-size:32px}.rank-description{font-size:13px;max-width:275px}.rank-name{font-size:11px}.profile-record{padding:0}.profile-section-label{font-size:9px}.xp-headline strong{font-size:40px}.xp-headline small{font-size:14px}.xp-headline>span{font-size:11px}.xp-total{font-size:10px}.profile-stat-grid{padding:21px 0;margin-bottom:22px}.profile-stat-grid strong{font-size:32px}.profile-stat-grid div>span:last-child{font-size:10px}.next-rank-card{padding:8px 12px}.next-rank-card>.profile-badge{width:70px}.next-rank-card div>span{font-size:8px}.next-rank-card strong{font-size:26px}.next-rank-card p{font-size:11px}.journey-heading h3{font-size:27px}.journey-heading .eyebrow{font-size:8px}.cosmetic-note{font-size:9px}.rank-path{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-bottom:24px}.rank-step{padding:8px 2px 12px}.rank-step>.profile-badge{width:72px}.rank-step strong{font-size:12px}.rank-step>span{font-size:7px}.profile-footer p{font-size:9px}.profile-footer .account-link{font-size:11px}.account-auth-shell{padding:90px 24px 30px;grid-template-columns:1fr;gap:25px}.account-auth-shell>.academy-navigation{width:calc(100% - 44px)}.auth-art{padding:0}.auth-art>.profile-badge{width:130px}.auth-art h2{font-size:30px}.auth-art>p{font-size:11px}.auth-form-panel{padding:0;width:100%;max-width:none}.auth-form-panel h2{font-size:29px}.auth-intro{font-size:12px}.auth-fine-print{font-size:9px}.account-empty-shell h2{font-size:30px}.account-empty-shell>.profile-badge{width:170px}}
 @media(prefers-reduced-motion:reduce){#account-panel .account-close>span{transition:none}}
+/* Perfil v2.5: composición del carnet, progresión y siete distinciones. */
+#account-panel .profile-badge{position:relative;display:block;aspect-ratio:1/.79;height:auto;overflow:hidden;flex:none}
+#account-panel .profile-badge>img{position:absolute;inset:0;width:100%;height:auto;max-width:none;display:block;object-fit:contain}
+#account-panel[data-page="profile"] .profile-shell{display:block;height:auto;min-height:100svh;padding:0 clamp(20px,2.5vw,48px) 18px;background:linear-gradient(180deg,#03101c55,#03101c70),url('/assets/Tesis-assets/profile-v250/academy-library.webp') center top/cover fixed,url('/assets/Tesis-assets/visual-v2/academy-night.webp') center/cover}
+#account-panel[data-page="profile"] .profile-main{width:100%;max-width:none;margin:17px 0 0;padding:0;display:grid;grid-template-columns:minmax(0,1.03fr) minmax(0,2fr);gap:20px;align-items:stretch}
+#account-panel[data-page="profile"] :is(.profile-identity,.profile-record,.rank-journey,.profile-stat-grid>div,.next-rank-card){position:relative;border:1px solid #c39a5d;border-radius:0;box-shadow:inset 0 0 0 3px #071622,inset 0 0 0 4px #b58d4b60,0 4px 18px #0005;overflow:hidden}
+#account-panel[data-page="profile"] :is(.profile-identity,.profile-record,.rank-journey,.profile-stat-grid>div,.next-rank-card):before{content:'';position:absolute;inset:6px;width:auto;height:auto;top:6px;left:6px;transform:none;border:1px solid #c49b5c73;border-radius:0;box-shadow:none;z-index:0;pointer-events:none;clip-path:polygon(0 0,35px 0,35px 1px,1px 1px,1px 35px,0 35px,0 0,100% 0,100% 35px,calc(100% - 1px) 35px,calc(100% - 1px) 1px,calc(100% - 35px) 1px,calc(100% - 35px) 0,100% 0,100% 100%,calc(100% - 35px) 100%,calc(100% - 35px) calc(100% - 1px),calc(100% - 1px) calc(100% - 1px),calc(100% - 1px) calc(100% - 35px),100% calc(100% - 35px),100% 100%,0 100%,0 calc(100% - 35px),1px calc(100% - 35px),1px calc(100% - 1px),35px calc(100% - 1px),35px 100%,0 100%)}
+#account-panel[data-page="profile"] .profile-identity{min-height:480px;padding:24px 28px 17px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow:hidden;background:radial-gradient(ellipse at 50% 36%,#d7902535,transparent 45%),linear-gradient(180deg,#03131b16,#03132100 55%,#031421d9 80%),url('/assets/Tesis-assets/profile-v250/researcher-study.webp') center/cover,url('/assets/Tesis-assets/visual-v2/academy-night.webp') center/cover}
+#account-panel[data-page="profile"] .researcher-card-label{font:600 14px var(--serif);letter-spacing:2.5px;color:#f5d38d;margin:0 0 6px}
+#account-panel[data-page="profile"] .profile-emblem{width:320px;max-width:90%;margin:0 auto 9px;position:relative;padding:0 19px 27px}
+#account-panel[data-page="profile"] .profile-emblem:before{inset:-10px -10px 0;border-radius:50%;filter:none;background:radial-gradient(circle,#e3a95222,transparent 65%);border:1px solid #ad945321;box-shadow:0 0 0 12px #d7b16706,0 0 0 13px #d7b1670d}
+#account-panel[data-page="profile"] .profile-emblem>.profile-badge{filter:drop-shadow(0 3px 13px #0009)}
+#account-panel[data-page="profile"] .profile-identity .emblem-level{bottom:0;left:50%;padding:5px 26px;gap:7px;background:linear-gradient(#132734,#071723);border:1px solid #dfb56e;box-shadow:inset 0 0 0 3px #03111b,inset 0 0 0 4px #a3865380,0 0 16px #dca95420;font:600 17px var(--serif);letter-spacing:1.5px;color:#fff0c9;clip-path:polygon(9px 0,calc(100% - 9px) 0,100% 50%,calc(100% - 9px) 100%,9px 100%,0 50%)}
+#account-panel[data-page="profile"] .profile-identity .emblem-level b{font:600 17px var(--serif)}
+#account-panel[data-page="profile"] .rank-kicker{font:600 13px var(--serif);letter-spacing:2px;color:#f4d79a;margin:0}
+#account-panel[data-page="profile"] .profile-identity h3{font:600 43px/1.12 var(--serif);margin:4px 0 0;color:#fff3d4;max-width:100%;overflow-wrap:anywhere}
+#account-panel[data-page="profile"] .identity-divider{position:relative;display:block;font-size:18px;line-height:19px;color:#e2b668;width:160px;margin:0 0 4px}
+#account-panel[data-page="profile"] .identity-divider:before,#account-panel[data-page="profile"] .identity-divider:after{content:'';position:absolute;top:50%;height:1px;width:64px;background:linear-gradient(90deg,transparent,#c7a466)}
+#account-panel[data-page="profile"] .identity-divider:before{left:0}#account-panel[data-page="profile"] .identity-divider:after{right:0;transform:rotate(180deg)}
+#account-panel[data-page="profile"] .rank-name{font:600 17px var(--serif);letter-spacing:3px;color:#e6a354}
+#account-panel[data-page="profile"] .rank-description{font:15px/1.45 var(--serif);max-width:none;color:#d5e1e6;margin:6px auto 8px}
+#account-panel[data-page="profile"] .researcher-card-signature{font:8px var(--serif);letter-spacing:2px;color:#b6a07d;border:0;padding:0;margin-top:auto}
+#account-panel[data-page="profile"] .profile-record{min-height:480px;padding:15px 16px 16px;display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden;background:linear-gradient(90deg,#061724db,#061724a8),url('/assets/Tesis-assets/profile-v250/progression-desk.webp') center top/100% auto no-repeat,url('/assets/Tesis-assets/visual-v2/academy-night.webp') center/cover}
+#account-panel[data-page="profile"] .profile-progress{padding:0 21px}
+#account-panel[data-page="profile"] .profile-section-label{display:flex;justify-content:flex-start;align-items:center;gap:15px;font:600 20px var(--serif);letter-spacing:1.2px;color:#f7e4b9;min-height:36px}
+#account-panel[data-page="profile"] .academic-sprig{font:36px/1 var(--serif);color:#e9c67b;flex:none;transform:rotate(-90deg)}
+#account-panel[data-page="profile"] .xp-headline{margin:6px 0 8px;display:flex;justify-content:space-between;align-items:end;gap:15px}
+#account-panel[data-page="profile"] .xp-headline strong{font:400 56px/1.1 var(--serif);color:#fff2d4}
+#account-panel[data-page="profile"] .xp-headline strong small{font:28px var(--serif);color:#cbdde8}
+#account-panel[data-page="profile"] .xp-next{display:grid;gap:3px;text-align:right;font:15px var(--serif);color:#d1e3ed;padding-bottom:2px}
+#account-panel[data-page="profile"] .xp-next>span:first-child{font:600 15px var(--serif);letter-spacing:1.2px}
+#account-panel[data-page="profile"] .xp-track{position:relative;height:30px;border:1px solid #d2ac72;background:linear-gradient(#06111a,#102331);border-radius:0;padding:4px;box-shadow:inset 0 0 0 2px #06111a,inset 0 0 0 3px #ad86557d;clip-path:polygon(13px 0,calc(100% - 13px) 0,100% 50%,calc(100% - 13px) 100%,13px 100%,0 50%)}
+#account-panel[data-page="profile"] .xp-track>span{border-radius:0;background:linear-gradient(90deg,#956b2e,#e6c688);box-shadow:0 0 12px #d8a44e}
+#account-panel[data-page="profile"] .xp-total{font:15px var(--serif);color:#ccdeeb;margin:10px 0 11px}
+#account-panel[data-page="profile"] .profile-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;border:0;padding:0;margin:4px 0 14px}
+#account-panel[data-page="profile"] .profile-stat-grid>div{display:grid;grid-template-columns:76px minmax(0,1fr);grid-template-rows:auto auto;align-items:center;align-content:center;gap:0 16px;min-height:109px;padding:13px 20px;text-align:left;background:linear-gradient(90deg,#061622bd,#06162280),url('/assets/Tesis-assets/profile-v250/progression-desk.webp') center/cover;overflow:hidden}
+#account-panel[data-page="profile"] .profile-stat-grid>div:nth-child(2){background-position:70% center}#account-panel[data-page="profile"] .profile-stat-grid>div:nth-child(3){background-position:100% center}
+#account-panel[data-page="profile"] .profile-stat-grid .stat-glyph{display:grid;place-items:center;grid-row:1/3;width:76px;height:76px;border:1px solid #d5b074;border-radius:50%;background:radial-gradient(circle,#1a3343,#06131e);box-shadow:inset 0 0 0 3px #03111c,inset 0 0 0 4px #65808f50,0 2px 8px #0006;font:36px var(--serif);color:#ebc17d}
+#account-panel[data-page="profile"] .profile-stat-grid strong{font:400 38px/1.1 var(--serif);color:#fff3da;align-self:end}
+#account-panel[data-page="profile"] .profile-stat-grid strong small{font-size:30px}
+#account-panel[data-page="profile"] .profile-stat-grid div>span:last-child{font:16px/1.5 var(--serif);color:#d8e7ef;align-self:start;white-space:nowrap}
+#account-panel[data-page="profile"] .next-rank-card{display:flex;align-items:center;gap:25px;min-height:136px;padding:10px 23px;margin-top:auto;background:radial-gradient(circle at 9% 50%,#c3914540,transparent 22%),linear-gradient(90deg,#071623df,#071623a0 48%,#07162318),url('/assets/Tesis-assets/profile-v250/next-horizon.webp') center/cover,url('/assets/Tesis-assets/visual-v2/academy-night.webp') center/cover}
+#account-panel[data-page="profile"] .next-rank-card>.profile-badge{width:126px}
+#account-panel[data-page="profile"] .next-rank-card div>span{font:600 14px var(--serif);letter-spacing:2.8px;color:#eed29a}
+#account-panel[data-page="profile"] .next-rank-card strong{font:400 38px/1.2 var(--serif);color:#fff2d4;margin:5px 0}
+#account-panel[data-page="profile"] .next-rank-card p{font:18px var(--serif);color:#d7e7ee;margin:0}
+#account-panel[data-page="profile"] .rank-journey{width:100%;max-width:none;margin:18px 0 0;padding:10px 25px 17px;background:linear-gradient(110deg,#081b2beb,#091a27c9),url('/assets/Tesis-assets/profile-v250/academy-library.webp') center 70%/cover;color:#f5e9cb;min-height:238px}
+#account-panel[data-page="profile"] .journey-heading{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:14px;padding:0 10px}
+#account-panel[data-page="profile"] .journey-heading>div{display:block}
+#account-panel[data-page="profile"] .journey-heading .eyebrow{font:10px var(--serif);letter-spacing:2px;color:#f3cd81}
+#account-panel[data-page="profile"] .journey-heading h3{font:600 26px/1.2 var(--serif);color:#fff0ca;margin:2px 0 0;letter-spacing:0}
+#account-panel[data-page="profile"] .cosmetic-note{font:13px var(--serif);color:#ccdce6;max-width:none;margin-left:auto;align-self:flex-start;padding-top:5px}
+#account-panel[data-page="profile"] .rank-path{position:relative;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;padding:0 10px;margin:10px 0 0;border:1px solid #9b89554d;background:linear-gradient(90deg,#b37c2720,#03131c33);min-height:146px}
+#account-panel[data-page="profile"] .rank-path:before{content:'';position:absolute;left:14px;right:14px;top:57px;height:1px;background:linear-gradient(90deg,#f9cf73,#d4b478 80%,#9b8857);box-shadow:0 1px 5px #b6804230}
+#account-panel[data-page="profile"] .rank-step{position:relative;padding:0 0 5px;background:none;border:0;border-radius:0;box-shadow:none;min-width:0;display:flex;flex-direction:column;align-items:center}
+#account-panel[data-page="profile"] .rank-step:before{content:'◇';position:absolute;top:44px;left:-15px;font:25px var(--serif);line-height:26px;color:#ddc38c;background:#0b1b27}
+#account-panel[data-page="profile"] .rank-step:first-child:before{left:0}
+#account-panel[data-page="profile"] .rank-step>.profile-badge{width:126px;max-width:90%;margin-top:-4px;z-index:1;filter:drop-shadow(0 1px 4px #000b);opacity:1}
+#account-panel[data-page="profile"] .rank-step.current{background:radial-gradient(ellipse at 50% 35%,#d69b3842,transparent 65%)}
+#account-panel[data-page="profile"] .rank-step.current>.profile-badge{filter:drop-shadow(0 0 10px #e5ab4f77)}
+#account-panel[data-page="profile"] .rank-plaque{width:138px;max-width:95%;min-height:49px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 7px;background:linear-gradient(#122735,#081721);border:1px solid #a58b5c;box-shadow:inset 0 0 0 3px #051522,inset 0 0 0 4px #937c4b44;clip-path:polygon(9px 0,calc(100% - 9px) 0,100% 9px,100% calc(100% - 9px),calc(100% - 9px) 100%,9px 100%,0 calc(100% - 9px),0 9px);z-index:1}
+#account-panel[data-page="profile"] .rank-plaque strong{font:600 18px var(--serif);color:#f6e6be;margin:0}
+#account-panel[data-page="profile"] .rank-plaque>span{font:12px var(--serif);letter-spacing:1px;color:#d0dde5;margin-top:2px;white-space:nowrap}
+#account-panel[data-page="profile"] .current .rank-plaque{border-color:#ffe1a0;background:linear-gradient(#2c291f,#0e1c24)}
+#account-panel[data-page="profile"] .current .rank-plaque>span{color:#f9d998}
+#account-panel[data-page="profile"] .next-rank-ribbon{position:absolute;bottom:-10px;font:600 10px var(--ui);letter-spacing:1.2px;padding:3px 20px;background:linear-gradient(#ffe3a6,#eab75d);color:#473117;clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 50%,calc(100% - 8px) 100%,8px 100%,0 50%);z-index:2}
+#account-panel[data-page="profile"] .profile-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;width:100%;max-width:none;margin:10px 0 0;padding:0;border:0;gap:4px 16px}
+#account-panel[data-page="profile"] .profile-footer p{font:13px/1.4 var(--serif);color:#b6cedd;max-width:none;margin:0}
+#account-panel[data-page="profile"] .profile-footer>div{display:flex;gap:20px;width:100%;justify-content:flex-end}
+#account-panel[data-page="profile"] .profile-footer .account-link{font:12px var(--serif);min-height:26px;color:#c7b898;padding:3px 0}
+#account-panel[data-page="profile"] .profile-name-editor{position:relative;right:auto;bottom:auto;width:100%;max-width:none;margin:12px 0 0}
+#account-panel[data-page="profile"] .profile-shell>.account-message:not(:empty){position:relative;bottom:auto;left:auto;right:auto;margin:10px 0 0}
+@media(max-width:1250px){
+ #account-panel[data-page="profile"] .profile-main{grid-template-columns:minmax(0,.9fr) minmax(0,1.7fr);gap:14px}
+ #account-panel[data-page="profile"] .profile-identity{padding:22px 16px 16px}
+ #account-panel[data-page="profile"] .profile-emblem{width:260px}
+ #account-panel[data-page="profile"] .profile-identity h3{font-size:36px}
+ #account-panel[data-page="profile"] .researcher-card-label{font-size:11px;letter-spacing:1.6px}
+ #account-panel[data-page="profile"] .rank-kicker{font-size:10px;letter-spacing:1.4px}
+ #account-panel[data-page="profile"] .profile-record{padding:17px 12px 12px}
+ #account-panel[data-page="profile"] .profile-progress{padding:0 12px}
+ #account-panel[data-page="profile"] .profile-section-label{font-size:17px}
+ #account-panel[data-page="profile"] .profile-stat-grid{gap:8px}
+ #account-panel[data-page="profile"] .profile-stat-grid>div{grid-template-columns:50px minmax(0,1fr);padding:12px 10px;gap:0 10px}
+ #account-panel[data-page="profile"] .profile-stat-grid .stat-glyph{width:50px;height:50px;font-size:26px}
+ #account-panel[data-page="profile"] .profile-stat-grid strong{font-size:32px}
+ #account-panel[data-page="profile"] .profile-stat-grid div>span:last-child{font-size:12px;white-space:normal}
+ #account-panel[data-page="profile"] .rank-step>.profile-badge{width:115px}
+ #account-panel[data-page="profile"] .rank-plaque strong{font-size:16px}
+ #account-panel[data-page="profile"] .rank-plaque>span{font-size:10px}
+}
+@media(max-width:900px){
+ #account-panel[data-page="profile"] .profile-main{grid-template-columns:1fr;margin-top:15px}
+ #account-panel[data-page="profile"] .profile-identity{min-height:480px}
+ #account-panel[data-page="profile"] .profile-record{min-height:460px}
+ #account-panel[data-page="profile"] .profile-stat-grid>div{grid-template-columns:60px minmax(0,1fr);padding:13px;gap:0 12px}
+ #account-panel[data-page="profile"] .profile-stat-grid .stat-glyph{width:60px;height:60px}
+ #account-panel[data-page="profile"] .rank-path{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px 7px;padding:10px}
+ #account-panel[data-page="profile"] .rank-path:before,#account-panel[data-page="profile"] .rank-step:before{display:none}
+ #account-panel[data-page="profile"] .rank-journey{padding:15px}
+ #account-panel[data-page="profile"] .rank-step>.profile-badge{width:130px}
+ #account-panel[data-page="profile"] .rank-step:last-child{grid-column:auto}
+ #account-panel[data-page="profile"] .journey-heading{flex-wrap:wrap;gap:8px}
+ #account-panel[data-page="profile"] .cosmetic-note{width:100%;text-align:left;margin-left:42px;font-size:12px}
+ #account-panel[data-page="profile"] .profile-footer>div{justify-content:space-between}
+}
+@media(max-width:540px){
+ #account-panel[data-page="profile"] .profile-shell{padding-inline:16px;background-attachment:scroll}
+ #account-panel[data-page="profile"] .profile-identity{padding:22px 12px 17px}
+ #account-panel[data-page="profile"] .profile-emblem{width:290px}
+ #account-panel[data-page="profile"] .researcher-card-label{font-size:12px}
+ #account-panel[data-page="profile"] .profile-record{padding:17px 10px 12px;min-height:455px}
+ #account-panel[data-page="profile"] .profile-progress{padding:0 10px}
+ #account-panel[data-page="profile"] .profile-section-label{font-size:15px;gap:8px;letter-spacing:.7px}
+ #account-panel[data-page="profile"] .xp-headline strong{font-size:43px}
+ #account-panel[data-page="profile"] .xp-headline strong small{font-size:19px}
+ #account-panel[data-page="profile"] .xp-next{font-size:11px;max-width:135px}
+ #account-panel[data-page="profile"] .xp-next>span:first-child{font-size:11px}
+ #account-panel[data-page="profile"] .xp-total{font-size:11px}
+ #account-panel[data-page="profile"] .profile-stat-grid{gap:6px}
+ #account-panel[data-page="profile"] .profile-stat-grid>div{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px;min-height:134px;text-align:center}
+ #account-panel[data-page="profile"] .profile-stat-grid .stat-glyph{width:44px;height:44px;font-size:24px}
+ #account-panel[data-page="profile"] .profile-stat-grid strong{font-size:28px;align-self:center}
+ #account-panel[data-page="profile"] .profile-stat-grid div>span:last-child{font-size:11px;line-height:1.2;align-self:center}
+ #account-panel[data-page="profile"] .next-rank-card{gap:12px;min-height:117px;padding:12px}
+ #account-panel[data-page="profile"] .next-rank-card>.profile-badge{width:94px}
+ #account-panel[data-page="profile"] .next-rank-card div>span{font-size:10px;letter-spacing:1.3px}
+ #account-panel[data-page="profile"] .next-rank-card strong{font-size:30px}
+ #account-panel[data-page="profile"] .next-rank-card p{font-size:13px}
+ #account-panel[data-page="profile"] .rank-path{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 10px}
+ #account-panel[data-page="profile"] .journey-heading{padding:0;gap:8px}
+ #account-panel[data-page="profile"] .journey-heading h3{font-size:23px}
+ #account-panel[data-page="profile"] .journey-heading .eyebrow{font-size:8px;letter-spacing:1px}
+ #account-panel[data-page="profile"] .profile-footer p{font-size:11px}
+}
+#account-panel[data-page="profile"] .profile-emblem .emblem-laurels{position:absolute;inset:0 -30px 15px;width:calc(100% + 60px);height:calc(100% - 15px);color:#d7ad61;filter:drop-shadow(0 0 6px #daa74450);pointer-events:none}
+#account-panel[data-page="profile"] .frame-corners{position:absolute;inset:0;pointer-events:none;z-index:2}
+#account-panel[data-page="profile"] .frame-corners i{position:absolute;width:38px;height:38px;background:url('/assets/Tesis-assets/profile-v250/frame-corner.svg') center/contain;opacity:.85}
+#account-panel[data-page="profile"] .frame-corners i:nth-child(1){top:0;left:0}
+#account-panel[data-page="profile"] .frame-corners i:nth-child(2){top:0;right:0;transform:rotate(90deg)}
+#account-panel[data-page="profile"] .frame-corners i:nth-child(3){bottom:0;right:0;transform:rotate(180deg)}
+#account-panel[data-page="profile"] .frame-corners i:nth-child(4){bottom:0;left:0;transform:rotate(270deg)}
+#account-panel[data-page="profile"] :is(.profile-identity,.profile-record,.rank-journey,.profile-stat-grid>div,.next-rank-card):after{display:none}
+
+#account-panel[data-page="profile"] .academic-sprig{display:block;width:30px;height:40px;transform:none;flex:none;overflow:visible}
+#account-panel[data-page="profile"] .profile-section-label>span:last-child{color:#f7e4b9}
+#account-panel[data-page="profile"] .rank-step.current:after{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:142px;max-width:96%;height:86px;border:1px solid #ffe0a0;border-radius:7px;background:linear-gradient(135deg,#dea6420b,#daa44614);box-shadow:inset 0 0 0 3px #e6b05e12,0 0 8px #edb456,0 0 22px #e49b3c55;z-index:0;pointer-events:none}
+#account-panel[data-page="profile"] .current .rank-plaque{box-shadow:inset 0 0 0 3px #051522,inset 0 0 0 4px #937c4b44,0 0 15px #e3a54a}

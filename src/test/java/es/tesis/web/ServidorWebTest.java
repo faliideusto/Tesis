@@ -25,6 +25,11 @@ class ServidorWebTest {
             assertTrue(get(c,base+"/css/game.css").headers().firstValue("Content-Type").orElseThrow().contains("text/css"));
             var png=get(c,base+"/assets/Tesis-assets/cartas/reverso_idea.webp");
             assertEquals(200,png.statusCode()); assertEquals("image/webp",png.headers().firstValue("Content-Type").orElseThrow());
+            var svg=get(c,base+"/assets/Tesis-assets/profile-v250/user-icon.svg");
+            assertEquals(200,svg.statusCode());
+            assertEquals("image/svg+xml",svg.headers().firstValue("Content-Type").orElseThrow());
+            assertEquals("nosniff",svg.headers().firstValue("X-Content-Type-Options").orElseThrow());
+            assertTrue(svg.headers().firstValue("Content-Security-Policy").orElseThrow().contains("img-src 'self'"));
             assertEquals(404,get(c,base+"/no-existe").statusCode());
             assertEquals(404,get(c,base+"/../pom.xml").statusCode());
             var creacion=post(c,base+"/api/game","{\"nombres\":[\"Ángela\",\"Bruno\",\"Clara\"]}");

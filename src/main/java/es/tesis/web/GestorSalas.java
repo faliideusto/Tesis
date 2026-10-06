@@ -49,6 +49,39 @@ public final class GestorSalas {
         return sala;
     }
 
+    /** Construye una mesa completa antes de hacerla visible en el registro. */
+    synchronized List<Vistas.AccesoSala> crearPartida(List<String> nombres, List<UUID> cuentas) {
+        if (nombres == null || cuentas == null || nombres.size() < 3 || nombres.size() > 5
+                || nombres.size() != cuentas.size())
+            throw new IllegalArgumentException("Se necesitan entre 3 y 5 jugadores.");
+        nombres.forEach(SalaJuego::validarNombre);
+        limpiar();
+        if (salas.size() >= 256) throw new ErrorSala(409, "Hay demasiadas salas abiertas. Inténtalo más tarde.");
+        String codigo;
+        do {
+            var texto = new StringBuilder();
+            for (int i = 0; i < 5; i++) texto.append(ALFABETO.charAt(azar.nextInt(ALFABETO.length())));
+            codigo = texto.toString();
+        } while (salas.containsKey(codigo));
+        var sala = new SalaJuego(codigo, reloj, azar, progresion);
+        var accesos = new ArrayList<Vistas.AccesoSala>();
+        var usados = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+        for (int i = 0; i < nombres.size(); i++) {
+            String base = SalaJuego.validarNombre(nombres.get(i));
+            String nombre = base;
+            for (int sufijo = 2; !usados.add(nombre); sufijo++) {
+                String fin = " (" + sufijo + ")";
+                nombre = base.substring(0, Math.min(base.length(), 24 - fin.length())).stripTrailing() + fin;
+            }
+            accesos.add(sala.unirse(nombre, cuentas.get(i)));
+        }
+        String anfitrion = accesos.get(0).playerToken();
+        sala.iniciar(anfitrion, sala.estado(anfitrion).revision());
+        var resultado = accesos.stream().map(a -> new Vistas.AccesoSala(a.codigo(), a.playerToken(), sala.estado(a.playerToken()))).toList();
+        salas.put(codigo, sala);
+        return resultado;
+    }
+
     public void limpiar() {
         long limite = reloj.millis() - caducidad.toMillis();
         salas.entrySet().removeIf(e -> e.getValue().caducar(limite));

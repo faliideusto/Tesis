@@ -18,6 +18,7 @@ public final class ServidorWeb implements AutoCloseable {
     private final Map<String, Entrada> sesiones = new ConcurrentHashMap<>();
     private final Gson gson = new GsonBuilder().setStrictness(Strictness.STRICT).create();
     private final GestorSalas salas;
+    private final GestorMatchmaking matchmaking;
     private final CuentasSupabase cuentas;
     private final ProgresionPartidas progresion;
     // Al menos dos trabajadores HTTP quedan disponibles para las salas durante una caída de Auth.
@@ -39,12 +40,17 @@ public final class ServidorWeb implements AutoCloseable {
         this.cuentas = cuentas;
         this.progresion = cuentas.habilitado() ? new ProgresionPartidas(cuentas::registrarResultado) : null;
         this.salas = new GestorSalas(java.time.Clock.systemUTC(), java.time.Duration.ofHours(24), progresion);
+        this.matchmaking = new GestorMatchmaking(salas);
         servidor = HttpServer.create(new InetSocketAddress(host, puerto), 0);
         servidor.setExecutor(ejecutor);
         servidor.createContext("/api/", this::api);
         servidor.createContext("/", this::estatico);
     }
-    public void iniciar() { servidor.start(); limpieza.scheduleAtFixedRate(salas::limpiar, 1, 1, TimeUnit.MINUTES); }
+    public void iniciar() {
+        servidor.start();
+        limpieza.scheduleAtFixedRate(matchmaking::limpiar, 1, 1, TimeUnit.SECONDS);
+        limpieza.scheduleAtFixedRate(salas::limpiar, 1, 1, TimeUnit.MINUTES);
+    }
     public int puerto() { return servidor.getAddress().getPort(); }
     @Override public void close() {
         servidor.stop(0); ejecutor.shutdownNow(); limpieza.shutdownNow();
@@ -86,6 +92,7 @@ public final class ServidorWeb implements AutoCloseable {
             if (Set.of("/api/comunidad", "/api/amigos", "/api/ranking", "/api/misiones", "/api/misiones/reclamar").contains(ruta)) {
                 comunidad(x, ruta, metodo); return;
             }
+            if (ruta.equals("/api/matchmaking") || ruta.startsWith("/api/matchmaking/")) { matchmaking(x, ruta, metodo); return; }
             if (ruta.equals("/api/salas") || ruta.startsWith("/api/salas/")) { salas(x, ruta, metodo); return; }
             // Compatibilidad del servidor local de pruebas, nunca conectada al registro de salas.
             // El arranque main y el constructor de red no publican estas rutas.
@@ -209,6 +216,29 @@ public final class ServidorWeb implements AutoCloseable {
         validarPeticion(objeto, operacion.equals("accion"));
         var peticion = gson.fromJson(objeto, Vistas.Peticion.class);
         json(x, 200, operacion.equals("iniciar") ? sala.iniciar(token, peticion.revision()) : sala.actuar(token, peticion));
+    }
+
+    private void matchmaking(HttpExchange x, String ruta, String metodo) throws IOException {
+        String operacion = ruta.equals("/api/matchmaking") ? "buscar" : ruta.substring("/api/matchmaking/".length());
+        if (!Set.of("buscar", "estado", "confirmar", "cancelar").contains(operacion))
+            throw new ErrorSala(404, "Ruta no encontrada.");
+        if (!(operacion.equals("estado") ? "GET" : "POST").equals(metodo))
+            throw new ErrorSala(405, "Método no permitido.");
+        String token = bearer(x.getRequestHeaders().getFirst("Authorization"));
+        if (operacion.equals("buscar")) {
+            var cuerpo = cuerpoSala(x, Set.of("nombre", "jugadores"));
+            entero(cuerpo, "jugadores", 5, true);
+            json(x, 200, matchmaking.buscar(token, nombre(cuerpo), cuerpo.get("jugadores").getAsInt(), cuentaEntrada(x)));
+            return;
+        }
+        // Autenticar antes de interpretar las mutaciones; GET renueva presencia.
+        var estado = matchmaking.estado(token);
+        if (operacion.equals("estado")) { json(x, 200, estado); return; }
+        var cuerpo = cuerpoSala(x, operacion.equals("confirmar") ? Set.of("grupo") : Set.of());
+        if (operacion.equals("confirmar")) {
+            texto(cuerpo, "grupo", true);
+            json(x, 200, matchmaking.confirmar(token, cuerpo.get("grupo").getAsString()));
+        } else json(x, 200, matchmaking.cancelar(token));
     }
 
     private static String bearer(String cabecera) {

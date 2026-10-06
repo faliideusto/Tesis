@@ -9,6 +9,7 @@ const document={getElementById:id=>{if(!nodes.has(id))nodes.set(id,element());re
   body:{append(){},classList:{add(){},remove(){}}},querySelector:()=>({append(){}}),addEventListener(){}};
 const context=vm.createContext({document,setTimeout,clearTimeout,console});
 const exports={
+  createMatchmaking:()=>({}),
   api:{identity:()=>null},accounts:{signedIn:()=>true,refreshProfile:async()=>{profileReads++;}},
   initAccountPanel:()=>{},progressText:p=>p?.estado==='CONFIRMADA'?`Guardado ${p.xp}`:p?.estado || '',
   homeCommunity:()=>'',

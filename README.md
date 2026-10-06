@@ -29,7 +29,11 @@ En el ordenador servidor abre `http://localhost:8080`. Crea una sala con tu nomb
 
 La selección es privada; cada persona actúa desde su dispositivo. Los personajes se revelan al llegar su turno. Al terminar una ronda, el último jugador indicado pulsa «Siguiente ronda» o «Ver resultados». Hay siete habilidades, dos acciones base, tres publicaciones para desencadenar el cierre y victoria por prestigio. Los ocho tipos de idea permanecen siempre disponibles; cada robo usa las probabilidades indicadas más abajo, con reposición.
 
-F5 recupera la identidad de **esa pestaña** mediante `sessionStorage`. Las salas viven en memoria y caducan tras 24 horas sin peticiones autenticadas. Reiniciar el servidor las elimina. No hay bots, expulsión de jugadores, sustitución del anfitrión ni recuperación de identidad por nombre: si alguien abandona sin conservar su token, su turno puede quedar esperando.
+También puedes pulsar **Buscar partidas** y elegir una mesa de **3, 4 o 5 personas**. Cada tamaño tiene una cola independiente por orden de llegada. Al reunir el número exacto, cada persona dispone de 20 segundos para pulsar **Estoy listo**; la partida comienza automáticamente cuando todos confirman. Si alguien cancela, los demás conservan su prioridad; si vence el plazo, quienes confirmaron siguen buscando y los demás salen. Puedes cancelar y buscar otro tamaño. Sin consultas durante 30 segundos, una búsqueda pierde su presencia y sale de la cola.
+
+F5 recupera la identidad de **esa pestaña** mediante `sessionStorage`, incluida una búsqueda pendiente. Las colas y salas viven en memoria y desaparecen al reiniciar el servidor; las salas caducan tras 24 horas sin peticiones autenticadas. El matchmaking conserva el acceso propio a una partida asignada durante 24 horas para recuperar una respuesta perdida. La cancelación de búsqueda solo existe antes del inicio. No hay bots, expulsión de jugadores, sustitución del anfitrión ni recuperación de identidad por nombre: si alguien abandona una partida sin conservar su token, su turno puede quedar esperando.
+
+QA del matchmaking con servidor local: `node tools/qa_matchmaking.mjs` (mismos requisitos Playwright/Chrome y variables `TESIS_URL`, `TESIS_PLAYWRIGHT`, `TESIS_CHROME` que la QA de navegador). Verifica colas separadas, cancelación, recarga, mesas exactas de 3/4/5 y pantalla móvil; guarda evidencias en `target/qa-matchmaking/`.
 
 ## Configuración y despliegue
 

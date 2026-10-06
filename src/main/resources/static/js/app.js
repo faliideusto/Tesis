@@ -1,4 +1,5 @@
 import {api} from './api.js';
+import {createMatchmaking} from './matchmaking.js';
 import {accounts} from './auth.js';
 import {initAccountPanel, progressText} from './account-panel.js';
 import {homeCommunity} from './home-community.js';
@@ -25,6 +26,13 @@ const academyIntro = (community=false) => `${community?'':`<div class="academy-b
 connection.className='network-status'; connection.setAttribute('role','status'); connection.hidden=true;
 document.body.append(connection);
 function connectionStatus(text='') { connection.textContent=text; connection.hidden=!text; }
+const matchmaking=createMatchmaking({api,panel:()=>document.querySelector('.setup-panel'),
+  onRoom:next=>run(()=>next),onHome:home,status:connectionStatus});
+function openMatchmaking() {
+  home();screen='matchmaking';
+  document.querySelector('.setup-panel')?.setAttribute('aria-labelledby','match-title');
+  matchmaking.open();
+}
 function stopPolling() { clearTimeout(timer); generation++; }
 function schedulePoll() {
   clearTimeout(timer);
@@ -52,6 +60,7 @@ function home() {
       <div class="room-divider"><span>¿YA TIENES UNA INVITACIÓN?</span></div>
       <form id="join-room" class="room-form"><label for="join-code">Código de sala<input id="join-code" name="codigo" maxlength="5" minlength="5" required autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="A7K3Q" class="code-input"></label><label for="join-name">Tu nombre<input id="join-name" name="nombre" maxlength="24" required autocomplete="nickname" placeholder="Tu nombre en la mesa"></label><button class="gold-button join-button" type="submit">Entrar en la academia <span aria-hidden="true">↗</span></button></form>
       ${api.identity() ? '<button class="text-button resume" data-command="resume">Volver a mi sala</button>' : ''}
+      <button class="gold-button match-entry" data-command="matchmaking">Buscar partidas</button>
       <p class="access-note"><span aria-hidden="true">◇</span> Cada persona juega desde su dispositivo.</p>
     </section><div class="home-footer"><span class="footer-motto">INVESTIGAR. TRANSFORMAR. MEJORAR.</span><span class="footer-edition">UNA MESA. MUCHAS IDEAS.</span></div></section>`;
   document.querySelector?.('.home-account-slot')?.append(accountOpener);
@@ -232,15 +241,22 @@ for (const event of ['pointerout','focusout']) document.addEventListener(event, 
 document.getElementById('modal').addEventListener('close',clearTargets);
 
 document.addEventListener('submit', e => {
+  if(e.target.id==='match-search') {
+    e.preventDefault();const fields=new FormData(e.target);
+    void matchmaking.submit(String(fields.get('nombre')).trim(),Number(fields.get('jugadores')));return;
+  }
   if (!['create-room','join-room'].includes(e.target.id)) return;
   e.preventDefault();
   const fields=new FormData(e.target); const name=String(fields.get('nombre')).trim();
   run(() => e.target.id==='create-room' ? api.create(name) : api.join(String(fields.get('codigo')),name));
 });
 document.addEventListener('click', async e => {
+  const matchButton=e.target.closest('[data-match]');
+  if(matchButton && !matchButton.disabled) {void matchmaking.command(matchButton.dataset.match);return;}
   const button = e.target.closest('[data-command]'); if (!button || button.disabled || busy || visualBusy) return;
   const index = Number(button.dataset.index);
   switch (button.dataset.command) {
+    case 'matchmaking': openMatchmaking(); break;
     case 'home': home(); break;
     case 'resume': screen='connecting'; run(() => api.state()); break;
     case 'start-game': run(() => api.start(room.revision)); break;
@@ -311,6 +327,7 @@ document.addEventListener('click', async e => {
 });
 
 async function boot() {
+  if(api.matchIdentity?.()) {openMatchmaking();return;}
   if (!api.identity()) { home(); return; }
   screen='connecting';
   try {

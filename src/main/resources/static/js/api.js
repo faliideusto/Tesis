@@ -1,15 +1,26 @@
 import {accounts} from './auth.js';
 const KEY = 'tesis.sala';
 let identity;
+const MATCH_KEY = 'tesis.matchmaking';
+let matchIdentity;
+try { matchIdentity = JSON.parse(sessionStorage.getItem(MATCH_KEY) || 'null'); } catch { matchIdentity = null; }
 try { identity = JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch { identity = null; }
 let queue = Promise.resolve();
-function request(path, body, authenticated = false, account = false) {
+function searchToken() {
+  // getRandomValues también funciona al jugar por HTTP dentro de la red local.
+  const bytes=crypto.getRandomValues(new Uint8Array(16));
+  bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+  const hex=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+  return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+}
+function request(path, body, authenticated = false, account = false, token = null) {
   const task = async () => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 12000);
     try {
       const headers = body === undefined ? {} : {'Content-Type':'application/json', 'X-Tesis':'1'};
       if (authenticated && identity) headers.Authorization = `Bearer ${identity.playerToken}`;
+      if (token) headers.Authorization = `Bearer ${token}`;
       if (account) {
         const token=await accounts.accessToken();
         if (token) headers['X-Tesis-Account-Authorization']=`Bearer ${token}`;
@@ -27,12 +38,27 @@ function request(path, body, authenticated = false, account = false) {
 }
 async function enter(path, nombre) {
   const access = await request(path, {nombre},false,true);
+  return accept(access);
+}
+function accept(access) {
   identity = {codigo:access.codigo, playerToken:access.playerToken};
   sessionStorage.setItem(KEY, JSON.stringify(identity));
   return access.sala;
 }
 const route = suffix => `salas/${encodeURIComponent(identity.codigo)}/${suffix}`;
 export const api = {
+  matchIdentity: () => matchIdentity,
+  matchForget: () => { matchIdentity=null; sessionStorage.removeItem(MATCH_KEY); },
+  matchSearch: (nombre,jugadores) => {
+    if (matchIdentity) throw new Error('Ya tienes una búsqueda pendiente. Recupérala o cancélala primero.');
+    matchIdentity={token:searchToken(),nombre,jugadores};
+    sessionStorage.setItem(MATCH_KEY,JSON.stringify(matchIdentity));
+    return request('matchmaking',{nombre,jugadores},false,true,matchIdentity.token);
+  },
+  matchState: () => request('matchmaking/estado',undefined,false,false,matchIdentity?.token),
+  matchConfirm: grupo => request('matchmaking/confirmar',{grupo},false,false,matchIdentity?.token),
+  matchCancel: () => request('matchmaking/cancelar',{},false,false,matchIdentity?.token),
+  matchAccept: access => { const sala=accept(access); api.matchForget(); return sala; },
   identity: () => identity,
   forget: () => { identity=null; sessionStorage.removeItem(KEY); },
   create: nombre => enter('salas',nombre),

@@ -1,0 +1,269 @@
+/* v2.4 · a compact academic workspace. Account and community contracts stay intact. */
+#account-panel{--academy-ink:#0b1824;--academy-panel:#142b3b;--academy-bronze:#cba477;--academy-paper:#f2e7d5;--academy-muted:#b7c6cc;background:var(--academy-ink);color:var(--academy-paper)}
+#account-panel :is(button,input,select){touch-action:manipulation}
+#account-panel :is(button,input,select,[tabindex]):focus-visible{outline:2px solid #f1c98e;outline-offset:3px}
+#account-panel button:disabled{cursor:default}
+#account-panel :is(.profile-shell,.academy-unavailable,.account-auth-shell,.account-empty-shell){background:linear-gradient(110deg,#0b1824f5,#102b3be8),url('/assets/Tesis-assets/visual-v2/academy-night.webp') center/cover;padding-inline:clamp(20px,4vw,64px)}
+#account-panel .academy-navigation{width:100%;max-width:none;min-height:56px;margin:0;padding:8px 0;border-bottom:1px solid #cba47740;gap:20px}
+#account-panel .academy-wordmark{font-size:25px;letter-spacing:.2em;color:var(--academy-bronze)}
+#account-panel .academy-section-label{color:var(--academy-muted);font-size:10px}
+#account-panel .account-close{min-height:40px;font-size:12px;gap:10px}
+#account-panel .community-tabs{width:100%;max-width:none;margin:0;padding:8px 0;border:0;gap:6px;flex-wrap:nowrap}
+#account-panel .community-tabs button{min-height:40px;padding:9px 20px;font-size:12px;border-radius:3px;background:#07152180;border-color:#b0c2cb20}
+#account-panel .community-tabs button[aria-current]{color:#f3d1a3;border-color:#cba47780;background:#cba47718;box-shadow:inset 0 -2px #cba477}
+#account-panel .profile-heading{max-width:none;margin:0;text-align:left;display:flex;gap:18px;align-items:center}
+#account-panel .profile-heading h2{font-size:32px;line-height:1.1;margin:0;order:-1}
+#account-panel .profile-heading .eyebrow{font-size:9px;letter-spacing:.16em}
+#account-panel .profile-ornament{margin-left:auto}
+#account-panel .profile-main{width:100%;max-width:none;margin:0;padding:0;grid-template-columns:minmax(210px,.8fr) minmax(0,2fr);gap:16px;align-items:stretch;min-height:0}
+#account-panel .profile-identity{padding:14px 18px;border-radius:5px;justify-content:center;background:radial-gradient(circle at 50% 10%,color-mix(in srgb,var(--rank-color) 14%,transparent),transparent 65%),#102736;box-shadow:none}
+#account-panel .profile-identity:before{border-radius:2px}
+#account-panel .profile-emblem{width:clamp(95px,16vh,170px);margin:0 auto 4px}
+#account-panel .profile-identity .emblem-level{bottom:5px;font-size:8px;padding:4px 11px}
+#account-panel .profile-identity .emblem-level b{font-size:18px}
+#account-panel .researcher-card-label{font-size:8px;letter-spacing:.15em;margin-bottom:6px}
+#account-panel .profile-identity h3{font-size:26px;margin:5px 0}
+#account-panel .rank-kicker{font-size:8px}
+#account-panel .rank-name{font-size:10px;letter-spacing:.15em}
+#account-panel .rank-description{font-size:11px;line-height:1.45;margin:7px auto;max-width:300px}
+#account-panel .researcher-card-signature{padding-top:6px;margin-top:4px;font-size:7px}
+#account-panel .profile-record{padding:18px 22px;border-radius:5px;background:#142b3bd9;box-shadow:none;display:flex;flex-direction:column;justify-content:center}
+#account-panel .profile-section-label{font-size:9px;letter-spacing:.08em}
+#account-panel .xp-headline{margin:12px 0 9px}
+#account-panel .xp-headline strong{font-size:43px}
+#account-panel .xp-headline>span{font-size:11px;max-width:none}
+#account-panel .xp-track{height:10px}
+#account-panel .xp-total{margin:8px 0 12px;font-size:10px}
+#account-panel .profile-stat-grid{gap:9px;margin-bottom:12px}
+#account-panel .profile-stat-grid>div{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:4px 10px;padding:10px 12px;border-radius:3px}
+#account-panel .profile-stat-grid .stat-glyph{grid-row:1/3;font-size:23px}
+#account-panel .profile-stat-grid strong{font-size:29px}
+#account-panel .profile-stat-grid div>span:last-child{font-size:10px;line-height:1.4}
+#account-panel .next-rank-card{padding:6px 12px;gap:12px;border-radius:3px}
+#account-panel .next-rank-card>.profile-badge{width:48px}
+#account-panel .next-rank-card strong{font-size:23px;margin:2px 0}
+#account-panel .next-rank-card p{font-size:10px}
+#account-panel .rank-journey{width:100%;max-width:none;margin:0;padding:12px 16px;border-radius:5px;box-shadow:none;background:linear-gradient(110deg,#f2e7d5,#ddd1bd)}
+#account-panel .journey-heading{align-items:center;gap:10px}
+#account-panel .journey-heading>div{display:flex;align-items:center;gap:14px}
+#account-panel .journey-heading h3{font-size:21px;margin:0}
+#account-panel .journey-heading .eyebrow{font-size:7px;letter-spacing:.12em}
+#account-panel .cosmetic-note{max-width:none;font-size:9px}
+#account-panel .rank-path{grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:9px 0 0}
+#account-panel .rank-step{padding:5px 3px;border-radius:3px}
+#account-panel .rank-step>.profile-badge{width:clamp(34px,6vh,62px)}
+#account-panel .rank-step strong{font-size:13px;margin-top:2px}
+#account-panel .rank-step>span{font-size:8px;margin-top:2px}
+#account-panel .rank-step:last-child{grid-column:auto}
+#account-panel .profile-community-notice{margin:0;font-size:10px;line-height:1.4;max-width:none}
+#account-panel .profile-footer{width:100%;max-width:none;margin:0;padding-top:5px;gap:10px}
+#account-panel .profile-footer p{font-size:10px}
+#account-panel .profile-footer>div{gap:18px;width:auto}
+#account-panel .profile-footer .account-link{font-size:11px;min-height:34px}
+#account-panel .profile-name-editor{position:absolute;right:clamp(20px,4vw,64px);bottom:60px;width:min(480px,calc(100% - 40px));margin:0;z-index:3;padding:16px;box-shadow:0 15px 50px #0009;background:#102b3b;border:1px solid var(--academy-bronze)}
+#account-panel .profile-name-editor input{min-height:42px;padding:10px}
+#account-panel .profile-shell>.account-message:not(:empty){position:absolute;bottom:6px;left:4vw;right:4vw;padding:8px 12px;margin:0;background:#102b3b;border:1px solid #cba47770;z-index:4;font-size:11px}
+#account-panel .community-panel{width:100%;max-width:none;min-height:0;margin:0;padding:0;font-size:12px;line-height:1.5}
+#account-panel .community-heading{position:relative;margin:0 0 14px;padding-right:155px}
+#account-panel .community-heading h2{font-size:34px;margin:6px 0}
+#account-panel .community-heading p{font-size:12px;line-height:1.5;margin:5px 0;max-width:900px}
+#account-panel .community-heading .community-fine-print{font-size:10px;color:#b3c4ca}
+#account-panel .community-heading>[data-community-refresh]{position:absolute;top:5px;right:0}
+#account-panel .community-card{padding:16px;border-radius:5px;box-shadow:none;background:#142b3bd9;border-color:#cba47745}
+#account-panel .community-card h3,.mission-section-heading h3{font-size:22px;margin-bottom:10px}
+#account-panel .community-action{min-height:38px;padding:8px 12px;border-radius:3px}
+#account-panel .community-panel :is(input,select){min-height:40px;padding:9px 12px;border-radius:3px}
+#account-panel .community-panel label{font-size:11px;margin-bottom:6px}
+#account-panel .friend-invite{gap:24px;margin-bottom:14px;border-left:3px solid var(--academy-bronze)}
+#account-panel .friend-invite p{font-size:10px;line-height:1.45;margin:6px 0 0}
+#account-panel .friend-code-line{gap:8px}
+#account-panel .friend-code-line .gold-button{min-height:40px;padding:9px 12px}
+#account-panel .community-friend-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;min-height:0}
+#account-panel .community-friend-grid>section:first-child{grid-column:auto}
+#account-panel .community-people li{gap:8px;padding:11px 0}
+#account-panel .community-avatar{flex-basis:30px;height:30px;font-size:17px}
+#account-panel .community-people li>div:first-of-type{min-width:100px}
+#account-panel .community-people strong{font-size:12px}
+#account-panel .community-people li>div>span{font-size:10px}
+#account-panel .community-person-actions{gap:5px;width:100%;justify-content:flex-end}
+#account-panel .community-person-actions button{font-size:10px;min-height:32px;padding:6px 10px}
+#account-panel .community-empty{font-size:12px;line-height:1.6;margin:10px 0}
+#account-panel .community-message{margin:8px 0 0;font-size:11px}
+#account-panel .community-message:empty{margin:0}
+#account-panel .ranking-controls{gap:10px;margin:0 0 12px}
+#account-panel .ranking-position{gap:18px;padding:11px 16px;margin-bottom:12px;border-left:3px solid var(--academy-bronze)}
+#account-panel .ranking-position>strong{font-size:31px}
+#account-panel .ranking-scroll{padding:0}
+#account-panel .ranking-table caption{padding:12px 16px;background:#193444}
+#account-panel .ranking-table :is(th,td){padding:10px 16px}
+#account-panel .ranking-table thead{position:sticky;top:0;z-index:1;background:#0b202e}
+#account-panel .ranking-table td small{font-size:10px;margin-top:3px}
+#account-panel .mission-section{margin-top:16px}
+#account-panel .mission-section-heading{margin-bottom:9px;gap:10px}
+#account-panel .mission-section-heading p{font-size:10px}
+#account-panel .mission-grid{gap:12px;grid-template-columns:repeat(3,minmax(0,1fr))}
+#account-panel .mission-card{padding:14px;gap:8px;position:relative;border-top:2px solid #cba47770}
+#account-panel .mission-card h4{font-size:21px;line-height:1.15}
+#account-panel .mission-reward{font-size:10px;padding:4px 8px}
+#account-panel .mission-card progress{margin:3px 0;height:7px}
+#account-panel .mission-card button{min-height:36px;padding:8px 12px}
+#account-panel .account-auth-shell{gap:7vw;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);padding-block:72px 20px}
+#account-panel .account-auth-shell>.academy-navigation{left:clamp(20px,4vw,64px);right:clamp(20px,4vw,64px);width:auto;transform:none}
+#account-panel .auth-art{align-self:center;max-width:560px}
+#account-panel .auth-art h2{font-size:clamp(34px,4vw,62px);line-height:1.08;margin:15px 0}
+#account-panel .auth-art>p{font-size:13px;line-height:1.7}
+#account-panel .auth-featured-badge{margin-top:18px;gap:14px}
+#account-panel .auth-featured-badge>.profile-badge{width:clamp(90px,17vh,155px)}
+#account-panel .auth-rank-preview>.profile-badge{width:38px}
+#account-panel .auth-benefit-line{margin-top:14px;font-size:10px}
+#account-panel .auth-form-panel{padding:24px 28px;max-width:480px;border-radius:5px;box-shadow:0 20px 60px #0005;color-scheme:light}
+#account-panel .auth-form-panel h2{font-size:31px;margin:8px 0}
+#account-panel .auth-intro{font-size:12px;line-height:1.5;margin:0 0 12px}
+#account-panel .auth-tabs{gap:22px;margin-bottom:14px}
+#account-panel .auth-tabs button{min-height:36px;padding:8px 0;font-size:12px}
+#account-panel .auth-form-panel form{gap:12px}
+#account-panel .auth-form-panel label{gap:5px;font-size:11px}
+#account-panel .auth-form-panel input{min-height:40px;padding:10px 12px;font-size:13px}
+#account-panel .auth-form-panel .gold-button{min-height:42px;padding:10px 15px;margin-top:0}
+#account-panel .auth-guest{margin:12px auto 0;min-height:32px;font-size:11px}
+#account-panel .auth-fine-print{margin:9px 0 0;font-size:10px;line-height:1.5}
+#account-panel .account-empty-shell{padding-block:80px 25px;min-height:100dvh;gap:16px}
+#account-panel .account-empty-shell>.academy-navigation{left:clamp(20px,4vw,64px);right:clamp(20px,4vw,64px);width:auto}
+#account-panel .account-empty-shell>.profile-badge{width:140px}
+#account-panel .account-empty-shell h2{font-size:35px}
+#account-panel .academy-welcome{max-width:none;margin:0}
+#account-panel .academy-welcome h2{font-size:35px;margin:5px 0}
+#account-panel .academy-welcome p{font-size:12px;line-height:1.5;margin:0}
+#account-panel .academy-welcome p br{display:none}
+#account-panel .account-availability{max-width:none;margin:0;padding:14px 18px;gap:14px;border-radius:5px;flex-wrap:nowrap}
+#account-panel .account-availability h3{font-size:23px;margin:0 0 6px}
+#account-panel .account-availability p{font-size:11px;line-height:1.5;margin:0}
+#account-panel .account-availability>.plain-button{margin:0;min-height:40px}
+#account-panel .academy-benefits{max-width:none;margin:0;gap:12px}
+#account-panel .academy-benefits article{padding:14px;border-radius:4px}
+#account-panel .academy-benefits h3{font-size:23px;margin:6px 0}
+#account-panel .academy-benefits p{font-size:11px;line-height:1.5;margin:0}
+#account-panel .unavailable-return{min-height:40px;margin:0;justify-self:end;padding:10px 16px}
+@media(min-width:901px){
+ body.account-page-active{height:100dvh;overflow:hidden}
+ #account-panel{height:100dvh;min-height:0;overflow:hidden}
+ #account-panel .profile-shell{height:100dvh;min-height:0;display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto auto auto;gap:8px;padding-block:0 14px}
+ #account-panel :is(.profile-identity,.profile-record){min-height:0;overflow:auto;justify-content:safe center;scrollbar-color:#937958 #102736;scrollbar-width:thin}
+ #account-panel[data-page="friends"] .profile-shell,#account-panel[data-page="ranking"] .profile-shell,#account-panel[data-page="missions"] .profile-shell{grid-template-rows:auto auto minmax(0,1fr)}
+ #account-panel .community-panel{display:flex;flex-direction:column;overflow:hidden}
+ #account-panel [data-community-content]{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-color:#937958 #102736;scrollbar-width:thin;padding:4px 5px 4px 0}
+ #account-panel[data-page="ranking"] [data-community-content]{display:flex;flex-direction:column;overflow:hidden;flex:1}
+ #account-panel[data-page="ranking"] .community-heading,#account-panel[data-page="ranking"] .ranking-controls,#account-panel[data-page="ranking"] .ranking-position{flex:none}
+ #account-panel .ranking-scroll{min-height:0;overflow:auto;flex:1}
+ #account-panel[data-page="friends"] [data-community-content]{display:flex;flex-direction:column;overflow:hidden;flex:1}
+ #account-panel[data-page="friends"] .community-heading,#account-panel[data-page="friends"] .friend-invite{flex:none}
+ #account-panel .community-friend-grid{flex:1}
+ #account-panel .community-friend-grid>.community-card{display:flex;flex-direction:column;min-height:0}
+ #account-panel .community-people{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-color:#937958 #102736;scrollbar-width:thin;padding-right:4px}
+ #account-panel .account-auth-shell{height:100dvh;min-height:0}
+ #account-panel .account-empty-shell{height:100dvh;min-height:0}
+ #account-panel .academy-unavailable{height:100dvh;min-height:0;display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto auto;gap:13px;padding-block:0 14px}
+ #account-panel .academy-benefits article{align-content:center}
+}
+@media(min-width:901px) and (max-height:680px){
+ #account-panel .profile-shell{gap:5px}
+ #account-panel .academy-navigation{min-height:48px;padding:4px 0}
+ #account-panel .community-tabs{padding:4px 0}
+ #account-panel .community-tabs button{min-height:36px;padding:8px 18px}
+ #account-panel .profile-heading h2{font-size:27px}
+ #account-panel .profile-identity{padding:8px 12px}
+ #account-panel .profile-emblem{width:65px}
+ #account-panel .profile-identity .emblem-level{bottom:0;padding:2px 7px;font-size:7px}
+ #account-panel .profile-identity .emblem-level b{font-size:14px}
+ #account-panel .researcher-card-label{margin-bottom:2px}
+ #account-panel .rank-description{margin:4px auto;line-height:1.35}
+ #account-panel .researcher-card-signature{padding-top:3px;margin-top:2px}
+ #account-panel .profile-identity h3{font-size:23px}
+ #account-panel .profile-record{padding:8px 18px}
+ #account-panel .xp-headline{margin:7px 0}
+ #account-panel .xp-headline strong{font-size:30px}
+ #account-panel .xp-total{margin:6px 0 8px}
+ #account-panel .profile-stat-grid{margin-bottom:8px}
+ #account-panel .profile-stat-grid>div{padding:5px 10px;gap:2px 8px}
+ #account-panel .profile-stat-grid strong{font-size:24px}
+ #account-panel .next-rank-card{padding:4px 10px}
+ #account-panel .next-rank-card>.profile-badge{width:36px}
+ #account-panel .next-rank-card strong{font-size:19px;line-height:1.1;margin:2px 0}
+ #account-panel .next-rank-card div>span{font-size:7px;letter-spacing:.1em}
+ #account-panel .next-rank-card p{font-size:9px;line-height:1.4}
+ #account-panel .rank-journey{padding:8px 12px}
+ #account-panel .rank-step>.profile-badge{width:33px}
+ #account-panel .rank-step{padding:3px}
+ #account-panel .journey-heading h3{font-size:18px}
+ #account-panel .profile-footer .account-link{min-height:30px}
+ #account-panel .account-auth-shell{padding-block:60px 16px}
+ #account-panel .auth-form-panel{padding:18px 24px}
+ #account-panel .auth-form-panel h2{font-size:29px}
+ #account-panel .auth-form-panel form{gap:9px}
+ #account-panel .auth-tabs{margin-bottom:10px}
+ #account-panel .auth-featured-badge{margin-top:12px}
+ #account-panel .auth-featured-badge>.profile-badge{width:90px}
+ #account-panel .auth-art h2{font-size:39px}
+ #account-panel .auth-guest{margin-top:8px}
+ #account-panel .auth-fine-print{margin-top:6px}
+ #account-panel .community-heading h2{font-size:29px}
+ #account-panel .community-heading{margin-bottom:10px}
+ #account-panel .academy-unavailable{gap:9px}
+ #account-panel .academy-benefits article{padding:10px 14px}
+}
+@media(max-width:900px){
+ #account-panel :is(.profile-shell,.academy-unavailable){padding-block:0 24px;min-height:100dvh}
+ #account-panel .profile-heading{margin:16px 0;flex-wrap:wrap;gap:8px}
+ #account-panel .profile-heading h2{font-size:35px}
+ #account-panel .profile-main{grid-template-columns:1fr;gap:14px}
+ #account-panel .profile-emblem{width:150px}
+ #account-panel .profile-identity{padding:20px}
+ #account-panel .profile-record{padding:20px}
+ #account-panel .rank-journey{margin-top:16px;padding:16px}
+ #account-panel .journey-heading{align-items:flex-start;flex-direction:column}
+ #account-panel .journey-heading>div{flex-direction:column;align-items:flex-start;gap:5px}
+ #account-panel .rank-path{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+ #account-panel .rank-step>.profile-badge{width:62px}
+ #account-panel .profile-community-notice{margin:14px 0}
+ #account-panel .profile-footer{flex-wrap:wrap;gap:10px}
+ #account-panel .profile-name-editor{position:relative;bottom:auto;right:auto;width:100%;margin-top:15px}
+ #account-panel .profile-shell>.account-message:not(:empty){position:static;margin-top:12px}
+ #account-panel .community-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+ #account-panel .community-tabs button{padding:9px 5px;font-size:11px}
+ #account-panel .community-panel{margin-top:16px}
+ #account-panel .community-heading{padding-right:0}
+ #account-panel .community-heading>[data-community-refresh]{position:static;margin-top:8px}
+ #account-panel .friend-invite{grid-template-columns:1fr;gap:16px}
+ #account-panel .community-friend-grid{grid-template-columns:1fr}
+ #account-panel .community-person-actions{width:auto}
+ #account-panel .account-auth-shell{grid-template-columns:1fr;gap:24px;padding-block:80px 24px;min-height:100dvh}
+ #account-panel .auth-art{max-width:none;width:100%}
+ #account-panel .auth-art h2{font-size:36px}
+ #account-panel .auth-featured-badge>.profile-badge{width:95px}
+ #account-panel .auth-form-panel{max-width:none;justify-self:stretch;padding:24px}
+ #account-panel .auth-rank-preview{display:flex}
+ #account-panel .academy-welcome{margin:20px 0}
+ #account-panel .account-availability{flex-wrap:wrap}
+ #account-panel .academy-benefits{margin:16px 0;grid-template-columns:1fr}
+ #account-panel .unavailable-return{margin:16px 0 0}
+}
+@media(max-width:520px){
+ #account-panel .academy-navigation{gap:10px}
+ #account-panel .academy-wordmark{font-size:21px}
+ #account-panel .academy-section-label{display:none}
+ #account-panel .account-close{font-size:11px}
+ #account-panel .community-tabs{grid-template-columns:1fr 1fr}
+ #account-panel .profile-stat-grid{gap:5px}
+ #account-panel .profile-stat-grid>div{grid-template-columns:1fr;text-align:center;padding:10px 4px}
+ #account-panel .profile-stat-grid .stat-glyph{grid-row:auto;font-size:18px}
+ #account-panel .xp-headline>span{max-width:110px;font-size:10px}
+ #account-panel .rank-path{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #account-panel .rank-step strong{font-size:15px}
+ #account-panel .profile-footer>div{width:100%;justify-content:space-between;gap:10px}
+ #account-panel .mission-grid{grid-template-columns:1fr}
+ #account-panel .mission-section-heading{align-items:flex-start;flex-direction:column}
+ #account-panel .community-person-actions{width:100%}
+ #account-panel .auth-benefit-line{gap:10px;font-size:9px}
+ #account-panel .auth-benefit-line>span+span{padding-left:10px}
+ #account-panel .account-empty-shell h2{font-size:29px}
+}

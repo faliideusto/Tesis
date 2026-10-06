@@ -1,5 +1,15 @@
 # Tesis
 
+La versión 2.4.0 reorganiza el inicio con navegación directa a perfil, amigos,
+ranking, misiones y reglas. **Buscar partida** tiene su espacio propio;
+**Crear sala privada** y **Tengo un código** abren formularios independientes.
+El inicio y las secciones de cuenta se ajustan al alto de escritorio; las listas
+largas se desplazan dentro de su panel. En móvil la página puede desplazarse.
+QA del rediseño: `node tools/qa_home_community.mjs` (delega en
+`qa_home_v240.mjs`, con los mismos requisitos Playwright/Chrome de las otras QA).
+Comprueba geometría, acceso y autenticación con HTTP/Auth simulados; evidencias
+en `target/qa-home-v240/`. No prueba un proyecto Supabase remoto.
+
 Amigos, ranking global y misiones diarias/semanales amplían las cuentas opcionales:
 solicitudes por código, clasificaciones por XP/victorias/partidas y recompensas
 de XP verificadas a partir de resultados del servidor. Instalación de la nueva

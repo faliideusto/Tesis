@@ -35,22 +35,30 @@ async function setup({signedIn=true,enabled=true,configFailure=false,rankingFail
 const routes={amigos:'friends',ranking:'ranking',misiones:'missions'};
 async function section(page,name){await page.locator(`#account-panel[data-page="${name}"]`).waitFor();if(name==='friends')await page.locator('#friend-own-code').waitFor();if(name==='ranking')await page.locator('#ranking-criterion').waitFor();if(name==='missions')await page.locator('.mission-section').first().waitFor();if(name==='profile')await page.locator('.profile-identity').waitFor();}
 async function shot(page,label){await page.screenshot({path:`${out}/${label}.png`,fullPage:true});if(label==='home-1440'||label==='home-390')await page.screenshot({path:`${out}/${label}.jpg`,fullPage:true,quality:85});checks.push(label);}
-async function homeGeometry(page,width){
- await page.setViewportSize({width,height:width<500?844:1000});await page.locator('.home-community a').first().waitFor();
+async function homeGeometry(page,width,height=width<500?844:1000){
+ await page.setViewportSize({width,height});await page.locator('.home-community a').first().waitFor();
  const result=await page.evaluate(()=>{
   const rect=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height};};
   const header=[...document.querySelectorAll('.home-nav-wordmark,.home-nav [data-command="help"],.home-nav #account-open')].map(rect);
   const cards=[...document.querySelectorAll('.home-community a')].map(rect);
   const overlap=(a,b)=>Math.min(a.right,b.right)-Math.max(a.x,b.x)>1&&Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)>1;
-  return {overflow:document.documentElement.scrollWidth>innerWidth+1,header,cards,overlaps:header.some((a,i)=>header.slice(i+1).some(b=>overlap(a,b)))||cards.some((a,i)=>cards.slice(i+1).some(b=>overlap(a,b))),forms:[...document.querySelectorAll('#create-room,#join-room')].map(el=>el.id)};
+  const nav=rect(document.querySelector('.home-nav')),logo=rect(document.querySelector('.home-header-logo')),copy=rect(document.querySelector('.home-copy')),setup=rect(document.querySelector('.setup-panel')),footer=rect(document.querySelector('.home-footer'));
+  return {verticalOverflow:document.documentElement.scrollHeight>innerHeight+1,nav,logo,copy,setup,footer,overflow:document.documentElement.scrollWidth>innerWidth+1,header,cards,overlaps:header.some((a,i)=>header.slice(i+1).some(b=>overlap(a,b)))||cards.some((a,i)=>cards.slice(i+1).some(b=>overlap(a,b))),forms:[...document.querySelectorAll('#create-room,#join-room')].map(el=>el.id)};
  });
  assert.equal(result.overflow,false,`Inicio ${width}: overflow`);assert.equal(result.overlaps,false,`Inicio ${width}: solapamiento`);
  assert.equal(result.cards.length,3);for(const r of result.cards)assert(r.width>=44&&r.height>=44,`Inicio ${width}: destino táctil`);
- assert.deepEqual(result.forms,['create-room','join-room']);await shot(page,`home-${width}`);
+ assert(result.logo.y>=result.nav.y&&result.logo.bottom<=result.nav.bottom,`Logo dentro de cabecera ${width}`);
+ assert(result.nav.bottom<=result.copy.y,`Cabecera separada de contenido ${width}`);
+ if(width>800){
+  assert.equal(result.verticalOverflow,false,`Inicio ${width}x${height}: scroll vertical ${JSON.stringify(result)}`);
+  assert(result.footer.y>=Math.max(result.copy.bottom,result.setup.bottom),`Pie separado del contenido ${width}x${height}`);
+ }
+ assert.deepEqual(result.forms,['create-room','join-room']);await shot(page,height===1000||width<500?`home-${width}`:`home-${width}x${height}`);
 }
 try{
  const {context,page}=await setup();await page.goto(base);await page.locator('#account-open.has-profile').waitFor();
  for(const width of [1440,1024,768,390,360])await homeGeometry(page,width);
+ for(const [width,height] of [[1920,1080],[1536,864],[1440,900],[1366,768],[1280,720],[1152,648],[1024,768],[1024,600]])await homeGeometry(page,width,height);
  await page.setViewportSize({width:1440,height:1000});
  await page.locator('#create-name').fill('Borrador crear');await page.locator('#join-name').fill('Borrador entrar');await page.locator('#join-code').fill('QA123');
  for(const [hash,name] of Object.entries(routes)){
@@ -79,7 +87,7 @@ try{
  // Formularios originales y regreso de sala con identidad conservada.
  await page.locator('#create-name').fill('Ana');await page.locator('#create-room button').click();await page.locator('.room-code').waitFor();assert.equal(await page.locator('.home-community').count(),0,'Comunidad solo en portada');
  await page.locator('[data-command="home"]').click();await page.locator('[data-command="resume"]').waitFor();await page.locator('.home-community a[href="#amigos"]').click();await section(page,'friends');await page.locator('.account-close').click();await page.locator('#account-panel').waitFor({state:'hidden'});await page.locator('[data-command="resume"]').click();await page.locator('.room-code').waitFor();
- await page.locator('[data-command="home"]').click();await page.locator('#join-code').fill('qa123');await page.locator('#join-name').fill('Ana');await page.locator('#join-room button').click();await page.locator('.room-code').waitFor();
+ await page.locator('[data-command="home"]').click();await homeGeometry(page,1024,600);await page.locator('#join-code').fill('qa123');await page.locator('#join-name').fill('Ana');await page.locator('#join-room button').click();await page.locator('.room-code').waitFor();
  assert.equal(await page.evaluate(()=>JSON.parse(sessionStorage.getItem('tesis.sala')).playerToken),'qa-room-token');checks.push('create-join-resume-room-identity');await context.close();
  for(const [hash,name] of Object.entries(routes)){
   const guest=await setup({signedIn:false});await guest.page.goto(`${base}/#${hash}`);await guest.page.locator('#account-login').waitFor();await guest.page.locator('[name="email"]').fill('qa@example.test');await guest.page.locator('[name="password"]').fill('password-qa');await guest.page.locator('#account-login button').click();await section(guest.page,name);assert.equal(new URL(guest.page.url()).hash,`#${hash}`);checks.push(`guest-login-${hash}`);await guest.context.close();

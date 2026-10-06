@@ -29,3 +29,8 @@ La revisión detectó que el nuevo control de operaciones podía ocultar el mens
 
 ## Publicación
 El usuario autoriza commit, push de `codex/inicio-comunidad` a personal/origin y merge a main en ambos. Antes de publicar, fetch confirma main local y ambos remotos en 8297dba. La entrega final registra los SHA verificados con `git ls-remote`; no se usa force ni se borran ramas.
+
+## Ajuste de altura y cabecera
+Petición posterior: evitar scroll de portada en ordenador y mover el logo a la cabecera para que no aparezca cortado junto a su línea. Rama `codex/inicio-sin-scroll`, desde main fc3a1ac. Cabecera y pie pasan a filas en flujo en escritorio; espacios, tipografía y decoración se adaptan a la altura. Hasta 650 px de alto se omiten las cartas decorativas y textos de presentación redundantes del formulario, manteniendo todos los accesos y controles. Mi perfil conserva el botón y el lobby conserva su composición.
+
+Validación: 10 suites Node y 28 comprobaciones Chrome con Auth/HTTP simulados pasan. Se comprueba ausencia de scroll vertical en 1920×1080, 1536×864, 1440×900, 1366×768, 1280×720, 1152×648, 1024×768 y 1024×600, también este último con Volver a mi sala. El logo queda dentro de la cabecera, sin solapamiento con el contenido; revisión visual de 1366×768, 1024×600 y móvil 390 px. Mantiene pruebas de navegación, teclado, sesión y salas. Diff revisado sin bloqueantes. Capturas actualizadas en docs/qa/inicio-comunidad. Publicación y fusión en ambos remotos autorizadas; SHA finales en la entrega.

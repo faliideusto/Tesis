@@ -1,6 +1,8 @@
 import {api} from './api.js';
 import {createMatchmaking} from './matchmaking.js';
 import {accounts} from './auth.js';
+import {startPresence} from './presence.js';
+import {createRoomInvitations} from './room-invitations.js';
 import {initAccountPanel, progressText} from './account-panel.js';
 import {homeCommunity} from './home-community.js';
 import {img, esc} from './dom.js';
@@ -28,6 +30,26 @@ document.body.append(connection);
 function connectionStatus(text='') { connection.textContent=text; connection.hidden=!text; }
 const matchmaking=createMatchmaking({api,panel:()=>document.querySelector('.setup-panel'),
   onRoom:next=>run(()=>next),onHome:()=>home('play',true),status:connectionStatus});
+const roomInvitations=createRoomInvitations({accounts,api,getRoom:()=>room,onAccept:acceptRoomInvitation});
+async function acceptRoomInvitation(id) {
+  if(busy||visualBusy)throw new Error('Espera a que termine la operación actual.');
+  if(api.matchIdentity?.())throw new Error('Cancela tu búsqueda de partida antes de aceptar otra invitación.');
+  if(api.identity()) {
+    const current=await api.state();
+    if(current.fase!=='LOBBY'&&current.partida?.fase!=='FIN_PARTIDA')throw new Error('Termina tu partida actual antes de entrar en otra sala.');
+    if(current.fase==='LOBBY'&&!window.confirm('¿Entrar en la sala invitada? Tu asiento actual se conserva, pero esta pestaña pasará a la nueva sala.'))return false;
+  }
+  const actor=accounts.identity();
+  if(!actor)throw new Error('Inicia sesión para aceptar la invitación.');
+  stopPolling();busy=true;document.body.classList.add('busy');
+  try {
+    const next=await api.acceptInvitation(id);
+    if(actor!==accounts.identity())return false;
+    document.querySelector('.public-profile-dialog[open]')?.close();
+    if(!document.getElementById('account-panel').hidden)window.location.hash='';
+    closeDialog();connectionStatus();await renderRoom(next,true);return true;
+  } finally {busy=false;document.body.classList.remove('busy');schedulePoll();}
+}
 function openMatchmaking() {
   home();screen='matchmaking';
   document.querySelector('.setup-panel')?.setAttribute('aria-labelledby','match-title');
@@ -58,6 +80,7 @@ function home(mode='play',restoreFocus=false) {
     <section class="setup-panel ${mode==='play'?'play-menu':'private-panel'}" aria-labelledby="academy-access-title" data-home-mode="${mode}">${homeAccess(mode)}</section></div><div class="home-footer"><span class="footer-motto">INVESTIGAR. TRANSFORMAR. MEJORAR.</span><span class="footer-edition">UNA MESA. MUCHAS IDEAS.</span></div></section>`;
   document.querySelector?.('.home-account-slot')?.append(accountOpener);
   if(mode!=='play' || restoreFocus) document.getElementById('academy-access-title')?.focus({preventScroll:true});
+  roomInvitations.refreshLobby();
 }
 function homeAccess(mode) {
   const resume=api.identity()?'<button class="text-button resume" data-command="resume">↪ Reanudar mi sala</button>':'';
@@ -78,6 +101,8 @@ function lobby() {
     ${room.soyAnfitrion ? `<button class="gold-button" data-command="start-game" ${(room.jugadores.length<3 || room.jugadores.length>5)?'disabled':''}>Iniciar partida</button><p class="setup-note">${(room.jugadores.length<3 || room.jugadores.length>5)?'Esperando jugadores. Se necesitan entre 3 y 5.':'Todo preparado. Puedes iniciar la partida.'}</p>` : `<p class="waiting-copy">Esperando a que ${esc(room.anfitrion)} inicie la partida…</p>`}</section></section>`;
   document.querySelector?.('.home-account-slot')?.append(accountOpener);
   document.querySelector?.('.lobby-panel')?.append(progress);
+  const slot=document.createElement('div');slot.dataset.roomInvitations='';
+  document.querySelector?.('.lobby-panel')?.append(slot);roomInvitations.refreshLobby();
 }
 function renderRoom(next, force=false) {
   const requestedGeneration=generation;
@@ -121,6 +146,7 @@ async function applyRoom(next, force=false) {
     room=next; screen=room.fase==='LOBBY'?'lobby':'game';
     if (screen==='lobby') { state=null; lobby(); return; }
     state=after; selectedRole=null; pendingAction=null; selectedTarget=null; clearTargets(); reconcileDialog(sameRoom);
+    roomInvitations.refreshLobby();
     const accountOpener=document.getElementById('account-open'),progress=document.getElementById('account-progress');
     document.body.append(accountOpener,progress);
     board(state); feedback(sameRoom ? before : null,state); settled(sameRoom ? before : null,state);
@@ -351,4 +377,5 @@ document.addEventListener('tesis:account-return',()=>{
   if(state && !document.getElementById('modal').open && ['SELECCION_ROLES','FIN_RONDA','FIN_PARTIDA'].includes(state.fase))phaseDialog(state);
 });
 initAccountPanel();
+startPresence(accounts);
 boot();

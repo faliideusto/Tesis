@@ -18,8 +18,11 @@ public final class CuentasSupabase implements AutoCloseable {
         @Override public String toString() { return "ConfiguracionSupabase[claves ocultas]"; }
     }
     public record Perfil(String nombre, long xp, int nivel, long partidasTerminadas, long victorias) {}
-    public record Amigo(String codigo, String nombre, int nivel) {}
-    public record Comunidad(String codigo, List<Amigo> amigos, List<Amigo> recibidas, List<Amigo> enviadas) {}
+    public record PerfilPublico(String codigo, String nombre, long xp, int nivel, long partidasTerminadas,
+                                long victorias, boolean enLinea, boolean presenciaDisponible) {}
+    public record Amigo(String codigo, String nombre, int nivel, boolean enLinea) {}
+    public record Comunidad(String codigo, List<Amigo> amigos, List<Amigo> recibidas, List<Amigo> enviadas, List<Amigo> sugerencias, boolean presenciaDisponible) {}
+    public record Presencia(boolean activa) {}
     public record EntradaRanking(long posicion, String codigo, String nombre, int nivel, long xp,
                                  long victorias, long partidas, boolean yo) {}
     public record Ranking(String criterio, List<EntradaRanking> entradas, EntradaRanking propia) {}
@@ -170,6 +173,46 @@ public final class CuentasSupabase implements AutoCloseable {
 
     public Comunidad comunidad(String jwt) { return leerComunidad(rpc(jwt, "comunidad", new JsonObject())); }
 
+    public PerfilPublico perfilPublico(String jwt, String codigo) {
+        if (codigo == null || !codigo.matches("[A-Fa-f0-9]{16}"))
+            throw new ExcepcionCuenta(400, "Indica un código de perfil válido.");
+        JsonObject cuerpo = new JsonObject(); cuerpo.addProperty("p_codigo", codigo.toUpperCase(Locale.ROOT));
+        JsonObject dato = rpc(jwt, "perfil_publico", cuerpo);
+        try {
+            long xp = numero(dato, "xp"), partidas = numero(dato, "partidasTerminadas"), victorias = numero(dato, "victorias");
+            int nivel = nivel(dato);
+            boolean disponible = booleano(dato, "presenciaDisponible"), enLinea = booleano(dato, "enLinea");
+            if (!codigo.toUpperCase(Locale.ROOT).equals(codigo(dato)) || victorias > partidas
+                    || nivel != Math.min(Integer.MAX_VALUE, 1 + xp / 500) || (!disponible && enLinea)) throw indisponible();
+            return new PerfilPublico(codigo(dato), cadena(dato, "nombre", 24), xp, nivel, partidas, victorias, enLinea, disponible);
+        } catch (RuntimeException e) { throw indisponible(); }
+    }
+
+    public Presencia presencia(String jwt) {
+        JsonObject dato = rpc(jwt, "presencia", new JsonObject());
+        if (!booleano(dato, "activa")) throw indisponible();
+        return new Presencia(true);
+    }
+
+    /** Solo servidor: actor previamente autenticado; UUID destino jamás sale al navegador. */
+    public UUID resolverAmigoEnLinea(UUID actor, String codigo) {
+        exigirHabilitado(); Objects.requireNonNull(actor);
+        if (codigo == null || !codigo.matches("[A-Fa-f0-9]{16}"))
+            throw new ExcepcionCuenta(400,"Indica un código de amistad válido.");
+        JsonObject cuerpo = new JsonObject(); cuerpo.addProperty("p_actor",actor.toString());
+        cuerpo.addProperty("p_codigo",codigo.toUpperCase(Locale.ROOT));
+        try {
+            JsonObject dato = JsonParser.parseString(pedir("/rest/v1/rpc/resolver_amigo_en_linea","POST",null,JSON.toJson(cuerpo),true)).getAsJsonObject();
+            JsonElement destino = dato.get("destino");
+            if (destino == null || destino.isJsonNull()) throw new ExcepcionCuenta(400,"Este amigo no está disponible para recibir una invitación.");
+            if (!destino.isJsonPrimitive() || !destino.getAsJsonPrimitive().isString()) throw indisponible();
+            UUID identidad = UUID.fromString(destino.getAsString());
+            if (identidad.equals(actor) || !identidad.toString().equalsIgnoreCase(destino.getAsString())) throw indisponible();
+            return identidad;
+        } catch (ExcepcionCuenta e) { throw e; }
+        catch (RuntimeException e) { throw indisponible(); }
+    }
+
     public Comunidad amistad(String jwt, String codigo, String accion) {
         if (codigo == null || !codigo.matches("[A-Fa-f0-9]{16}"))
             throw new ExcepcionCuenta(400, "Indica un código de amistad válido.");
@@ -214,14 +257,18 @@ public final class CuentasSupabase implements AutoCloseable {
     }
 
     private Comunidad leerComunidad(JsonObject dato) {
-        try { return new Comunidad(codigo(dato), amigos(dato, "amigos"), amigos(dato, "recibidas"), amigos(dato, "enviadas")); }
+        try { return new Comunidad(codigo(dato), amigos(dato, "amigos"), amigos(dato, "recibidas"), amigos(dato, "enviadas"),
+                dato.has("sugerencias") ? amigos(dato, "sugerencias") : List.of(),
+                dato.has("presenciaDisponible") && booleano(dato, "presenciaDisponible")); }
         catch (RuntimeException e) { throw indisponible(); }
     }
     private List<Amigo> amigos(JsonObject dato, String campo) {
         List<Amigo> resultado = new ArrayList<>();
-        for (JsonElement fila : lista(dato, campo, 100)) {
+        for (JsonElement fila : lista(dato, campo, campo.equals("sugerencias") ? 12 : 100)) {
             JsonObject amigo = fila.getAsJsonObject();
-            resultado.add(new Amigo(codigo(amigo), cadena(amigo, "nombre", 24), nivel(amigo)));
+            boolean enLinea = amigo.has("enLinea") && booleano(amigo, "enLinea");
+            // La presencia solo se proyecta para amistades aceptadas.
+            resultado.add(new Amigo(codigo(amigo), cadena(amigo, "nombre", 24), nivel(amigo), campo.equals("amigos") && enLinea));
         }
         return List.copyOf(resultado);
     }
@@ -313,11 +360,13 @@ public final class CuentasSupabase implements AutoCloseable {
             if (respuesta.body().length > 65536) throw indisponible();
             int estado = respuesta.statusCode();
             if (!privilegiada && (estado == 401 || estado == 403)) throw invalida();
-            if (!privilegiada && ruta.startsWith("/rest/v1/rpc/") && estado == 400) {
+            if (!privilegiada && ruta.startsWith("/rest/v1/rpc/") && (estado == 400 || estado == 404)) {
                 // Únicamente errores de negocio conocidos: nunca publicar hints, detalles o secretos remotos.
                 try {
                     JsonObject error = JsonParser.parseString(new String(respuesta.body(), java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
                     String mensaje = error.get("message").getAsString();
+                    if (ruta.equals("/rest/v1/rpc/perfil_publico") && "P0002".equals(error.get("code").getAsString())
+                            && "Perfil público no encontrado".equals(mensaje)) throw new ExcepcionCuenta(404, mensaje + ".");
                     if ("22023".equals(error.get("code").getAsString()) && Set.of(
                             "Código o acción de amistad inválidos", "No existe una cuenta con ese código",
                             "No puedes agregarte a ti mismo", "Se ha alcanzado el límite de cien amistades y solicitudes",

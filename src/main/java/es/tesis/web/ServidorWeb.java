@@ -19,6 +19,7 @@ public final class ServidorWeb implements AutoCloseable {
     private final Gson gson = new GsonBuilder().setStrictness(Strictness.STRICT).create();
     private final GestorSalas salas;
     private final GestorMatchmaking matchmaking;
+    private final GestorInvitaciones invitaciones;
     private final CuentasSupabase cuentas;
     private final ProgresionPartidas progresion;
     // Al menos dos trabajadores HTTP quedan disponibles para las salas durante una caída de Auth.
@@ -41,6 +42,7 @@ public final class ServidorWeb implements AutoCloseable {
         this.progresion = cuentas.habilitado() ? new ProgresionPartidas(cuentas::registrarResultado) : null;
         this.salas = new GestorSalas(java.time.Clock.systemUTC(), java.time.Duration.ofHours(24), progresion);
         this.matchmaking = new GestorMatchmaking(salas);
+        this.invitaciones = new GestorInvitaciones(salas);
         servidor = HttpServer.create(new InetSocketAddress(host, puerto), 0);
         servidor.setExecutor(ejecutor);
         servidor.createContext("/api/", this::api);
@@ -50,6 +52,7 @@ public final class ServidorWeb implements AutoCloseable {
         servidor.start();
         limpieza.scheduleAtFixedRate(matchmaking::limpiar, 1, 1, TimeUnit.SECONDS);
         limpieza.scheduleAtFixedRate(salas::limpiar, 1, 1, TimeUnit.MINUTES);
+        limpieza.scheduleAtFixedRate(invitaciones::limpiar, 1, 1, TimeUnit.MINUTES);
     }
     public int puerto() { return servidor.getAddress().getPort(); }
     @Override public void close() {
@@ -89,10 +92,11 @@ public final class ServidorWeb implements AutoCloseable {
                         : cuentas.renombrar(jwt, nuevoNombre)));
                 return;
             }
-            if (Set.of("/api/comunidad", "/api/amigos", "/api/ranking", "/api/misiones", "/api/misiones/reclamar").contains(ruta)) {
+            if (Set.of("/api/comunidad", "/api/amigos", "/api/presencia", "/api/perfil-publico", "/api/ranking", "/api/misiones", "/api/misiones/reclamar").contains(ruta)) {
                 comunidad(x, ruta, metodo); return;
             }
             if (ruta.equals("/api/matchmaking") || ruta.startsWith("/api/matchmaking/")) { matchmaking(x, ruta, metodo); return; }
+            if (ruta.equals("/api/invitaciones") || ruta.startsWith("/api/invitaciones/")) { invitaciones(x,ruta,metodo); return; }
             if (ruta.equals("/api/salas") || ruta.startsWith("/api/salas/")) { salas(x, ruta, metodo); return; }
             // Compatibilidad del servidor local de pruebas, nunca conectada al registro de salas.
             // El arranque main y el constructor de red no publican estas rutas.
@@ -146,18 +150,27 @@ public final class ServidorWeb implements AutoCloseable {
     }
 
     private void comunidad(HttpExchange x, String ruta, String metodo) throws IOException {
-        boolean mutacion = ruta.equals("/api/amigos") || ruta.equals("/api/misiones/reclamar");
+        boolean mutacion = ruta.equals("/api/amigos") || ruta.equals("/api/presencia") || ruta.equals("/api/misiones/reclamar");
         if (!(mutacion ? "POST" : "GET").equals(metodo)) throw new ErrorSala(405, "Método no permitido.");
         String jwt = bearer(x.getRequestHeaders().getFirst("Authorization"));
         // Dentro del mismo cupo limitado se verifica la cuenta y se ejecuta la RPC.
         json(x, 200, consultarCuenta(() -> {
             cuentas.autenticar(jwt);
             String consulta = x.getRequestURI().getRawQuery();
-            if (!ruta.equals("/api/ranking") && consulta != null)
+            if (!Set.of("/api/ranking", "/api/perfil-publico").contains(ruta) && consulta != null)
                 throw new IllegalArgumentException("Esta ruta no admite parámetros de consulta.");
             try {
                 return switch (ruta) {
                     case "/api/comunidad" -> cuentas.comunidad(jwt);
+                    case "/api/perfil-publico" -> {
+                        if (consulta == null || !consulta.matches("codigo=[A-Fa-f0-9]{16}"))
+                            throw new IllegalArgumentException("Indica un código de perfil válido.");
+                        yield cuentas.perfilPublico(jwt, consulta.substring("codigo=".length()));
+                    }
+                    case "/api/presencia" -> {
+                        cuerpoSala(x, Set.of());
+                        yield cuentas.presencia(jwt);
+                    }
                     case "/api/misiones" -> cuentas.misiones(jwt);
                     case "/api/ranking" -> {
                         String criterio = "xp";
@@ -197,7 +210,7 @@ public final class ServidorWeb implements AutoCloseable {
             UUID cuenta = cuentaEntrada(x);
             json(x, 201, salas.crear(nombre(cuerpoSala(x, Set.of("nombre"))), cuenta)); return;
         }
-        if (partes.length != 5 || !Set.of("unirse", "estado", "iniciar", "accion").contains(partes[4]))
+        if (partes.length != 5 || !Set.of("unirse", "estado", "iniciar", "accion", "invitar").contains(partes[4]))
             throw new ErrorSala(404, "Ruta no encontrada.");
         String operacion = partes[4];
         if (!(operacion.equals("estado") ? metodo.equals("GET") : metodo.equals("POST")))
@@ -212,10 +225,36 @@ public final class ServidorWeb implements AutoCloseable {
         // Autenticar antes de interpretar acciones o devolver información del juego.
         var estado = sala.estado(token);
         if (operacion.equals("estado")) { json(x, 200, estado); return; }
+        if (operacion.equals("invitar")) {
+            if (x.getRequestURI().getRawQuery() != null) throw new IllegalArgumentException("Esta ruta no admite consultas.");
+            String jwt = bearer(x.getRequestHeaders().getFirst("X-Tesis-Account-Authorization"));
+            UUID actor = consultarCuenta(() -> cuentas.autenticar(jwt));
+            sala.validarInvitador(token,actor,null);
+            JsonObject cuerpo = cuerpoSala(x,Set.of("codigo")); texto(cuerpo,"codigo",true);
+            UUID destino = consultarCuenta(() -> cuentas.resolverAmigoEnLinea(actor,cuerpo.get("codigo").getAsString()));
+            json(x,200,invitaciones.enviar(partes[3],token,actor,destino)); return;
+        }
         var objeto = cuerpoSala(x, operacion.equals("iniciar") ? Set.of("revision") : Set.of("revision", "tipo", "indice", "objetivo"));
         validarPeticion(objeto, operacion.equals("accion"));
         var peticion = gson.fromJson(objeto, Vistas.Peticion.class);
         json(x, 200, operacion.equals("iniciar") ? sala.iniciar(token, peticion.revision()) : sala.actuar(token, peticion));
+    }
+
+    private void invitaciones(HttpExchange x, String ruta, String metodo) throws IOException {
+        String[] partes = ruta.split("/",-1);
+        boolean lista = ruta.equals("/api/invitaciones");
+        if (!lista && (partes.length != 5 || !partes[3].matches("[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}")
+                || !Set.of("aceptar","rechazar").contains(partes[4]))) throw new ErrorSala(404,"Ruta no encontrada.");
+        if (!(lista ? "GET" : "POST").equals(metodo)) throw new ErrorSala(405,"Método no permitido.");
+        String jwt = bearer(x.getRequestHeaders().getFirst("Authorization"));
+        UUID actor = consultarCuenta(() -> cuentas.autenticar(jwt));
+        if (x.getRequestURI().getRawQuery() != null) throw new IllegalArgumentException("Esta ruta no admite consultas.");
+        if (lista) { json(x,200,invitaciones.listar(actor)); return; }
+        cuerpoSala(x,Set.of());
+        if (partes[4].equals("aceptar")) {
+            String nombre = consultarCuenta(() -> cuentas.perfil(jwt)).nombre();
+            json(x,200,invitaciones.aceptar(partes[3],actor,nombre));
+        } else { invitaciones.rechazar(partes[3],actor); json(x,200,Map.of()); }
     }
 
     private void matchmaking(HttpExchange x, String ruta, String metodo) throws IOException {

@@ -24,14 +24,16 @@ try {
   await db.exec(await readFile(new URL('../migrations/202610070001_amigos_presencia_sugerencias.sql', import.meta.url), 'utf8'));
   await db.exec(await readFile(new URL('../migrations/202610070002_perfiles_publicos.sql', import.meta.url), 'utf8'));
   await db.exec(await readFile(new URL('../migrations/202610070003_invitaciones_amigos.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('../migrations/202610070004_ranking_periodos.sql', import.meta.url), 'utf8'));
   await db.exec(await readFile(new URL('cuentas_progresion.sql', import.meta.url), 'utf8'));
   await db.exec(await readFile(new URL('comunidad_misiones.sql', import.meta.url), 'utf8'));
   await db.exec(await readFile(new URL('amigos_presencia_sugerencias.sql', import.meta.url), 'utf8'));
   await db.exec(await readFile(new URL('perfiles_publicos.sql', import.meta.url), 'utf8'));
   await db.exec(await readFile(new URL('invitaciones_amigos.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('ranking_periodos.sql', import.meta.url), 'utf8'));
   const {rows} = await db.query('select count(*)::integer as perfiles from public.profiles');
   if (rows[0].perfiles !== 0) throw new Error('El script no revirtió los perfiles de prueba');
-  console.log('PASS PostgreSQL WASM: cinco migraciones; perfiles/resultados, amistad consentida, presencia y caducidad, sugerencias, perfiles públicos y resolver privado de invitaciones, ranking, misiones, permisos/RLS, reintentos y rollback.');
+  console.log('PASS PostgreSQL WASM: seis migraciones; perfiles/resultados, comunidad y presencia, perfiles e invitaciones, ranking global/amigos/semanal/mensual con DST, misiones, permisos/RLS y rollback.');
   console.log('No verifica Supabase Auth/PostgREST ni concurrencia con varias conexiones.');
 } finally {
   await db.close();

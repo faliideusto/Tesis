@@ -121,7 +121,7 @@ export function createAccounts({fetcher=globalThis.fetch, storage=globalThis.ses
     invitations:()=>request('invitaciones'),
     rejectInvitation:id=>request(`invitaciones/${encodeURIComponent(id)}/rechazar`,{}),
     friendship:(codigo,accion)=>request('amigos',{codigo,accion}),
-    ranking:(criterio='xp')=>request(`ranking?criterio=${encodeURIComponent(criterio)}`),
+    ranking:(criterio='xp',ambito='global')=>request(`ranking?criterio=${encodeURIComponent(criterio)}&ambito=${encodeURIComponent(ambito)}`),
     missions:()=>request('misiones'),
     claimMission:id=>request('misiones/reclamar',{id}),
     identity:()=>session?.user?.id || null,

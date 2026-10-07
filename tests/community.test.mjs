@@ -62,6 +62,14 @@ select=rankRoot.querySelector('#ranking-criterion');assert.equal(rankRoot.ownerD
 select.value='victorias';rankRoot.listeners.change({target:select});await tick();
 assert.deepEqual(criteria,['xp','partidas','victorias']);assert.equal(select.value,'partidas','Fallo conserva criterio de los datos actuales');assert.match(rankRoot.innerHTML,/Tu posición aparecerá/);
 
+const scopeRoot=new Root(),scopeCalls=[];
+mountCommunity(scopeRoot,{accounts:{...account,profile:()=>({nivel:1,xp:350,victorias:0,partidasTerminadas:2}),ranking:async(criterion,scope)=>{scopeCalls.push([criterion,scope]);if(scope==='temporada')throw new Error('Periodo no disponible');return {entradas:[],propia:null,ambito:scope};}},page:'ranking'});
+await tick();let weekly=scopeRoot.controls.find(control=>control.dataset.rankingScope==='semanal');weekly.focus();await scopeRoot.click(weekly);await tick();
+assert.equal(scopeRoot.ownerDocument.activeElement.dataset.rankingScope,'semanal','Cambiar ámbito mantiene el foco en el botón de ámbito');assert.match(scopeRoot.innerHTML,/data-ranking-scope="semanal" aria-current="page"/);
+let criterionSelect=scopeRoot.querySelector('#ranking-criterion');criterionSelect.value='victorias';scopeRoot.listeners.change({target:criterionSelect});await tick();
+await scopeRoot.click(scopeRoot.controls.find(control=>control.dataset.rankingScope==='temporada'));await tick();assert.match(scopeRoot.innerHTML,/data-ranking-scope="semanal" aria-current="page"/,'Fallo de ámbito conserva el ámbito y los datos anteriores');
+await scopeRoot.click(scopeRoot.querySelector('[data-community-refresh]'));await tick();assert.deepEqual(scopeCalls,[['xp','global'],['xp','semanal'],['victorias','semanal'],['victorias','temporada'],['victorias','semanal']],'Ordenar y actualizar conservan el ámbito seleccionado');
+
 let claims=0,rewards=0,resolveClaim;
 const missionData={diarias:[{id:'d',titulo:'Juega una partida',objetivo:1,progreso:1,xp:50,completada:true,reclamada:false}],semanales:[]};
 const missionRoot=new Root();mountCommunity(missionRoot,{accounts:{...account,missions:async()=>missionData,claimMission:()=>{claims++;return new Promise(value=>resolveClaim=value);}},page:'missions',onReward:()=>rewards++});
@@ -78,7 +86,7 @@ const {createAccounts}=(await module('auth.js')).namespace;
 let authCallback;const session={access_token:'account-token',user:{id:'auth-user'}};
 const paths=[];const auth=createAccounts({storage:{getItem:()=>null},sdk:()=>({createClient:()=>({auth:{onAuthStateChange:fn=>authCallback=fn,getSession:async()=>({data:{session}})}})}),fetcher:async(path,init)=>{paths.push({path,init});return {ok:true,json:async()=>path.endsWith('config')?{habilitado:true,url:'https://example.com',publishableKey:'p'}:{}};}});
 await auth.initialize();await auth.community();await auth.friendship('ABC','solicitar');await auth.ranking('victorias');await auth.missions();await auth.claimMission('d');
-assert.deepEqual(paths.slice(1).map(value=>value.path),['/api/comunidad','/api/amigos','/api/ranking?criterio=victorias','/api/misiones','/api/misiones/reclamar']);
+assert.deepEqual(paths.slice(1).map(value=>value.path),['/api/comunidad','/api/amigos','/api/ranking?criterio=victorias&ambito=global','/api/misiones','/api/misiones/reclamar']);
 for(const {init} of paths.slice(1)){assert.equal(init.headers.Authorization,'Bearer account-token');assert.ok(init.signal);assert.equal(init.headers['X-Tesis-Account-Authorization'],undefined);}
 assert.equal(paths[2].init.body,'{"codigo":"ABC","accion":"solicitar"}');assert.equal(paths[5].init.body,'{"id":"d"}');
 authCallback('SIGNED_OUT',null);assert.equal(auth.identity(),null);

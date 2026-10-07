@@ -1,6 +1,8 @@
 import {esc} from './dom.js';
 import {badge,progression} from './profile-ranks.js';
 import {createPublicProfile} from './public-profile.js';
+import {rankingView} from './ranking-panel.js';
+export {rankingView} from './ranking-panel.js';
 
 const integer=value=>Math.max(0,Math.floor(Number(value)||0));
 const format=value=>integer(value).toLocaleString('es-ES');
@@ -40,14 +42,6 @@ export function friendsView(data,{filter='',suggestionOffset=0}={}) {
   const stats=[['friends','Amigos',friends.length],['received','Solicitudes recibidas',received.length],['sent','Solicitudes enviadas',sent.length],['online','En línea ahora',presenceAvailable?friends.filter(person=>person.enLinea).length:null]];
   return `<header class="community-heading friend-heading"><span class="eyebrow">INVESTIGAR EN COMPAÑÍA</span><h2>Tu círculo académico</h2><p>Conecta por código, añade compañeros y forma tu círculo en la Academia.<br>Puedes tener hasta 100 contactos, incluidas las solicitudes pendientes.</p></header><div class="friend-stat-grid">${stats.map(([kind,label,count])=>`<article class="community-card friend-stat friend-stat-${kind}">${corners()}<span class="friend-stat-glyph">${kind==='online'?'<i class="friend-online-light" aria-hidden="true"></i>':icon(kind)}</span><div><h3>${label}</h3><strong ${count===null?'aria-label="Presencia no disponible"':''}>${count===null?'—':format(count)}</strong></div></article>`).join('')}</div><div class="friend-invite community-card">${corners()}<div class="friend-own-code"><label for="friend-own-code">${icon('link')}Tu código de amistad</label><div class="friend-code-line"><input id="friend-own-code" readonly value="${esc(data.codigo)}" aria-label="Tu código de amistad"><button type="button" class="community-action friend-gold" data-copy-code>${icon('copy')}Copiar</button></div><p>Este código público identifica tu perfil; para entrar en una partida usa el código de sala.</p></div><form id="friend-request"><label for="friend-code">${icon('add')}Añadir un amigo por código</label><div class="friend-code-line"><input id="friend-code" name="codigo" required maxlength="32" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Código de tu amigo"><button class="gold-button friend-gold" ${atCapacity?'disabled title="Has alcanzado el límite de 100 contactos"':''}>${icon('sent')}Enviar solicitud</button></div><button type="button" class="community-action friend-refresh" data-community-refresh>${icon('refresh')}Actualizar amigos</button></form></div><div class="community-friend-grid">${people('Tus amigos',friends,'friends',filter,presenceAvailable)}${people('Solicitudes recibidas',received,'received')}${people('Solicitudes enviadas',sent,'sent')}</div>${suggestionsView(data.sugerencias||[],suggestionOffset,atCapacity)}`;
 }
-const labels={xp:'Experiencia',victorias:'Victorias',partidas:'Partidas terminadas'};
-function rankRow(entry) {
-  return `<tr ${entry.yo?'class="ranking-self"':''}><th scope="row">${format(entry.posicion)}</th><td>${profileTrigger(entry,`Nivel ${format(entry.nivel)}`,'',false)}</td><td>${format(entry.xp)}</td><td>${format(entry.victorias)}</td><td>${format(entry.partidas)}</td></tr>`;
-}
-export function rankingView(data,criterion='xp') {
-  const own=data.propia,entries=data.entradas||[];
-  return `<header class="community-heading"><span class="eyebrow">EL LEGADO DE LA COMUNIDAD</span><h2>Ranking global</h2><p>Las 50 primeras posiciones de la academia. La experiencia incluye las recompensas de misiones.</p><p class="community-fine-print">Tu nombre visible, nivel, experiencia, victorias y partidas terminadas aparecen para las otras cuentas en el ranking.</p></header><div class="ranking-controls"><label for="ranking-criterion">Ordenar por</label><select id="ranking-criterion">${Object.entries(labels).map(([value,label])=>`<option value="${value}" ${value===criterion?'selected':''}>${label}</option>`).join('')}</select><button type="button" class="community-action" data-community-refresh>Actualizar</button></div><section class="community-card ranking-position" aria-label="Tu posición">${own?`<span>Tu posición · ${esc(labels[criterion])}</span><strong>#${format(own.posicion)}</strong><p>Nivel ${format(own.nivel)} · ${format(own.xp)} XP · ${format(own.victorias)} victorias · ${format(own.partidas)} partidas terminadas</p>`:'<p class="ranking-no-position">Tu posición aparecerá cuando el servidor registre tu perfil.</p>'}</section>${entries.length?`<div class="community-card ranking-scroll" tabindex="0" role="region" aria-label="Clasificación global, desliza para ver todas las columnas"><table class="ranking-table"><caption>${esc(labels[criterion])} · clasificación global</caption><thead><tr><th scope="col">Posición</th><th scope="col">Investigador</th><th scope="col">XP</th><th scope="col">Victorias</th><th scope="col">Partidas</th></tr></thead><tbody>${entries.map(rankRow).join('')}</tbody></table></div>`:'<p class="community-card community-empty">La clasificación aún no tiene investigadores.</p>'}`;
-}
 export function resetTime(value) {
   const time=new Date(value);
   if(!Number.isFinite(time.getTime()))return 'Pendiente de confirmar';
@@ -65,7 +59,7 @@ export function missionsView(data) {
 
 // Each mount owns its generation. Leaving the page/account invalidates every pending response.
 export function mountCommunity(root,{accounts,page,onReward=()=>{},clipboard=globalThis.navigator?.clipboard,confirm=message=>globalThis.confirm(message)}={}) {
-  let alive=true,generation=0,busy=false,criterion='xp',data=null,loadError=false,friendFilter='',suggestionOffset=0,refreshTimer=null;
+  let alive=true,generation=0,busy=false,criterion='xp',rankingScope='global',data=null,loadError=false,friendFilter='',suggestionOffset=0,refreshTimer=null,periodTimer=null;
   const identity=accounts.identity();
   const publicProfiles=createPublicProfile(root,{accounts});
   const valid=current=>alive&&generation===current&&accounts.signedIn()&&accounts.identity()===identity;
@@ -73,18 +67,18 @@ export function mountCommunity(root,{accounts,page,onReward=()=>{},clipboard=glo
   function render(status='') {
     if(!alive)return;
     if(suggestionOffset>=(data?.sugerencias||[]).length)suggestionOffset=0;
-    const view=data?(page==='friends'?friendsView(data,{filter:friendFilter,suggestionOffset}):page==='ranking'?rankingView(data,criterion):missionsView(data)):`<p class="community-empty">${loadError?'No se pudo cargar esta sección.':'Cargando tu academia…'}</p>`;
+    const view=data?(page==='friends'?friendsView(data,{filter:friendFilter,suggestionOffset}):page==='ranking'?rankingView(data,criterion,{ambito:rankingScope,profile:accounts.profile?.()||null}):missionsView(data)):`<p class="community-empty">${loadError?'No se pudo cargar esta sección.':'Cargando tu academia…'}</p>`;
     root.innerHTML=`<div data-community-content>${view}</div><p data-community-message class="community-message" role="status" aria-live="polite" tabindex="-1">${esc(status)}</p>${data?'':'<button type="button" class="community-action" data-community-refresh>Volver a intentar</button>'}`;
     root.setAttribute('aria-busy',String(busy));
     if(busy)root.querySelectorAll('button,input,select').forEach(control=>control.disabled=true);
   }
-  async function run(task,{success='',reward=false,nextCriterion}={}) {
+  async function run(task,{success='',reward=false,nextCriterion,nextScope}={}) {
     if(busy||!alive)return;
     busy=true;const current=++generation;
     const active=root.ownerDocument?.activeElement;
     const restoreFocus=Boolean(active&&root.contains(active));
     const requestCode=root.querySelector('#friend-code')?.value;
-    const focusId=active?.id,focusCode=active?.dataset?.code,focusAction=active?.dataset?.friendAction,focusClaim=active?.dataset?.claimMission;
+    const focusId=active?.id,focusCode=active?.dataset?.code,focusAction=active?.dataset?.friendAction,focusClaim=active?.dataset?.claimMission,focusScope=active?.dataset?.rankingScope;
     const controls=Array.from(root.querySelectorAll('button,input,select'));
     const disabled=controls.map(control=>control.disabled);
     controls.forEach(control=>control.disabled=true);root.setAttribute('aria-busy','true');message('Conectando…');
@@ -93,10 +87,11 @@ export function mountCommunity(root,{accounts,page,onReward=()=>{},clipboard=glo
     if(restoreFocus)root.querySelector('[data-community-message]')?.focus({preventScroll:true});
     try {
       const value=await task();if(!valid(current))return;
-      data=value;busy=false;loadError=false;if(nextCriterion)criterion=nextCriterion;render(success);
+      data=value;busy=false;loadError=false;if(nextCriterion)criterion=nextCriterion;if(nextScope)rankingScope=nextScope;render(success);
+      if(page==='ranking')schedulePeriodRefresh();
       if(page==='friends'&&requestCode&&root.querySelector('#friend-code'))root.querySelector('#friend-code').value=requestCode;
       if(restoreFocus) {
-        const match=Array.from(root.querySelectorAll('button,input,select')).find(control=>!control.disabled&&(focusId?control.id===focusId:focusClaim?control.dataset.claimMission===focusClaim:focusCode?control.dataset.code===focusCode&&control.dataset.friendAction===focusAction:control.hasAttribute('data-community-refresh')));
+        const match=Array.from(root.querySelectorAll('button,input,select')).find(control=>!control.disabled&&(focusId?control.id===focusId:focusScope?control.dataset.rankingScope===focusScope:focusClaim?control.dataset.claimMission===focusClaim:focusCode?control.dataset.code===focusCode&&control.dataset.friendAction===focusAction:control.hasAttribute('data-community-refresh')));
         (match||root.querySelector(page==='friends'?'#friend-code':'[data-community-message]'))?.focus({preventScroll:true});
       }
       if(reward)onReward();
@@ -106,12 +101,29 @@ export function mountCommunity(root,{accounts,page,onReward=()=>{},clipboard=glo
       if(!data){loadError=true;render();}
       else if(page==='ranking')root.querySelector('#ranking-criterion').value=criterion;
       message(error.name==='AbortError'?'La conexión tardó demasiado. Actualiza para comprobar el estado antes de repetir una acción.':error.name==='TypeError'?'No se pudo conectar. Actualiza para comprobar el estado antes de repetir una acción.':error.message||'No se pudo completar la operación.');
+      if(page==='ranking')schedulePeriodRefresh(30000);
     }
   }
-  const load=(selected=criterion)=>run(()=>page==='friends'?accounts.community():page==='ranking'?accounts.ranking(selected):accounts.missions(),{nextCriterion:page==='ranking'?selected:undefined});
+  const load=(selected=criterion,scope=rankingScope)=>run(()=>page==='friends'?accounts.community():page==='ranking'?accounts.ranking(selected,scope):accounts.missions(),{nextCriterion:page==='ranking'?selected:undefined,nextScope:page==='ranking'?scope:undefined});
+  function schedulePeriodRefresh(backoff=0) {
+    clearTimeout(periodTimer);
+    if(!alive||page!=='ranking'||!['semanal','temporada'].includes(rankingScope))return;
+    const end=new Date(data?.periodo?.fin).getTime();if(!Number.isFinite(end))return;
+    periodTimer=setTimeout(refreshExpiredPeriod,backoff||Math.max(50,Math.min(3600000,end-Date.now()+50)));
+  }
+  function refreshExpiredPeriod() {
+    if(!alive||page!=='ranking')return;
+    const end=new Date(data?.periodo?.fin).getTime();if(!Number.isFinite(end))return;
+    if(end>Date.now()){schedulePeriodRefresh();return;}
+    if(root.ownerDocument?.visibilityState==='hidden')return;
+    if(busy||publicProfiles.isOpen){schedulePeriodRefresh(5000);return;}
+    void load();
+  }
+  const visibility=()=>{if(root.ownerDocument?.visibilityState!=='hidden')refreshExpiredPeriod();};
   const click=async event=>{
     const button=event.target.closest('button');if(!button||!root.contains(button)||busy||button.disabled)return;
     if(button.hasAttribute('data-public-profile')){publicProfiles.open(button.dataset.publicProfile,button);return;}
+    if(button.hasAttribute('data-ranking-scope')){void load(criterion,button.dataset.rankingScope);return;}
     if(button.hasAttribute('data-community-refresh')){void load();return;}
     if(button.hasAttribute('data-suggestions-next')||button.hasAttribute('data-suggestions-prev')) {
       const count=(data?.sugerencias||[]).length;if(!count)return;
@@ -179,6 +191,7 @@ export function mountCommunity(root,{accounts,page,onReward=()=>{},clipboard=glo
   }
   root.addEventListener('input',input);root.addEventListener('click',click);root.addEventListener('submit',submit);root.addEventListener('change',change);
   render();void load();
+  if(page==='ranking')root.ownerDocument?.addEventListener?.('visibilitychange',visibility);
   if(page==='friends'&&root.ownerDocument?.visibilityState!==undefined)refreshTimer=setTimeout(refreshFriends,30000);
-  return {destroy(){alive=false;++generation;publicProfiles.destroy();clearTimeout(refreshTimer);root.removeEventListener('input',input);root.removeEventListener('click',click);root.removeEventListener('submit',submit);root.removeEventListener('change',change);}};
+  return {destroy(){alive=false;++generation;publicProfiles.destroy();clearTimeout(refreshTimer);clearTimeout(periodTimer);root.ownerDocument?.removeEventListener?.('visibilitychange',visibility);root.removeEventListener('input',input);root.removeEventListener('click',click);root.removeEventListener('submit',submit);root.removeEventListener('change',change);}};
 }

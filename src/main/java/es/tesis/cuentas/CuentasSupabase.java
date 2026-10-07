@@ -25,7 +25,8 @@ public final class CuentasSupabase implements AutoCloseable {
     public record Presencia(boolean activa) {}
     public record EntradaRanking(long posicion, String codigo, String nombre, int nivel, long xp,
                                  long victorias, long partidas, boolean yo) {}
-    public record Ranking(String criterio, List<EntradaRanking> entradas, EntradaRanking propia) {}
+    public record PeriodoRanking(String id, String inicio, String fin, String zonaHoraria) {}
+    public record Ranking(String criterio, String ambito, PeriodoRanking periodo, List<EntradaRanking> entradas, EntradaRanking propia) {}
     public record Mision(String id, String titulo, long objetivo, long progreso, long xp, boolean completada, boolean reclamada) {}
     public record Misiones(List<Mision> diarias, List<Mision> semanales, String reinicioDiario, String reinicioSemanal) {}
     public record Participante(int seat, UUID user_id, String display_name, int prestige, boolean winner) {}
@@ -224,19 +225,45 @@ public final class CuentasSupabase implements AutoCloseable {
     }
 
     public Ranking ranking(String jwt, String criterio) {
+        return ranking(jwt, criterio, "global");
+    }
+
+    public Ranking ranking(String jwt, String criterio, String ambito) {
         if (!Set.of("xp", "victorias", "partidas").contains(criterio == null ? "" : criterio))
             throw new ExcepcionCuenta(400, "Criterio de ranking no válido.");
+        if (!Set.of("global", "amigos", "semanal", "temporada").contains(ambito == null ? "" : ambito))
+            throw new ExcepcionCuenta(400, "Ámbito de ranking no válido.");
         JsonObject cuerpo = new JsonObject(); cuerpo.addProperty("p_criterio", criterio);
-        JsonObject dato = rpc(jwt, "ranking", cuerpo);
+        cuerpo.addProperty("p_ambito", ambito);
+        JsonObject dato = rpc(jwt, "ranking_periodo", cuerpo);
         try {
             if (!criterio.equals(cadena(dato, "criterio", 16))) throw indisponible();
+            // Permite respuestas globales anteriores para la transición de despliegue.
+            if (dato.has("ambito") ? !ambito.equals(cadena(dato, "ambito", 16)) : !ambito.equals("global")) throw indisponible();
+            PeriodoRanking periodo = null;
+            boolean temporal = Set.of("semanal", "temporada").contains(ambito);
+            if (temporal) {
+                JsonObject p = dato.getAsJsonObject("periodo");
+                String id = cadena(p, "id", 32), inicio = cadena(p, "inicio", 64), fin = cadena(p, "fin", 64);
+                if (!"Europe/Madrid".equals(cadena(p, "zonaHoraria", 32))
+                        || !OffsetDateTime.parse(inicio).toInstant().isBefore(OffsetDateTime.parse(fin).toInstant())
+                        || !id.matches(ambito.equals("semanal") ? "semanal:[0-9]{4}-[0-9]{2}-[0-9]{2}" : "temporada:[0-9]{4}-[0-9]{2}")) throw indisponible();
+                ZonedDateTime primero = OffsetDateTime.parse(inicio).atZoneSameInstant(ZoneId.of("Europe/Madrid"));
+                ZonedDateTime siguiente = OffsetDateTime.parse(fin).atZoneSameInstant(ZoneId.of("Europe/Madrid"));
+                boolean semanal = ambito.equals("semanal");
+                String esperado = ambito + ":" + (semanal ? primero.toLocalDate() : YearMonth.from(primero));
+                if (!primero.toLocalTime().equals(LocalTime.MIDNIGHT) || !id.equals(esperado)
+                        || (semanal ? primero.getDayOfWeek() != DayOfWeek.MONDAY : primero.getDayOfMonth() != 1)
+                        || !(semanal ? primero.plusWeeks(1) : primero.plusMonths(1)).equals(siguiente)) throw indisponible();
+                periodo = new PeriodoRanking(id, inicio, fin, "Europe/Madrid");
+            } else if (dato.has("periodo") && !dato.get("periodo").isJsonNull()) throw indisponible();
             List<EntradaRanking> entradas = new ArrayList<>();
             for (JsonElement fila : lista(dato, "entradas", 50)) entradas.add(leerEntrada(fila.getAsJsonObject()));
             JsonElement propia = dato.get("propia");
             if (propia == null) throw indisponible();
             EntradaRanking personal = propia.isJsonNull() ? null : leerEntrada(propia.getAsJsonObject());
             if (personal != null && !personal.yo()) throw indisponible();
-            return new Ranking(criterio, List.copyOf(entradas), personal);
+            return new Ranking(criterio, ambito, periodo, List.copyOf(entradas), personal);
         } catch (RuntimeException e) { throw indisponible(); }
     }
 

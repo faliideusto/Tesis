@@ -173,13 +173,20 @@ public final class ServidorWeb implements AutoCloseable {
                     }
                     case "/api/misiones" -> cuentas.misiones(jwt);
                     case "/api/ranking" -> {
-                        String criterio = "xp";
+                        String criterio = "xp", ambito = "global";
                         if (consulta != null) {
-                            if (!consulta.matches("criterio=(xp|victorias|partidas)"))
-                                throw new IllegalArgumentException("Criterio de ranking no válido.");
-                            criterio = consulta.substring("criterio=".length());
+                            Set<String> vistos = new HashSet<>();
+                            for (String parametro : consulta.split("&", -1)) {
+                                if (parametro.matches("criterio=(xp|victorias|partidas)")) {
+                                    if (!vistos.add("criterio")) throw new IllegalArgumentException("Consulta de ranking no válida.");
+                                    criterio = parametro.substring("criterio=".length());
+                                } else if (parametro.matches("ambito=(global|amigos|semanal|temporada)")) {
+                                    if (!vistos.add("ambito")) throw new IllegalArgumentException("Consulta de ranking no válida.");
+                                    ambito = parametro.substring("ambito=".length());
+                                } else throw new IllegalArgumentException("Consulta de ranking no válida.");
+                            }
                         }
-                        yield cuentas.ranking(jwt, criterio);
+                        yield cuentas.ranking(jwt, criterio, ambito);
                     }
                     case "/api/amigos" -> {
                         JsonObject cuerpo = cuerpoSala(x, Set.of("codigo", "accion"));

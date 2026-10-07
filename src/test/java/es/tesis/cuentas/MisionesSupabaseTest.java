@@ -23,7 +23,7 @@ class MisionesSupabaseTest {
         {"diarias":[],"semanales":[],"reinicioDiario":"2026-10-08T00:00:00Z","reinicioSemanal":"2026-10-12T00:00:00Z"}
         """;
     static final String ACTUAL = """
-        {"diarias":[],"semanales":[],"temporada":[{"id":"temporada:jugar10:2026-10","titulo":"Diez partidas","descripcion":"Completa diez partidas.","objetivo":10,"progreso":10,"xp":100,"puntosPase":100,"completada":true,"reclamada":true}],"reinicioDiario":"2026-10-08T00:00:00Z","reinicioSemanal":"2026-10-12T00:00:00Z","reinicioTemporada":"2026-10-31T23:00:00Z"}
+        {"diarias":[],"semanales":[],"temporada":[{"id":"temporada:jugar10:2026-10","titulo":"Diez partidas","descripcion":"Completa diez partidas.","objetivo":10,"progreso":10,"xp":1000,"puntosPase":1000,"completada":true,"reclamada":true}],"reinicioDiario":"2026-10-08T00:00:00Z","reinicioSemanal":"2026-10-12T00:00:00Z","reinicioTemporada":"2026-12-31T23:00:00Z"}
         """;
     @BeforeEach void iniciar() throws Exception {
         var clave = new ECKeyGenerator(Curve.P_256).keyID("test").generate();
@@ -51,9 +51,9 @@ class MisionesSupabaseTest {
     @Test void proyectaTemporadaYReclamaSoloIdSinCantidadDelCliente() {
         respuesta.set(ACTUAL);
         var misiones=cuentas.misiones(jwt);
-        assertEquals("2026-10-31T23:00:00Z",misiones.reinicioTemporada());
+        assertEquals("2026-12-31T23:00:00Z",misiones.reinicioTemporada());
         var m=misiones.temporada().get(0);
-        assertEquals(100,m.puntosPase());assertEquals("Completa diez partidas.",m.descripcion());assertTrue(m.reclamada());
+        assertEquals(1000,m.puntosPase());assertEquals("Completa diez partidas.",m.descripcion());assertTrue(m.reclamada());
         cuentas.reclamarMision(jwt,m.id());assertEquals("{\"p_id\":\"temporada:jugar10:2026-10\"}",cuerpo.get());
         assertEquals(400,assertThrows(ExcepcionCuenta.class,()->cuentas.reclamarMision(jwt,"temporada:jugar10:2026-13")).estado());
     }
@@ -62,9 +62,9 @@ class MisionesSupabaseTest {
         assertTrue(m.temporada().isEmpty());assertNull(m.reinicioTemporada());
     }
     @Test void rechazaCantidadIncoherenteYFechaInvalida() {
-        respuesta.set(ACTUAL.replace("\"puntosPase\":100","\"puntosPase\":999"));
+        respuesta.set(ACTUAL.replace("\"puntosPase\":1000","\"puntosPase\":999"));
         assertEquals(503,assertThrows(ExcepcionCuenta.class,()->cuentas.misiones(jwt)).estado());
-        respuesta.set(ACTUAL.replace("2026-10-31T23:00:00Z","mañana"));
+        respuesta.set(ACTUAL.replace("2026-12-31T23:00:00Z","mañana"));
         assertEquals(503,assertThrows(ExcepcionCuenta.class,()->cuentas.misiones(jwt)).estado());
     }
 }

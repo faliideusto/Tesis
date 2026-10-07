@@ -12,11 +12,11 @@ const data={diarias:[mission],semanales:[],temporada:[],reinicioDiario:'2026-10-
 const pass={temporada:{id:'2026-10',nombre:'Crónicas del Archivo',fin:'2026-10-31T23:00:00Z',activa:true},progreso:{nivel:1,maxNivel:10,puntos:450,puntosSiguienteNivel:500,puntosPorNivel:500},recompensas:[{id:'badge',nombre:'Crónicas',nivel:1,cosmeticos:[{tipo:'insignia',nombre:'Archivo',asset:'https://evil.test/a.png'}],desbloqueada:true,reclamada:false}]};
 const html=missionsView(data,pass,{expanded:true});
 assert(html.includes('&lt;script&gt;'));assert(!html.includes('<script>'));assert(!html.includes('evil.test'));
-assert(html.includes('data-mission-claim="daily_game"'));assert(html.includes('data-season-claim="badge"'));assert(html.includes('50 puntos para el siguiente nivel'));
+assert(html.includes('data-countdown-end="2026-10-08T00:00:00Z"'));assert(!html.includes('Se renuevan'));assert(html.includes('data-mission-claim="daily_game"'));assert(html.includes('data-season-claim="badge"'));assert(html.includes('50 puntos para el siguiente nivel'));
 const expired={...pass,temporada:{...pass.temporada,fin:'2000-01-01T00:00:00Z',activa:true}};
 assert.match(missionsView(data,expired),/data-season-claim="badge" disabled/,'Stale active season cannot expose an enabled claim after its end');
 assert.equal(missionState({...mission,reclamada:true}),'reclamada');
-assert.equal(seasonCountdown(null),'Fecha pendiente de confirmar');assert.equal(seasonCountdown('2026-10-31T23:00:00Z',Date.parse('2026-10-07T12:00:00Z')),'24 días · 11 h restantes');assert.equal(seasonCountdown('2026-01-01',Date.parse('2026-10-07')),'Temporada finalizada');
+assert.equal(seasonCountdown(null),'Tiempo restante pendiente de confirmar');assert.equal(seasonCountdown('2026-10-31T23:00:00Z',Date.parse('2026-10-07T12:00:00Z')),'24 días · 11 h · 0 min · 0 s restantes');assert.equal(seasonCountdown('2026-01-01',Date.parse('2026-10-07')),'Temporada finalizada');
 let identity='one',resolve;
 const staleRoot=root(),stale=mountMissions(staleRoot,{accounts:{identity:()=>identity,missions:()=>new Promise(done=>resolve=done),seasonPass:async()=>pass}});await flush();stale.destroy();resolve(data);await flush();assert(!staleRoot.innerHTML.includes('daily_game'));assert.equal(staleRoot.listeners.size,0);
 let reads=0,claims=0,rewards=0;

@@ -1,6 +1,6 @@
 # Catálogo definitivo: Crónicas del Archivo
 
-Pase gratuito mensual de10niveles. Los premios son exclusivamente cosméticos; el progreso del pase es independiente y reclamar no concede XP adicional. Las12piezas se conservan permanentemente.
+Pase gratuito de tres meses y 10 niveles. Los premios son exclusivamente cosméticos; el progreso del pase es independiente y reclamar no concede XP adicional. Las12piezas se conservan permanentemente.
 
 | Nivel | Tipo | Nombre | ID estable |
 | --- | --- | --- | --- |

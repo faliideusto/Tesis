@@ -72,9 +72,33 @@ try {
   if (misionesVerificadas.rows.some(r => r.resultado !== 'PASS')) throw new Error('Falló verificación readonly misiones');
   const verificacion = await db.query(await readFile(new URL('verificar_assets_cronicas.sql', import.meta.url), 'utf8'));
   if (verificacion.rows.some(r => r.resultado !== 'PASS')) throw new Error('Falló verificación readonly assets');
+  await db.exec(`
+    insert into auth.users(id,raw_user_meta_data) values ('85000000-0000-0000-0000-000000000001','{"display_name":"Histórico"}');
+    insert into private.matches(id,result_hash,version,completed_at) values ('86000000-0000-0000-0000-000000000001',repeat('a',64),1,now());
+    insert into private.reward_ledger(match_id,user_id,xp,version) values ('86000000-0000-0000-0000-000000000001','85000000-0000-0000-0000-000000000001',100,1);
+    insert into private.mission_claims(user_id,mission_id,xp) values ('85000000-0000-0000-0000-000000000001','historica',50);
+    insert into private.cosmetics_inventory(user_id,cosmetic_id,kind) values ('85000000-0000-0000-0000-000000000001','academia_avatar','avatar');
+  `);
+  await db.exec(await readFile(new URL('../migrations/202610070010_recompensas_trimestres.sql', import.meta.url), 'utf8'));
+  await db.exec(`
+    do $$ declare sid text; begin
+      sid:=private.registrar_temporada(now());
+      perform private.sincronizar_pase('85000000-0000-0000-0000-000000000001',sid);
+      if (select points from private.pass_progress where user_id='85000000-0000-0000-0000-000000000001')<>150
+      or (select xp from public.profiles where id='85000000-0000-0000-0000-000000000001')<>0
+      or (select count(*) from private.pass_receipts where user_id='85000000-0000-0000-0000-000000000001')<>2
+      or (select count(*) from private.cosmetics_inventory where user_id='85000000-0000-0000-0000-000000000001')<>1 then raise exception 'Migración revaloriza o pierde histórico'; end if;
+    end $$;
+    delete from auth.users where id='85000000-0000-0000-0000-000000000001';
+    delete from private.matches where id='86000000-0000-0000-0000-000000000001';
+  `);
+  await db.exec(await readFile(new URL('misiones_trimestres.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('recompensas_trimestres.sql', import.meta.url), 'utf8'));
+  const trimestral = await db.query(await readFile(new URL('verificar_recompensas_trimestres.sql', import.meta.url), 'utf8'));
+  if (trimestral.rows.some(r => r.resultado !== 'PASS')) throw new Error('Falló verificación readonly trimestres: '+JSON.stringify(trimestral.rows));
   const {rows} = await db.query('select count(*)::integer as perfiles from public.profiles');
   if (rows[0].perfiles !== 0) throw new Error('El script no revirtió los perfiles de prueba');
-  console.log('PASS PostgreSQL WASM: once migraciones; perfiles/resultados, comunidad y presencia, perfiles e invitaciones, ranking y pase mensual, colección y archivo, assets definitivos y metadata, misiones diarias/semanales/mensuales, permisos/RLS y rollback.');
+  console.log('PASS PostgreSQL WASM: doce migraciones; perfiles/resultados, comunidad y presencia, perfiles e invitaciones, ranking y pase trimestral, colección y archivo, assets definitivos y metadata, misiones diarias/semanales/mensuales, permisos/RLS y rollback.');
   console.log('No verifica Supabase Auth/PostgREST ni concurrencia con varias conexiones.');
 } finally {
   await db.close();

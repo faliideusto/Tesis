@@ -23,7 +23,7 @@ assert.match(friendsView({codigo:'ABC',amigos:[],recibidas:[],enviadas:[]}),/Tod
 const ranked=rankingView({entradas:[{posicion:1,nombre:hostile,nivel:2,xp:500,victorias:3,partidas:5,yo:true}],propia:{posicion:90,nivel:1,xp:10}},'victorias');
 assert.match(ranked,/#90/);assert.match(ranked,/ranking-self/);assert.ok(!ranked.includes('<img src=x'));
 const missions=missionsView({diarias:[{id:hostile,titulo:hostile,objetivo:1,progreso:9,xp:50,completada:true,reclamada:false},{id:'claimed',titulo:'Ya recibida',objetivo:3,progreso:3,xp:75,completada:true,reclamada:true}],semanales:[],reinicioDiario:'2026-10-07T00:00:00Z',reinicioSemanal:'2026-10-12T00:00:00Z'});
-assert.ok(!missions.includes('<img src=x'));assert.match(missions,/max="1" value="1"/);assert.match(missions,/data-mission-claim="claimed" disabled/);assert.match(missions,/tu hora local/);
+assert.ok(!missions.includes('<img src=x'));assert.match(missions,/max="1" value="1"/);assert.match(missions,/data-mission-claim="claimed" disabled/);assert.match(missions,/data-countdown-end=/);assert(!missions.includes('tu hora local'));
 
 class Root {
   constructor(){this.listeners={};this.controls=[];this.message={textContent:'',setAttribute(){},focus:()=>{this.ownerDocument.activeElement=this.message;}};this.ownerDocument={activeElement:null};}

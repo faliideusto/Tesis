@@ -24,13 +24,13 @@ Nombre visible, código y estadísticas de juego de las cuentas aparecen en el r
 
 | Periodo | Objetivo | Recompensa |
 | --- | --- | --- |
-| Diario | Terminar 1 partida | 50 XP |
-| Diario | Ganar 1 partida | 75 XP |
-| Semanal | Terminar 3 partidas | 100 XP |
-| Semanal | Terminar 7 partidas | 200 XP |
-| Semanal | Ganar 3 partidas | 150 XP |
+| Diario | Terminar 1 partida | 100 XP |
+| Diario | Ganar 1 partida | 150 XP |
+| Semanal | Terminar 3 partidas | 200 XP |
+| Semanal | Terminar 7 partidas | 400 XP |
+| Semanal | Ganar 3 partidas | 300 XP |
 
-El día comienza a las 00:00 UTC; la semana, el lunes a las 00:00 UTC. La interfaz muestra la fecha de renovación en la zona del navegador. Cada objetivo tiene su propia recompensa, reclamable una vez por periodo antes de su renovación. Se conservan los recibos de recompensas ya reclamadas.
+El día comienza a las 00:00 UTC; la semana, el lunes a las 00:00 UTC. La interfaz muestra una cuenta atrás hasta el instante de renovación recibido del servidor. Cada objetivo tiene su propia recompensa, reclamable una vez por periodo antes de su renovación. Se conservan los recibos de recompensas ya reclamadas.
 
 Solo cuentan partidas completadas con la cuenta vinculada al entrar en la sala y resultados confirmados por el servidor. No cuentan partidas abandonadas ni resultados anteriores a la activación de las misiones. La fecha autoritativa de finalización decide el periodo, incluso si el guardado se retrasa. Si el resultado sigue pendiente, actualizar las misiones después de su confirmación. La XP es cosmética y no modifica cartas, acciones ni reglas.
 
@@ -62,3 +62,6 @@ Los RPC de usuario operan con la identidad Auth; solo el RPC de resultados exist
 179 pruebas Java, 9 suites Node y ambas suites SQL locales pasan. La nueva QA de navegador `tools/qa_community.mjs` pasa a 1440, 390 y 360 px, con evidencia en `target/qa-community/`. Comprueba flujos de amistad, ranking, misiones, errores y teclado usando la interfaz real con SDK y respuestas simuladas: no verifica el servicio Supabase desplegado. PGlite verifica SQL y permisos con una sola conexión, sin demostrar concurrencia real entre conexiones.
 
 La QA de perfil anterior encuentra una aserción fallida de cabecera móvil a 360 px que se reproduce con el código previo. Ver el plan `.agent/plans/comunidad-ranking-misiones.md` para comandos, evidencia, revisión y escenarios no ejecutados.
+
+
+Las misiones de temporada duran tres meses y conceden 1.000 XP por completar diez partidas y 1.500 XP por ganar cinco. Cada misión concede tantos puntos de pase como XP. Las nuevas recompensas de partida y la conservación del historial se detallan en [Recompensas trimestrales](recompensas-temporadas-trimestrales.md).

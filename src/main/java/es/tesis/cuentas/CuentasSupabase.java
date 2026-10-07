@@ -272,7 +272,7 @@ public final class CuentasSupabase implements AutoCloseable {
                 String esperado = ambito + ":" + (semanal ? primero.toLocalDate() : YearMonth.from(primero));
                 if (!primero.toLocalTime().equals(LocalTime.MIDNIGHT) || !id.equals(esperado)
                         || (semanal ? primero.getDayOfWeek() != DayOfWeek.MONDAY : primero.getDayOfMonth() != 1)
-                        || !(semanal ? primero.plusWeeks(1) : primero.plusMonths(1)).equals(siguiente)) throw indisponible();
+                        || !(semanal ? primero.plusWeeks(1).equals(siguiente) : duracionTemporadaValida(primero,siguiente))) throw indisponible();
                 periodo = new PeriodoRanking(id, inicio, fin, "Europe/Madrid");
             } else if (dato.has("periodo") && !dato.get("periodo").isJsonNull()) throw indisponible();
             List<EntradaRanking> entradas = new ArrayList<>();
@@ -288,6 +288,11 @@ public final class CuentasSupabase implements AutoCloseable {
     public Misiones misiones(String jwt) { return leerMisiones(rpc(jwt, "misiones", new JsonObject())); }
 
     private static final Set<String> TIPOS_COSMETICOS = Set.of("avatar", "marco", "titulo", "insignia", "reverso", "placa", "interaccion");
+    // Los archivos mensuales anteriores permanecen accesibles.
+    private static boolean duracionTemporadaValida(ZonedDateTime inicio, ZonedDateTime fin) {
+        return inicio.plusMonths(1).equals(fin) || inicio.plusMonths(3).equals(fin);
+    }
+
     private static void validarTemporada(String temporada) {
         if (temporada == null) return;
         try {
@@ -327,7 +332,7 @@ public final class CuentasSupabase implements AutoCloseable {
             boolean activa = booleano(t,"activa"), gratuita = booleano(t,"gratuita");
             if (!"Europe/Madrid".equals(cadena(t,"zonaHoraria",32)) || (solicitada != null && !solicitada.equals(id))
                     || !id.equals("temporada:" + YearMonth.from(primero)) || primero.getDayOfMonth()!=1
-                    || !primero.toLocalTime().equals(LocalTime.MIDNIGHT) || !primero.plusMonths(1).equals(siguiente)
+                    || !primero.toLocalTime().equals(LocalTime.MIDNIGHT) || !duracionTemporadaValida(primero,siguiente)
                     || primero.toInstant().isAfter(reloj.instant().plusSeconds(15))
                     || (activa && !reloj.instant().isBefore(siguiente.toInstant().plusSeconds(15)))
                     || (!activa && reloj.instant().isAfter(primero.toInstant().plusSeconds(15)) && reloj.instant().isBefore(siguiente.toInstant().minusSeconds(15)))) throw indisponible();
@@ -383,7 +388,7 @@ public final class CuentasSupabase implements AutoCloseable {
                 ZonedDateTime siguiente=OffsetDateTime.parse(fin).atZoneSameInstant(ZoneId.of("Europe/Madrid"));
                 long nivel=numero(t,"nivel"),max=numero(t,"maxNivel"),obtenidas=numero(t,"recompensasObtenidas"),total=numero(t,"totalRecompensas");
                 if(!id.equals("temporada:"+YearMonth.from(primero))||primero.getDayOfMonth()!=1||!primero.toLocalTime().equals(LocalTime.MIDNIGHT)
-                        ||!primero.plusMonths(1).equals(siguiente)||primero.toInstant().isAfter(reloj.instant().plusSeconds(15))
+                        ||!duracionTemporadaValida(primero,siguiente)||primero.toInstant().isAfter(reloj.instant().plusSeconds(15))
                         ||max<1||max>100||nivel<1||nivel>max||total>100||obtenidas>total)throw indisponible();
                 TemporadaColeccion temporada=new TemporadaColeccion(id,cadena(t,"nombre",120),inicio,fin,(int)nivel,(int)max,(int)obtenidas,(int)total);
                 if(archivo.put(id,temporada)!=null)throw indisponible();temporadas.add(temporada);

@@ -25,6 +25,9 @@ public final class GestorSalas {
         return crear(nombre, null);
     }
     public synchronized Vistas.AccesoSala crear(String nombre, UUID cuenta) {
+        return crear(nombre,cuenta,CosmeticosPartida.originales());
+    }
+    public synchronized Vistas.AccesoSala crear(String nombre, UUID cuenta,CosmeticosPartida cosmeticos) {
         SalaJuego.validarNombre(nombre);
         limpiar();
         if (salas.size() >= 256) throw new ErrorSala(409, "Hay demasiadas salas abiertas. Inténtalo más tarde.");
@@ -35,7 +38,7 @@ public final class GestorSalas {
             codigo = texto.toString();
         } while (salas.containsKey(codigo));
         var sala = new SalaJuego(codigo, reloj, azar, progresion);
-        var acceso = sala.unirse(nombre, cuenta);
+        var acceso = sala.unirse(nombre, cuenta,cosmeticos);
         salas.put(codigo, sala);
         return acceso;
     }
@@ -51,8 +54,11 @@ public final class GestorSalas {
 
     /** Construye una mesa completa antes de hacerla visible en el registro. */
     synchronized List<Vistas.AccesoSala> crearPartida(List<String> nombres, List<UUID> cuentas) {
+        return crearPartida(nombres,cuentas,Collections.nCopies(nombres==null?0:nombres.size(),CosmeticosPartida.originales()));
+    }
+    synchronized List<Vistas.AccesoSala> crearPartida(List<String> nombres,List<UUID> cuentas,List<CosmeticosPartida> cosmeticos) {
         if (nombres == null || cuentas == null || nombres.size() < 3 || nombres.size() > 5
-                || nombres.size() != cuentas.size())
+                || nombres.size() != cuentas.size() || cosmeticos==null || cosmeticos.size()!=nombres.size())
             throw new IllegalArgumentException("Se necesitan entre 3 y 5 jugadores.");
         nombres.forEach(SalaJuego::validarNombre);
         limpiar();
@@ -73,7 +79,7 @@ public final class GestorSalas {
                 String fin = " (" + sufijo + ")";
                 nombre = base.substring(0, Math.min(base.length(), 24 - fin.length())).stripTrailing() + fin;
             }
-            accesos.add(sala.unirse(nombre, cuentas.get(i)));
+            accesos.add(sala.unirse(nombre, cuentas.get(i),cosmeticos.get(i)));
         }
         String anfitrion = accesos.get(0).playerToken();
         sala.iniciar(anfitrion, sala.estado(anfitrion).revision());

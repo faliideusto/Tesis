@@ -42,11 +42,14 @@ public final class GestorInvitaciones {
         return new Bandeja(pendientes.values().stream().filter(p -> p.destinatario.equals(actor)).map(Pendiente::vista).toList());
     }
     public synchronized Vistas.AccesoSala aceptar(String id, UUID actor, String nombre) {
+        return aceptar(id,actor,nombre,CosmeticosPartida.originales());
+    }
+    public synchronized Vistas.AccesoSala aceptar(String id,UUID actor,String nombre,CosmeticosPartida cosmeticos) {
         Pendiente pendiente = obtener(id,actor);
         SalaJuego sala = salas.buscar(pendiente.vista.codigoSala);
         synchronized (sala) {
             if (!sala.admiteInvitado(actor)) { pendientes.remove(id); throw new ErrorSala(409,"La sala ya no admite esta invitación."); }
-            Vistas.AccesoSala acceso = sala.unirse(nombre,actor);
+            Vistas.AccesoSala acceso = sala.unirse(nombre,actor,cosmeticos);
             pendientes.remove(id);
             return acceso;
         }

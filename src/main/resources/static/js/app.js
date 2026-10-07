@@ -3,6 +3,8 @@ import {createMatchmaking} from './matchmaking.js';
 import {accounts} from './auth.js';
 import {startPresence} from './presence.js';
 import {createRoomInvitations} from './room-invitations.js';
+import {createRoomInteractions} from './room-interactions.js';
+import {playInteraction} from './interaction-effects.js';
 import {initAccountPanel, progressText} from './account-panel.js';
 import {homeCommunity} from './home-community.js';
 import {img, esc} from './dom.js';
@@ -31,6 +33,7 @@ function connectionStatus(text='') { connection.textContent=text; connection.hid
 const matchmaking=createMatchmaking({api,panel:()=>document.querySelector('.setup-panel'),
   onRoom:next=>run(()=>next),onHome:()=>home('play',true),status:connectionStatus});
 const roomInvitations=createRoomInvitations({accounts,api,getRoom:()=>room,onAccept:acceptRoomInvitation});
+const roomInteractions=createRoomInteractions({accounts,api,getRoom:()=>room,getState:()=>state,play:playInteraction,onError:message=>notify(message,'error')});
 async function acceptRoomInvitation(id) {
   if(busy||visualBusy)throw new Error('Espera a que termine la operación actual.');
   if(api.matchIdentity?.())throw new Error('Cancela tu búsqueda de partida antes de aceptar otra invitación.');
@@ -69,6 +72,7 @@ function schedulePoll() {
   },900);
 }
 function home(mode='play',restoreFocus=false) {
+  roomInteractions.reset();
   stopPolling(); resetEffects(); screen='home'; closeDialog(); resetFeedback(); connectionStatus();
   state=null; room=null;
   const accountOpener=document.getElementById('account-open');
@@ -130,7 +134,7 @@ async function applyRoom(next, force=false) {
   if (!force && room?.codigo===next.codigo && room.revision===next.revision) return;
   const before=state, current=generation;
   const sameRoom=room?.codigo===next.codigo;
-  if (!sameRoom) { resetFeedback(); resetEffects(); }
+  if (!sameRoom) { resetFeedback(); resetEffects();roomInteractions.reset(); }
   const after=next.partida ? {...next.partida, yo:next.yo} : null;
   visualBusy=true; document.body.classList.add('visual-busy');
   try {
@@ -144,12 +148,13 @@ async function applyRoom(next, force=false) {
     }
     if (current!==generation) return;
     room=next; screen=room.fase==='LOBBY'?'lobby':'game';
-    if (screen==='lobby') { state=null; lobby(); return; }
+    if (screen==='lobby') { state=null;roomInteractions.reset(); lobby(); return; }
     state=after; selectedRole=null; pendingAction=null; selectedTarget=null; clearTargets(); reconcileDialog(sameRoom);
     roomInvitations.refreshLobby();
     const accountOpener=document.getElementById('account-open'),progress=document.getElementById('account-progress');
     document.body.append(accountOpener,progress);
     board(state); feedback(sameRoom ? before : null,state); settled(sameRoom ? before : null,state);
+    roomInteractions.update();
     accountOpener.classList.add('in-board');document.querySelector('#board .utility').append(accountOpener,progress);
     const accountPageOpen=!document.getElementById('account-panel').hidden;
     if (!accountPageOpen && state.fase==='SELECCION_ROLES' && state.seleccion.length && (!before || before.fase!=='SELECCION_ROLES' || before.actual!==state.actual) && !document.getElementById('modal').open) phaseDialog(state);

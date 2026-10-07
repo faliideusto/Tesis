@@ -27,8 +27,9 @@ async function fixture(initialHash='',offline=false,refresh=async()=>{}) {
     enabled:()=>true,onChange:fn=>listener=fn,initialize:async()=>{if(offline)throw new Error('503');},refreshProfile:refresh,
     login:async()=>{identity='Ana';listener();}};
   const context=vm.createContext({document,location,history,FormData:class{get(key){return {email:'ana@example.test',password:'clave123'}[key];}},Event:class{},window:{scrollY:100,scrollTo(){},addEventListener:(type,fn)=>windowEvents.set(type,fn)}});
-  const exports={accounts,esc:String,RANKS:[],progression:()=>({rank:{id:'madera',name:'Madera'},level:1,index:0}),badge:()=>'',academyTabs:()=>'',
-    mountCommunity:(_,options)=>{const mount={page:options.page,destroyed:false,destroy(){this.destroyed=true;}};mounts.push(mount);return mount;}};
+  const exports={accounts,esc:String,RANKS:[],progression:()=>({rank:{id:'madera',name:'Madera'},level:1,index:0}),badge:()=>'',academyTabs:()=>'',profileCosmeticParts:()=>({}),
+    mountCommunity:(_,options)=>{const mount={page:options.page,destroyed:false,destroy(){this.destroyed=true;}};mounts.push(mount);return mount;},
+    mountCustomization:(_,options)=>{const mount={page:'customization',onSummary:options.onSummary,destroyed:false,destroy(){this.destroyed=true;}};mounts.push(mount);return mount;}};
   const dependency=new vm.SyntheticModule(Object.keys(exports),function(){for(const [key,value] of Object.entries(exports))this.setExport(key,value);},{context});
   const module=new vm.SourceTextModule(await readFile(new URL('../src/main/resources/static/js/account-panel.js',import.meta.url),'utf8'),{context});
   await module.link(()=>dependency);await module.evaluate();module.namespace.initAccountPanel();await Promise.resolve();await Promise.resolve();
@@ -53,6 +54,9 @@ nav.history.go(1);assert.equal(nav.panel.dataset.page,'ranking','Forward restaur
 nav.logout();assert.ok(nav.mounts.at(-1).destroyed,'Cerrar sesión destruye la vista privada');assert.equal(nav.panel.dataset.view,'auth');
 nav.login('Bea');assert.equal(nav.mounts.at(-1).page,'ranking','Otra identidad monta datos nuevos');
 nav.opener.onclick();assert.equal(nav.location.hash,'#perfil','Mi perfil siempre abre perfil');assert.equal(nav.panel.dataset.page,'profile');
+nav.nodes.get('[data-customize]').onclick();assert.equal(nav.location.hash,'#personalizacion');
+const customization=nav.mounts.at(-1);assert.equal(customization.page,'customization');
+customization.onSummary();assert.equal(nav.location.hash,'#perfil');assert.ok(customization.destroyed,'Volver al resumen invalida la pantalla privada');
 const offline=await fixture('',true);offline.click('#amigos');
 assert.match(offline.panel.innerHTML,/La academia está desconectada/,'Los enlaces respetan el fallo de configuración');
 assert.equal(offline.location.hash,'#amigos','Se conserva el destino para recargar');

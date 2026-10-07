@@ -63,6 +63,10 @@ class ComunidadHttpTest {
                 byte[] b = "[{\"display_name\":\"Lin\",\"xp\":0,\"games_finished\":0,\"wins\":0}]".getBytes(StandardCharsets.UTF_8);
                 x.sendResponseHeaders(200,b.length);x.getResponseBody().write(b);x.close();
             });
+            remoto.createContext("/rest/v1/rpc/cosmeticos", x -> {
+                byte[] b="{\"inventario\":[],\"equipamiento\":{\"avatar\":null,\"marco\":null,\"titulo\":null,\"insignia\":null,\"reverso\":null,\"placa\":null,\"interaccion\":null}}".getBytes(StandardCharsets.UTF_8);
+                x.sendResponseHeaders(200,b.length);x.getResponseBody().write(b);x.close();
+            });
             remoto.start();
             web = new ServidorWeb("127.0.0.1", 0, new CuentasSupabase(new CuentasSupabase.Configuracion(origen, "sb_publishable_test", "sb_secret_privado")));
             web.iniciar(); base = "http://127.0.0.1:" + web.puerto();
@@ -253,6 +257,38 @@ class ComunidadHttpTest {
             assertEquals(404,e.pedir(aceptar,"POST","{}",amigoJwt).statusCode());
             assertFalse(e.pedir("/api/invitaciones","GET",null,amigoJwt).body().contains(id));
             assertTrue(e.peticiones.stream().allMatch(p->p.contains("resolver_amigo_en_linea")));
+        }
+    }
+
+    @Test void rankingAmbitosValidanConsultaPeriodoProyeccionYRespuestaCoincidente() throws Exception {
+        try (var e = new Entorno()) {
+            for (String consulta : List.of("ambito=inventado", "ambito=global&ambito=amigos", "criterio=xp&ambito=global&criterio=partidas",
+                    "criterio=xp&extra=otro", "ambito=%67lobal", "ambito=", "criterio=xp&"))
+                assertEquals(400,e.pedir("/api/ranking?"+consulta,"GET",null,e.jwt).statusCode(),consulta);
+            assertEquals(401,e.pedir("/api/ranking?ambito=amigos","GET",null,null).statusCode());
+            assertTrue(e.peticiones.isEmpty());
+            String entrada="{\"posicion\":1,\"codigo\":\""+CODIGO+"\",\"nombre\":\"Ana\",\"nivel\":201,\"xp\":225,\"victorias\":1,\"partidas\":1,\"yo\":true,\"email\":\"secreto\"}";
+            String periodo="{\"id\":\"semanal:2026-10-05\",\"inicio\":\"2026-10-04T22:00:00+00:00\",\"fin\":\"2026-10-11T22:00:00+00:00\",\"zonaHoraria\":\"Europe/Madrid\"}";
+            String semanal="{\"criterio\":\"xp\",\"ambito\":\"semanal\",\"periodo\":"+periodo+",\"entradas\":["+entrada+"],\"propia\":"+entrada+"}";
+            e.respuesta=semanal;
+            var respuesta=e.pedir("/api/ranking?ambito=semanal&criterio=xp","GET",null,e.jwt);
+            assertEquals(200,respuesta.statusCode()); assertFalse(respuesta.body().contains("secreto"));
+            assertTrue(respuesta.body().contains("Europe/Madrid"));assertTrue(respuesta.body().contains("\"nivel\":201"));
+            assertEquals("/rest/v1/rpc/ranking_periodo {\"p_criterio\":\"xp\",\"p_ambito\":\"semanal\"}",e.peticiones.get(0));
+            for (String invalido : List.of(semanal.replace("Europe/Madrid","UTC"),semanal.replace("semanal:2026-10-05","temporada:2026-10"),
+                    semanal.replace("2026-10-11T22:00:00+00:00","2026-10-04T22:00:00+00:00"),
+                    semanal.replace("\"ambito\":\"semanal\"","\"ambito\":\"amigos\""))) {
+                e.respuesta=invalido;assertEquals(503,e.pedir("/api/ranking?ambito=semanal","GET",null,e.jwt).statusCode());
+            }
+            e.respuesta=semanal.replace("\"ambito\":\"semanal\"","\"ambito\":\"amigos\"").replace(periodo,"null");
+            assertEquals(200,e.pedir("/api/ranking?criterio=xp&ambito=amigos","GET",null,e.jwt).statusCode());
+            e.respuesta=semanal.replace("\"ambito\":\"semanal\"","\"ambito\":\"global\"").replace(periodo,"null");
+            assertEquals(200,e.pedir("/api/ranking?criterio=xp","GET",null,e.jwt).statusCode());
+            assertEquals(200,e.pedir("/api/ranking","GET",null,e.jwt).statusCode());
+            assertTrue(e.peticiones.get(e.peticiones.size()-1).contains("\"p_ambito\":\"global\""));
+            e.respuesta=semanal.replace("\"ambito\":\"semanal\"","\"ambito\":\"temporada\"").replace("semanal:2026-10-05","temporada:2026-10")
+                    .replace("2026-10-04T22:00:00+00:00","2026-09-30T22:00:00+00:00").replace("2026-10-11T22:00:00+00:00","2026-10-31T23:00:00+00:00");
+            assertEquals(200,e.pedir("/api/ranking?ambito=temporada","GET",null,e.jwt).statusCode());
         }
     }
 }

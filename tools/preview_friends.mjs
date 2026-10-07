@@ -10,6 +10,16 @@ const roomView=room=>({codigo:room.codigo,revision:room.revision,fase:'LOBBY',yo
 const roomAccess=room=>({codigo:room.codigo,playerToken:'demo-local',sala:roomView(room)});
 const person=(nombre,nivel,index,enLinea=false)=>({nombre,nivel,codigo:index.toString(16).padStart(16,'0').toUpperCase(),enLinea});
 const candidates=[person('ValeriaNox',10,21),person('DrakeSol',5,22),person('LyraAeterna',20,23),person('KaelArden',35,24),person('Irene',50,25),person('Marcos',75,26)];
+function demoPeriod(ambito){
+ if(!['semanal','temporada'].includes(ambito))return null;
+ const parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Madrid',year:'numeric',month:'numeric',day:'numeric'}).formatToParts(new Date()).map(p=>[p.type,p.value]));
+ const year=+parts.year,month=+parts.month-1,day=+parts.day;
+ const start=new Date(Date.UTC(year,month,ambito==='temporada'?1:day));
+ if(ambito==='semanal')start.setUTCDate(start.getUTCDate()-(start.getUTCDay()+6)%7);
+ const end=new Date(start);if(ambito==='temporada')end.setUTCMonth(end.getUTCMonth()+1);else end.setUTCDate(end.getUTCDate()+7);
+ const instant=date=>{const offset=new Intl.DateTimeFormat('en',{timeZone:'Europe/Madrid',timeZoneName:'shortOffset'}).formatToParts(date).find(p=>p.type==='timeZoneName').value;return new Date(date.getTime()-Number(offset.replace('GMT',''))*3600000).toISOString();};
+ return {id:ambito+':'+start.toISOString().slice(0,ambito==='temporada'?7:10),inicio:instant(start),fin:instant(end),zonaHoraria:'Europe/Madrid'};
+}
 const scenarios=['completo','recibidas','enviadas','desconectados','vacio','muchos'];
 function fixture(scenario='completo') {
  const data={codigo:'61F6F7E9EFE94792',amigos:[person('Bruno',20,1,true),person('Clara',35,2,true),person('Diego',10,3)],recibidas:[person('Marta',5,4),person('Sofía',50,5)],enviadas:[person('Álvaro',20,6),person('Lucía',10,7)],sugerencias:structuredClone(candidates),presenciaDisponible:true};
@@ -68,13 +78,18 @@ const server=createServer(async(req,res)=>{
    if(url.pathname==='/api/salas/B8M4R/estado')return send(200,roomView(demoRooms.get(id)));
    if(url.pathname==='/api/comunidad'&&req.method==='GET')return send(200,data);
    if(url.pathname==='/api/ranking'&&req.method==='GET'){
-    const people=[...data.amigos,...data.sugerencias];
-    const entradas=people.map((p,i)=>({posicion:i+1,codigo:p.codigo,nombre:p.nombre,nivel:p.nivel,
-     xp:(p.nivel-1)*500+120,victorias:Math.floor((40+p.nivel)*.4),partidas:40+p.nivel,yo:false}));
-    return send(200,{entradas,propia:{posicion:people.length+1,codigo:data.codigo,nombre:'Falio3',nivel:1,xp:0,victorias:0,partidas:0,yo:true}});
+    const criterio=url.searchParams.get('criterio')||'xp',ambito=url.searchParams.get('ambito')||'global';
+    const people=ambito==='amigos'?data.amigos:[...data.amigos,...data.sugerencias];
+    const temporal=['semanal','temporada'].includes(ambito);
+    const rows=people.map(p=>({codigo:p.codigo,nombre:p.nombre,nivel:p.nivel,xp:temporal?Math.floor(p.nivel*15):(p.nivel-1)*500+120,victorias:temporal?Math.floor(p.nivel/12):Math.floor((40+p.nivel)*.4),partidas:temporal?Math.floor(p.nivel/5):40+p.nivel,yo:false}));
+    rows.push({codigo:data.codigo,nombre:'Falio3',nivel:1,xp:0,victorias:0,partidas:0,yo:true});
+    rows.sort((a,b)=>b[criterio]-a[criterio]||a.codigo.localeCompare(b.codigo));
+    rows.forEach((p,i)=>p.posicion=i&&p[criterio]===rows[i-1][criterio]?rows[i-1].posicion:i+1);
+    return send(200,{criterio,ambito,periodo:demoPeriod(ambito),entradas:rows.slice(0,50),propia:rows.find(p=>p.yo)});
    }
    if(url.pathname==='/api/perfil-publico'&&req.method==='GET'){
     const codigo=url.searchParams.get('codigo')?.toUpperCase();
+    if(codigo===data.codigo)return send(200,{codigo,nombre:'Falio3',nivel:1,xp:0,partidasTerminadas:0,victorias:0,enLinea:true,presenciaDisponible:true});
     const found=[...data.amigos,...data.recibidas,...data.enviadas,...data.sugerencias].find(p=>p.codigo===codigo);
     if(!found)return send(404,{error:'No se encontró ese perfil.'});
     const isFriend=data.amigos.some(p=>p.codigo===codigo),played=40+found.nivel;

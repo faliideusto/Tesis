@@ -1,0 +1,9 @@
+#local{position:relative}.room-interaction-slot{position:absolute;right:12px;bottom:calc(25% + 8px);z-index:8;line-height:1}
+#local .room-interaction-control{position:relative;display:grid;place-items:center;width:25px;height:25px;min-width:0;min-height:0;padding:4px;border:1px solid #d8b97866;border-radius:50%;background:#06151ece;color:#eed39e;box-shadow:inset 0 0 5px #d3a96922;cursor:pointer}
+.room-interaction-control svg{height:16px;width:16px;fill:#eed39e44;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round}
+#local .room-interaction-control:hover,#local .room-interaction-control[aria-pressed="true"]{border-color:#ffe0a0;background:#3c3024;box-shadow:0 0 7px #dbb87b55}.room-interaction-control:focus-visible{outline:2px solid #ffe3ab;outline-offset:3px}
+#local .room-interaction-control:disabled{opacity:.65;cursor:default;background:#0a1d27;color:#8b9b9f}.room-interaction-count{position:absolute;right:-4px;bottom:-3px;color:#ecd4a6;background:#061720;border:1px solid #ad8957;min-width:13px;border-radius:5px;font:9px/12px Georgia,serif}.room-interaction-count:empty{display:none}
+.rival.room-interaction-target{outline:1px solid #e6c087!important;outline-offset:3px;box-shadow:0 0 10px #e0b06b33!important;cursor:crosshair!important}.rival.room-interaction-target:hover,.rival.room-interaction-target:focus-visible{outline-color:#ffe3a6!important;box-shadow:0 0 15px #e0b06b55!important}
+.rival.room-interaction-target + .player-role-preview{display:none!important}
+@media(max-width:700px){.room-interaction-slot{right:12px;bottom:calc(25% + 8px)}#local .room-interaction-control{width:27px;height:27px}}
+@media(prefers-reduced-motion:reduce){.room-interaction-control,.room-interaction-target{transition:none!important}}

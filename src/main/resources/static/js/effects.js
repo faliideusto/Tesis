@@ -1,4 +1,4 @@
-import {img} from './dom.js';
+import {img,esc} from './dom.js';
 import {ideaCardContents, roleCard} from './cards.js';
 import {showActivity} from './feedback.js';
 
@@ -39,6 +39,12 @@ const player = (name, state) => name === state.yo ? document.getElementById('loc
 const study = (name, index) => [...document.querySelectorAll('#board [data-player][data-index]')]
   .find(n => n.dataset.player === name && Number(n.dataset.index) === index);
 const hand = (name, state) => name === state.yo ? document.getElementById('hand') : player(name, state);
+// Only the public owner's loadout selects a hidden card back. Never inspect a rival hand.
+export function ownerCardBack(state,name) {
+  const back=state.jugadores?.find(p=>p.nombre===name)?.cosmeticos?.reverso;
+  return back?.tipo==='reverso' && /^\/assets\/(?:Tesis-assets|seasons)\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.(?:webp|png|svg)$/.test(back.asset||'')
+    ? back.asset : '/assets/Tesis-assets/cartas/reverso_idea.webp';
+}
 function rect(element) {
   const r = element?.getBoundingClientRect();
   if (r?.width && r.height && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth)
@@ -111,7 +117,7 @@ async function flight(art, source, destination, {card=null, coin=false, replace=
   const from=rect(source), to=rect(destination);
   if (replace) conceal(source);
   const n=node(`fx-flight ${card?'game-card idea-card fx-complete-card':''} ${coin?'fx-coin':''} ${ceremonial?'fx-ceremonial':''} ${privateDraw?'fx-private-draw':''} fx-${tone}`);
-  n.innerHTML=card ? ideaCardContents(card) : img(art); n.style.left=`${from.x}px`; n.style.top=`${from.y}px`;
+  n.innerHTML=card ? ideaCardContents(card) : art.startsWith('/assets/') ? `<img src="${esc(art)}" alt="" draggable="false">` : img(art); n.style.left=`${from.x}px`; n.style.top=`${from.y}px`;
   if(privateDraw && reduced()) {n.style.left=`${innerWidth/2}px`;n.style.top=`${innerHeight*.43}px`;}
   const dx=to.x-from.x, dy=to.y-from.y;
   const cx=innerWidth/2-from.x, cy=innerHeight*.43-from.y;
@@ -345,7 +351,7 @@ export async function transition(before, after) {
       }
       if (e.robo) {
         const card=ownDrawnCard(e,events,before,after);
-        const draw=group=>flight(card?.arte || 'cartas/reverso_idea.webp',document.querySelector('.idea-deck'),hand(e.actor,before),
+        const draw=group=>flight(card?.arte || ownerCardBack(after,e.actor),document.querySelector('.idea-deck'),hand(e.actor,before),
           card ? {card,privateDraw:true,duration:2400,group} : {});
         tasks.push(card ? presentation(draw) : draw(null));
       }
@@ -371,8 +377,8 @@ export async function transition(before, after) {
       if (identities[e.tipo]) {
         const [label,tone]=identities[e.tipo]; tasks.push(floating(label,target,tone),particles(target,false,tone));
         if (e.tipo==='habilidad.plagiador') tasks.push(
-          flight('cartas/reverso_idea.webp',actor,player(e.objetivo,before),{tone}),
-          flight('cartas/reverso_idea.webp',player(e.objetivo,before),actor,{tone}));
+          flight(ownerCardBack(before,e.actor),actor,player(e.objetivo,before),{tone}),
+          flight(ownerCardBack(before,e.objetivo),player(e.objetivo,before),actor,{tone}));
         if (e.tipo==='habilidad.revisor_2') {
           const mark=node('fx-correction','╱',target); tasks.push(ephemeral(mark,[{opacity:0,transform:'scaleX(.2)'},{opacity:1,offset:.3},{opacity:0,transform:'scaleX(1)'}],1400));
         }

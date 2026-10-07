@@ -20,6 +20,10 @@ public final class SalaJuego {
     private boolean caducada;
     private long finRondaHasta;
     private final Map<Jugador, UUID> cuentas = new IdentityHashMap<>();
+    private final Map<Jugador,CosmeticosPartida> cosmeticos = new IdentityHashMap<>();
+    private final Map<Jugador,Long> interaccionDisponible = new IdentityHashMap<>();
+    private final Deque<Vistas.EventoInteraccion> interacciones = new ArrayDeque<>();
+    private long numeroInteraccion;
     private final UUID partidaId = UUID.randomUUID();
     private final ProgresionPartidas progresion;
     private ProgresionPartidas.Registro resultado;
@@ -37,6 +41,10 @@ public final class SalaJuego {
         return unirse(nombre, null);
     }
     public synchronized Vistas.AccesoSala unirse(String nombre, UUID cuenta) {
+        return unirse(nombre,cuenta,CosmeticosPartida.originales());
+    }
+    public synchronized Vistas.AccesoSala unirse(String nombre, UUID cuenta,CosmeticosPartida equipo) {
+        if(cuenta!=null)Objects.requireNonNull(equipo);
         vigente();
         nombre = validarNombre(nombre);
         if (iniciada) throw new ErrorSala(409, "La partida ya ha comenzado.");
@@ -53,6 +61,7 @@ public final class SalaJuego {
         var jugador = new Jugador(nombre);
         miembros.put(token, jugador);
         if (cuenta != null) cuentas.put(jugador, cuenta);
+        cosmeticos.put(jugador,cuenta==null?CosmeticosPartida.originales():Objects.requireNonNull(equipo));
         if (anfitrion == null) anfitrion = jugador;
         revision++; actividad = reloj.millis();
         return new Vistas.AccesoSala(codigo, token, vista(jugador));
@@ -65,6 +74,46 @@ public final class SalaJuego {
     }
 
     public synchronized Vistas.Sala estado(String token) { return vista(autenticar(token)); }
+
+    /** Canal cosmético: nunca consulta vista/estado ni avanza FIN_RONDA. */
+    public synchronized Vistas.Interacciones interacciones(String token,Long desde) {
+        Jugador actor=autenticar(token);
+        if(desde!=null&&(desde<0||desde>numeroInteraccion))throw new ErrorSala(400,"Cursor cosmético no válido.");
+        return vistaInteracciones(actor,desde);
+    }
+    synchronized void validarInteraccion(String token,UUID cuenta,String id,String objetivo) {
+        validarEmisorInteraccion(token,cuenta,id,objetivo);
+    }
+    private Jugador validarEmisorInteraccion(String token,UUID cuenta,String id,String objetivo) {
+        Jugador actor=autenticar(token);
+        if(cuenta==null||!cuenta.equals(cuentas.get(actor)))throw new ErrorSala(403,"La cuenta no corresponde al jugador de esta sala.");
+        CatalogoInteracciones.cooldown(id);
+        if(!iniciada||!juego.resultadoFinal().isEmpty())throw new ErrorSala(409,"Las interacciones solo están disponibles durante la partida.");
+        Jugador destino=miembros.values().stream().filter(j->j.nombre().equals(objetivo)).findFirst().orElse(null);
+        if(destino==null||destino==actor)throw new ErrorSala(400,"Elige otro jugador de esta sala.");
+        if(reloj.millis()<interaccionDisponible.getOrDefault(actor,0L))throw new ErrorSala(429,"Espera antes de usar otra interacción.");
+        return actor;
+    }
+    public synchronized Vistas.Interacciones interactuar(String token,UUID cuenta,String id,String objetivo,CosmeticosPartida actuales) {
+        Jugador actor=validarEmisorInteraccion(token,cuenta,id,objetivo);
+        var equipada=actuales==null?null:actuales.interaccion();
+        if(equipada==null||!id.equals(equipada.id())||!"interaccion".equals(equipada.tipo()))
+            throw new ErrorSala(403,"Debes poseer y equipar esta interacción.");
+        long ahora=reloj.millis();
+        interaccionDisponible.put(actor,ahora+CatalogoInteracciones.cooldown(id));
+        interacciones.addLast(new Vistas.EventoInteraccion(++numeroInteraccion,actor.nombre(),objetivo,id,ahora));
+        while(interacciones.size()>64)interacciones.removeFirst();
+        // Incluir recientes permite al cliente cerrar huecos entre su último GET y este POST.
+        return vistaInteracciones(actor,0L);
+    }
+    private Vistas.Interacciones vistaInteracciones(Jugador actor,Long desde) {
+        long ahora=reloj.millis();
+        while(!interacciones.isEmpty()&&interacciones.peekFirst().fecha()<ahora-60_000)interacciones.removeFirst();
+        var equipo=cosmeticos.get(actor);var propia=equipo==null?null:equipo.interaccion();
+        String id=propia!=null&&CatalogoInteracciones.admite(propia.id())?propia.id():null;
+        var eventos=desde==null?List.<Vistas.EventoInteraccion>of():interacciones.stream().filter(e->e.numero()>desde).toList();
+        return new Vistas.Interacciones(numeroInteraccion,ahora,new Vistas.InteraccionPropia(id,interaccionDisponible.getOrDefault(actor,0L)),eventos);
+    }
 
     synchronized String validarInvitador(String token, UUID cuenta, UUID destinatario) {
         Jugador jugador = autenticar(token);
@@ -129,11 +178,21 @@ public final class SalaJuego {
 
     private Vistas.Sala vista(Jugador jugador) {
         continuarRondaSiCorresponde();
-        var estado = iniciada ? juego.estado(jugador) : null;
+        var estado = iniciada ? vestir(juego.estado(jugador)) : null;
         String fase = !iniciada ? "LOBBY" : estado.fase().equals("FIN_PARTIDA") ? "FINALIZADA" : "EN_PARTIDA";
         registrarResultado();
         return new Vistas.Sala(codigo, revision, fase, jugador.nombre(), anfitrion.nombre(), jugador == anfitrion,
                 miembros.values().stream().map(Jugador::nombre).toList(), estado, progreso(jugador));
+    }
+
+    private Vistas.Estado vestir(Vistas.Estado estado) {
+        Map<String,CosmeticosPartida> porNombre=new HashMap<>();
+        miembros.values().forEach(j -> porNombre.put(j.nombre(),cosmeticos.get(j)));
+        var jugadores=estado.jugadores().stream().map(j -> new Vistas.Jugador(j.nombre(),j.monedas(),j.prestigio(),j.cartas(),j.publicados(),
+                j.rol(),j.estudios(),j.activo(),porNombre.getOrDefault(j.nombre(),CosmeticosPartida.originales()))).toList();
+        return new Vistas.Estado(estado.revision(),estado.fase(),estado.ronda(),estado.actual(),estado.bloqueada(),estado.ideas(),estado.roles(),
+                estado.accionesRestantes(),estado.habilidadPendiente(),jugadores,estado.mano(),estado.seleccion(),estado.catalogoSeleccion(),
+                estado.acciones(),estado.eventos(),estado.ganadores(),estado.ultimaRonda(),estado.aviso());
     }
 
     private void registrarResultado() {

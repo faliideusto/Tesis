@@ -23,19 +23,19 @@ assert.match(friendsView({codigo:'ABC',amigos:[],recibidas:[],enviadas:[]}),/Tod
 const ranked=rankingView({entradas:[{posicion:1,nombre:hostile,nivel:2,xp:500,victorias:3,partidas:5,yo:true}],propia:{posicion:90,nivel:1,xp:10}},'victorias');
 assert.match(ranked,/#90/);assert.match(ranked,/ranking-self/);assert.ok(!ranked.includes('<img src=x'));
 const missions=missionsView({diarias:[{id:hostile,titulo:hostile,objetivo:1,progreso:9,xp:50,completada:true,reclamada:false},{id:'claimed',titulo:'Ya recibida',objetivo:3,progreso:3,xp:75,completada:true,reclamada:true}],semanales:[],reinicioDiario:'2026-10-07T00:00:00Z',reinicioSemanal:'2026-10-12T00:00:00Z'});
-assert.ok(!missions.includes('<img src=x'));assert.match(missions,/value="1" max="1"/);assert.match(missions,/data-claim-mission="claimed" disabled/);assert.match(missions,/tu hora local/);assert.match(missions,/00:00 UTC/);
+assert.ok(!missions.includes('<img src=x'));assert.match(missions,/max="1" value="1"/);assert.match(missions,/data-mission-claim="claimed" disabled/);assert.match(missions,/tu hora local/);
 
 class Root {
-  constructor(){this.listeners={};this.controls=[];this.message={textContent:'',focus:()=>{this.ownerDocument.activeElement=this.message;}};this.ownerDocument={activeElement:null};}
+  constructor(){this.listeners={};this.controls=[];this.message={textContent:'',setAttribute(){},focus:()=>{this.ownerDocument.activeElement=this.message;}};this.ownerDocument={activeElement:null};}
   set innerHTML(value){this.html=value;this.controls=[];for(const found of value.matchAll(/<(button|input|select)\b([^>]*)>/g)){
     const attributes=new Map([...found[2].matchAll(/([\w-]+)(?:="([^"]*)")?/g)].map(match=>[match[1],match[2]??'']));
-    const control={id:attributes.get('id')||'',value:attributes.get('value')||'',dataset:{},disabled:attributes.has('disabled'),hasAttribute:key=>attributes.has(key),focus:()=>{this.ownerDocument.activeElement=control;},select(){},closest(){return this;}};
+    const control={id:attributes.get('id')||'',value:attributes.get('value')||'',dataset:{},disabled:attributes.has('disabled'),hasAttribute:key=>attributes.has(key),getAttribute:key=>attributes.get(key),focus:()=>{this.ownerDocument.activeElement=control;},select(){},closest(){return this;}};
     for(const [key,val] of attributes)if(key.startsWith('data-'))control.dataset[key.slice(5).replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase())]=val;
     this.controls.push(control);
   }}
   get innerHTML(){return this.html;}
   querySelectorAll(){return this.controls;}
-  querySelector(selector){if(selector==='[data-community-message]')return this.message;if(selector[0]==='#')return this.controls.find(control=>control.id===selector.slice(1));return this.controls.find(control=>control.hasAttribute(selector.slice(1,-1)));}
+  querySelector(selector){if(selector==='[data-community-message]'||selector==='.missions-status')return this.message;if(selector[0]==='#')return this.controls.find(control=>control.id===selector.slice(1));return this.controls.find(control=>control.hasAttribute(selector.slice(1,-1)));}
   contains(control){return this.controls.includes(control);}
   setAttribute(){}addEventListener(type,listener){this.listeners[type]=listener;}removeEventListener(type){delete this.listeners[type];}
   click(control){return this.listeners.click({target:control});}
@@ -62,13 +62,21 @@ select=rankRoot.querySelector('#ranking-criterion');assert.equal(rankRoot.ownerD
 select.value='victorias';rankRoot.listeners.change({target:select});await tick();
 assert.deepEqual(criteria,['xp','partidas','victorias']);assert.equal(select.value,'partidas','Fallo conserva criterio de los datos actuales');assert.match(rankRoot.innerHTML,/Tu posición aparecerá/);
 
+const scopeRoot=new Root(),scopeCalls=[];
+mountCommunity(scopeRoot,{accounts:{...account,profile:()=>({nivel:1,xp:350,victorias:0,partidasTerminadas:2}),ranking:async(criterion,scope)=>{scopeCalls.push([criterion,scope]);if(scope==='temporada')throw new Error('Periodo no disponible');return {entradas:[],propia:null,ambito:scope};}},page:'ranking'});
+await tick();let weekly=scopeRoot.controls.find(control=>control.dataset.rankingScope==='semanal');weekly.focus();await scopeRoot.click(weekly);await tick();
+assert.equal(scopeRoot.ownerDocument.activeElement.dataset.rankingScope,'semanal','Cambiar ámbito mantiene el foco en el botón de ámbito');assert.match(scopeRoot.innerHTML,/data-ranking-scope="semanal" aria-current="page"/);
+let criterionSelect=scopeRoot.querySelector('#ranking-criterion');criterionSelect.value='victorias';scopeRoot.listeners.change({target:criterionSelect});await tick();
+await scopeRoot.click(scopeRoot.controls.find(control=>control.dataset.rankingScope==='temporada'));await tick();assert.match(scopeRoot.innerHTML,/data-ranking-scope="semanal" aria-current="page"/,'Fallo de ámbito conserva el ámbito y los datos anteriores');
+await scopeRoot.click(scopeRoot.querySelector('[data-community-refresh]'));await tick();assert.deepEqual(scopeCalls,[['xp','global'],['xp','semanal'],['victorias','semanal'],['victorias','temporada'],['victorias','semanal']],'Ordenar y actualizar conservan el ámbito seleccionado');
+
 let claims=0,rewards=0,resolveClaim;
-const missionData={diarias:[{id:'d',titulo:'Juega una partida',objetivo:1,progreso:1,xp:50,completada:true,reclamada:false}],semanales:[]};
+let missionData={diarias:[{id:'d',titulo:'Juega una partida',objetivo:1,progreso:1,xp:50,completada:true,reclamada:false}],semanales:[]};
 const missionRoot=new Root();mountCommunity(missionRoot,{accounts:{...account,missions:async()=>missionData,claimMission:()=>{claims++;return new Promise(value=>resolveClaim=value);}},page:'missions',onReward:()=>rewards++});
-await tick();const claim=missionRoot.querySelector('[data-claim-mission]');missionRoot.ownerDocument.activeElement=claim;
+await tick();const claim=missionRoot.querySelector('[data-mission-claim]');missionRoot.ownerDocument.activeElement=claim;
 await missionRoot.click(claim);await missionRoot.click(claim);assert.equal(claims,1,'Reclamo concurrente bloqueado');
 assert.equal(missionRoot.ownerDocument.activeElement,missionRoot.message,'Una acción pendiente mantiene el foco dentro del panel para permitir Escape');
-resolveClaim({...missionData,diarias:[{...missionData.diarias[0],reclamada:true}]});await tick();assert.equal(rewards,1);assert.match(missionRoot.innerHTML,/Reclamada ✓/);
+missionData={...missionData,diarias:[{...missionData.diarias[0],reclamada:true}]};resolveClaim(missionData);await tick();assert.equal(rewards,1);assert.match(missionRoot.innerHTML,/✓ Reclamada/);
 
 let removals=0;
 const friendRoot=new Root();mountCommunity(friendRoot,{accounts:{...account,community:async()=>({...community,amigos:[{codigo:'FRIEND',nombre:'Ana',nivel:1}]}),friendship:async()=>{removals++;return community;}},page:'friends',confirm:()=>false});
@@ -78,7 +86,7 @@ const {createAccounts}=(await module('auth.js')).namespace;
 let authCallback;const session={access_token:'account-token',user:{id:'auth-user'}};
 const paths=[];const auth=createAccounts({storage:{getItem:()=>null},sdk:()=>({createClient:()=>({auth:{onAuthStateChange:fn=>authCallback=fn,getSession:async()=>({data:{session}})}})}),fetcher:async(path,init)=>{paths.push({path,init});return {ok:true,json:async()=>path.endsWith('config')?{habilitado:true,url:'https://example.com',publishableKey:'p'}:{}};}});
 await auth.initialize();await auth.community();await auth.friendship('ABC','solicitar');await auth.ranking('victorias');await auth.missions();await auth.claimMission('d');
-assert.deepEqual(paths.slice(1).map(value=>value.path),['/api/comunidad','/api/amigos','/api/ranking?criterio=victorias','/api/misiones','/api/misiones/reclamar']);
+assert.deepEqual(paths.slice(1).map(value=>value.path),['/api/comunidad','/api/amigos','/api/ranking?criterio=victorias&ambito=global','/api/misiones','/api/misiones/reclamar']);
 for(const {init} of paths.slice(1)){assert.equal(init.headers.Authorization,'Bearer account-token');assert.ok(init.signal);assert.equal(init.headers['X-Tesis-Account-Authorization'],undefined);}
 assert.equal(paths[2].init.body,'{"codigo":"ABC","accion":"solicitar"}');assert.equal(paths[5].init.body,'{"id":"d"}');
 authCallback('SIGNED_OUT',null);assert.equal(auth.identity(),null);

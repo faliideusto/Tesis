@@ -41,6 +41,10 @@ class CuentasHttpTest {
             byte[] b = "[{\"display_name\":\"Ana\",\"xp\":500,\"games_finished\":4,\"wins\":2}]".getBytes(StandardCharsets.UTF_8);
             x.sendResponseHeaders(200, b.length); x.getResponseBody().write(b); x.close();
         });
+        supabase.createContext("/rest/v1/rpc/cosmeticos", x -> {
+            byte[] b="{\"inventario\":[],\"equipamiento\":{\"avatar\":null,\"marco\":null,\"titulo\":null,\"insignia\":null,\"reverso\":null,\"placa\":null,\"interaccion\":null}}".getBytes(StandardCharsets.UTF_8);
+            x.sendResponseHeaders(200,b.length);x.getResponseBody().write(b);x.close();
+        });
         supabase.start();
         var usuario = UUID.randomUUID();
         var jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).keyID("test").build(),

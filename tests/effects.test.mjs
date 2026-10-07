@@ -154,6 +154,18 @@ export async function runEffectsTests(root) {
     assert(nodes.every(n=>!n.innerHTML?.includes('SECRETO')));
     assert(nodes.every(n=>!n.isConnected)); count++;
   }
+  {
+    const {fx,nodes}=await setup();
+    const back=name=>({reverso:{tipo:'reverso',asset:`/assets/seasons/cronicas/reverso/${name}.png`}});
+    const themed={...before,jugadores:before.jugadores.map(p=>({...p,cosmeticos:back(p.nombre)}))};
+    await fx.transition(themed,{...themed,eventos:[...themed.eventos,event('accion.pensar',{robo:true,carta:{nombre:'Secreto',arte:'private.png'}})]});
+    assert(nodes.some(n=>n.innerHTML?.includes('/assets/seasons/cronicas/reverso/Rival.png')));
+    assert(!nodes.some(n=>n.innerHTML?.includes('private.png')),'La carga cosmética no habilita caras privadas');
+    nodes.length=0;
+    await fx.transition(themed,{...themed,eventos:[...themed.eventos,event('habilidad.plagiador',{objetivo:'Yo'})]});
+    const flights=nodes.filter(n=>n.className?.includes('fx-flight'));
+    assert.equal(flights.length,2);assert(flights[0].innerHTML.includes('/Rival.png'));assert(flights[1].innerHTML.includes('/Yo.png'));count++;
+  }
   const drawCard={indice:0,nombre:'Cohortes',arte:'articulos/04_cohortes.webp',marco:'cartas/marco_articulo_raro.webp',coste:4,trabajo:3,prestigio:5};
   const ownDraw=()=>({...after(event('accion.pensar',{robo:true,actor:'Yo'})),mano:[drawCard]});
   {

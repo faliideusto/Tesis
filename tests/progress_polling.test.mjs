@@ -9,7 +9,7 @@ const document={getElementById:id=>{if(!nodes.has(id))nodes.set(id,element());re
   body:{append(){},classList:{add(){},remove(){}}},querySelector:()=>({append(){}}),addEventListener(){}};
 const context=vm.createContext({document,setTimeout,clearTimeout,console});
 const exports={
-  createMatchmaking:()=>({}),createRoomInvitations:()=>({refreshLobby(){}}),
+  createMatchmaking:()=>({}),createRoomInvitations:()=>({refreshLobby(){}}),createRoomInteractions:()=>({reset(){},update(){}}),playInteraction:()=>Promise.resolve(),
   api:{identity:()=>null},accounts:{signedIn:()=>true,refreshProfile:async()=>{profileReads++;}},
   initAccountPanel:()=>{},startPresence:()=>{},progressText:p=>p?.estado==='CONFIRMADA'?`Guardado ${p.xp}`:p?.estado || '',
   homeCommunity:()=>'',

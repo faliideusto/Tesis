@@ -1,0 +1,11 @@
+.interaction-effects{position:fixed;inset:0;z-index:88;pointer-events:none;overflow:hidden;contain:layout paint}
+.interaction-effects *{pointer-events:none}
+.interaction-piece{position:absolute;display:block;transform:translate(-50%,-50%);will-change:transform,opacity}
+.interaction-piece img{display:block;width:100%;height:100%;object-fit:contain}
+.interaction-book{width:clamp(48px,5.4vw,82px);height:clamp(48px,5.4vw,82px);filter:drop-shadow(0 5px 5px #0009)}
+.interaction-page{width:clamp(20px,2.8vw,38px);height:clamp(20px,2.8vw,38px);filter:drop-shadow(0 2px 3px #0007)}
+.interaction-impact{width:clamp(70px,8vw,120px);height:clamp(70px,8vw,120px)}
+.interaction-spark{z-index:2;background:currentColor;box-shadow:0 0 5px currentColor,0 0 12px currentColor;border-radius:50%}
+.interaction-spark-star{width:clamp(10px,1.2vw,16px);height:clamp(10px,1.2vw,16px);border-radius:0;clip-path:polygon(50% 0,62% 36%,100% 50%,62% 64%,50% 100%,38% 64%,0 50%,38% 36%);filter:drop-shadow(0 0 4px currentColor)}
+.interaction-spark-trail{width:clamp(15px,1.6vw,25px);height:3px;background:linear-gradient(90deg,transparent,currentColor 65%,#fff3d9);box-shadow:0 0 5px currentColor,0 0 9px currentColor}
+@media(prefers-reduced-motion:reduce){.interaction-piece{will-change:opacity}}

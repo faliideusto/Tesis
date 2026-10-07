@@ -22,15 +22,17 @@ public final class GestorMatchmaking {
         final String token, nombre;
         final int jugadores;
         final UUID cuenta;
+        final CosmeticosPartida cosmeticos;
         final long orden;
         long actividad, terminada;
         String fase = "BUSCANDO";
         Grupo grupo;
         boolean listo;
         Vistas.AccesoSala acceso;
-        Solicitud(String token, String nombre, int jugadores, UUID cuenta, long orden, long ahora) {
+        Solicitud(String token, String nombre, int jugadores, UUID cuenta,CosmeticosPartida cosmeticos, long orden, long ahora) {
             this.token = token; this.nombre = nombre; this.jugadores = jugadores;
             this.cuenta = cuenta; this.orden = orden; actividad = ahora;
+            this.cosmeticos=cuenta==null?CosmeticosPartida.originales():Objects.requireNonNull(cosmeticos);
         }
         boolean activa() { return fase.equals("BUSCANDO") || fase.equals("CONFIRMACION"); }
     }
@@ -45,6 +47,9 @@ public final class GestorMatchmaking {
     GestorMatchmaking(GestorSalas salas, Clock reloj) { this.salas = salas; this.reloj = reloj; }
 
     public synchronized Vista buscar(String token, String nombre, int jugadores, UUID cuenta) {
+        return buscar(token,nombre,jugadores,cuenta,CosmeticosPartida.originales());
+    }
+    public synchronized Vista buscar(String token,String nombre,int jugadores,UUID cuenta,CosmeticosPartida cosmeticos) {
         validarToken(token);
         nombre = SalaJuego.validarNombre(nombre);
         if (jugadores < 3 || jugadores > 5) throw new IllegalArgumentException("Elige una partida de 3, 4 o 5 personas.");
@@ -59,7 +64,7 @@ public final class GestorMatchmaking {
         if (cuenta != null && solicitudes.values().stream().anyMatch(s -> s.activa() && cuenta.equals(s.cuenta)))
             throw new ErrorSala(409, "Esta cuenta ya está buscando partida.");
         if (solicitudes.size() >= MAX_SOLICITUDES) throw new ErrorSala(409, "Hay demasiadas búsquedas. Inténtalo más tarde.");
-        var solicitud = new Solicitud(token, nombre, jugadores, cuenta, orden++, reloj.millis());
+        var solicitud = new Solicitud(token, nombre, jugadores, cuenta,cosmeticos, orden++, reloj.millis());
         solicitudes.put(token, solicitud);
         formarGrupos();
         return vista(solicitud);
@@ -85,7 +90,7 @@ public final class GestorMatchmaking {
             // Si crear falla, las confirmaciones permanecen recuperables y se puede volver a intentar.
             var cuentas = new ArrayList<UUID>();
             miembros.forEach(s -> cuentas.add(s.cuenta));
-            var accesos = salas.crearPartida(miembros.stream().map(s -> s.nombre).toList(), cuentas);
+            var accesos = salas.crearPartida(miembros.stream().map(s -> s.nombre).toList(), cuentas,miembros.stream().map(s -> s.cosmeticos).toList());
             for (int i = 0; i < miembros.size(); i++) {
                 var miembro = miembros.get(i);
                 miembro.acceso = accesos.get(i); miembro.fase = "ASIGNADA"; miembro.terminada = reloj.millis();

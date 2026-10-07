@@ -92,7 +92,7 @@ public final class ServidorWeb implements AutoCloseable {
                         : cuentas.renombrar(jwt, nuevoNombre)));
                 return;
             }
-            if (Set.of("/api/comunidad", "/api/amigos", "/api/presencia", "/api/perfil-publico", "/api/ranking", "/api/misiones", "/api/misiones/reclamar").contains(ruta)) {
+            if (Set.of("/api/comunidad", "/api/amigos", "/api/presencia", "/api/perfil-publico", "/api/ranking", "/api/misiones", "/api/misiones/reclamar", "/api/pase", "/api/pase/reclamar", "/api/cosmeticos", "/api/cosmeticos/equipar").contains(ruta)) {
                 comunidad(x, ruta, metodo); return;
             }
             if (ruta.equals("/api/matchmaking") || ruta.startsWith("/api/matchmaking/")) { matchmaking(x, ruta, metodo); return; }
@@ -150,18 +150,39 @@ public final class ServidorWeb implements AutoCloseable {
     }
 
     private void comunidad(HttpExchange x, String ruta, String metodo) throws IOException {
-        boolean mutacion = ruta.equals("/api/amigos") || ruta.equals("/api/presencia") || ruta.equals("/api/misiones/reclamar");
+        boolean mutacion = Set.of("/api/amigos", "/api/presencia", "/api/misiones/reclamar", "/api/pase/reclamar", "/api/cosmeticos/equipar").contains(ruta);
         if (!(mutacion ? "POST" : "GET").equals(metodo)) throw new ErrorSala(405, "Método no permitido.");
         String jwt = bearer(x.getRequestHeaders().getFirst("Authorization"));
         // Dentro del mismo cupo limitado se verifica la cuenta y se ejecuta la RPC.
         json(x, 200, consultarCuenta(() -> {
             cuentas.autenticar(jwt);
             String consulta = x.getRequestURI().getRawQuery();
-            if (!Set.of("/api/ranking", "/api/perfil-publico").contains(ruta) && consulta != null)
+            if (!Set.of("/api/ranking", "/api/perfil-publico", "/api/pase").contains(ruta) && consulta != null)
                 throw new IllegalArgumentException("Esta ruta no admite parámetros de consulta.");
             try {
                 return switch (ruta) {
                     case "/api/comunidad" -> cuentas.comunidad(jwt);
+                    case "/api/pase" -> {
+                        String temporada = null;
+                        if (consulta != null) {
+                            if (!consulta.matches("temporada=temporada(:|%3[Aa])[0-9]{4}-(0[1-9]|1[0-2])"))
+                                throw new IllegalArgumentException("Consulta de temporada no válida.");
+                            temporada = java.net.URLDecoder.decode(consulta.substring("temporada=".length()), StandardCharsets.UTF_8);
+                        }
+                        yield cuentas.pase(jwt, temporada);
+                    }
+                    case "/api/pase/reclamar" -> {
+                        JsonObject cuerpo = cuerpoSala(x, Set.of("temporada", "id"));
+                        texto(cuerpo, "temporada", true); texto(cuerpo, "id", true);
+                        yield cuentas.reclamarRecompensaTemporada(jwt,cuerpo.get("temporada").getAsString(),cuerpo.get("id").getAsString());
+                    }
+                    case "/api/cosmeticos" -> cuentas.cosmeticos(jwt);
+                    case "/api/cosmeticos/equipar" -> {
+                        JsonObject cuerpo = cuerpoSala(x, Set.of("tipo", "id"));texto(cuerpo,"tipo",true);
+                        if(!cuerpo.has("id"))throw new IllegalArgumentException("Indica el cosmético o null para quitarlo.");
+                        if(!cuerpo.get("id").isJsonNull())texto(cuerpo,"id",true);
+                        yield cuentas.equiparCosmetico(jwt,cuerpo.get("tipo").getAsString(),cuerpo.get("id").isJsonNull()?null:cuerpo.get("id").getAsString());
+                    }
                     case "/api/perfil-publico" -> {
                         if (consulta == null || !consulta.matches("codigo=[A-Fa-f0-9]{16}"))
                             throw new IllegalArgumentException("Indica un código de perfil válido.");
@@ -214,18 +235,19 @@ public final class ServidorWeb implements AutoCloseable {
     private void salas(HttpExchange x, String ruta, String metodo) throws IOException {
         String[] partes = ruta.split("/", -1);
         if (ruta.equals("/api/salas") && metodo.equals("POST")) {
-            UUID cuenta = cuentaEntrada(x);
-            json(x, 201, salas.crear(nombre(cuerpoSala(x, Set.of("nombre"))), cuenta)); return;
+            EntradaCuenta cuenta = cuentaEntrada(x);
+            json(x, 201, salas.crear(nombre(cuerpoSala(x, Set.of("nombre"))), cuenta.id(),cuenta.cosmeticos())); return;
         }
-        if (partes.length != 5 || !Set.of("unirse", "estado", "iniciar", "accion", "invitar").contains(partes[4]))
+        if (partes.length != 5 || !Set.of("unirse", "estado", "iniciar", "accion", "invitar", "interacciones").contains(partes[4]))
             throw new ErrorSala(404, "Ruta no encontrada.");
         String operacion = partes[4];
+        if(operacion.equals("interacciones")) { interacciones(x,partes[3],metodo);return; }
         if (!(operacion.equals("estado") ? metodo.equals("GET") : metodo.equals("POST")))
             throw new ErrorSala(405, "Método no permitido.");
         var sala = salas.buscar(partes[3]);
         if (operacion.equals("unirse")) {
-            UUID cuenta = cuentaEntrada(x);
-            json(x, 200, sala.unirse(nombre(cuerpoSala(x, Set.of("nombre"))), cuenta)); return;
+            EntradaCuenta cuenta = cuentaEntrada(x);
+            json(x, 200, sala.unirse(nombre(cuerpoSala(x, Set.of("nombre"))), cuenta.id(),cuenta.cosmeticos())); return;
         }
         String cabecera = x.getRequestHeaders().getFirst("Authorization");
         String token = cabecera != null && cabecera.startsWith("Bearer ") ? cabecera.substring(7) : null;
@@ -247,6 +269,30 @@ public final class ServidorWeb implements AutoCloseable {
         json(x, 200, operacion.equals("iniciar") ? sala.iniciar(token, peticion.revision()) : sala.actuar(token, peticion));
     }
 
+    private void interacciones(HttpExchange x,String codigo,String metodo) throws IOException {
+        if(!Set.of("GET","POST").contains(metodo))throw new ErrorSala(405,"Método no permitido.");
+        SalaJuego sala=salas.buscar(codigo);String token=bearer(x.getRequestHeaders().getFirst("Authorization"));
+        // Autenticación de sala pura para este canal; nunca sala.estado().
+        sala.interacciones(token,null);
+        String consulta=x.getRequestURI().getRawQuery();
+        if(metodo.equals("GET")) {
+            Long desde=null;
+            if(consulta!=null) {
+                if(!consulta.matches("desde=(0|[1-9][0-9]{0,18})"))throw new ErrorSala(400,"Cursor cosmético no válido.");
+                try { desde=Long.parseLong(consulta.substring(6)); }catch(NumberFormatException e){throw new ErrorSala(400,"Cursor cosmético no válido.");}
+            }
+            json(x,200,sala.interacciones(token,desde));return;
+        }
+        if(consulta!=null)throw new ErrorSala(400,"Esta ruta no admite consultas.");
+        JsonObject cuerpo=cuerpoSala(x,Set.of("interactionId","objetivo"));texto(cuerpo,"interactionId",true);texto(cuerpo,"objetivo",true);
+        String id=cuerpo.get("interactionId").getAsString(),objetivo=cuerpo.get("objetivo").getAsString();
+        String jwt=bearer(x.getRequestHeaders().getFirst("X-Tesis-Account-Authorization"));
+        UUID cuenta=consultarCuenta(() -> cuentas.autenticar(jwt));
+        sala.validarInteraccion(token,cuenta,id,objetivo);
+        CosmeticosPartida actuales=consultarCuenta(() -> CosmeticosPartida.desde(cuentas.cosmeticos(jwt)));
+        json(x,200,sala.interactuar(token,cuenta,id,objetivo,actuales));
+    }
+
     private void invitaciones(HttpExchange x, String ruta, String metodo) throws IOException {
         String[] partes = ruta.split("/",-1);
         boolean lista = ruta.equals("/api/invitaciones");
@@ -260,7 +306,8 @@ public final class ServidorWeb implements AutoCloseable {
         cuerpoSala(x,Set.of());
         if (partes[4].equals("aceptar")) {
             String nombre = consultarCuenta(() -> cuentas.perfil(jwt)).nombre();
-            json(x,200,invitaciones.aceptar(partes[3],actor,nombre));
+            CosmeticosPartida cosmeticos=consultarCuenta(() -> CosmeticosPartida.desde(cuentas.cosmeticos(jwt)));
+            json(x,200,invitaciones.aceptar(partes[3],actor,nombre,cosmeticos));
         } else { invitaciones.rechazar(partes[3],actor); json(x,200,Map.of()); }
     }
 
@@ -274,7 +321,8 @@ public final class ServidorWeb implements AutoCloseable {
         if (operacion.equals("buscar")) {
             var cuerpo = cuerpoSala(x, Set.of("nombre", "jugadores"));
             entero(cuerpo, "jugadores", 5, true);
-            json(x, 200, matchmaking.buscar(token, nombre(cuerpo), cuerpo.get("jugadores").getAsInt(), cuentaEntrada(x)));
+            EntradaCuenta cuenta=cuentaEntrada(x);
+            json(x, 200, matchmaking.buscar(token, nombre(cuerpo), cuerpo.get("jugadores").getAsInt(), cuenta.id(),cuenta.cosmeticos()));
             return;
         }
         // Autenticar antes de interpretar las mutaciones; GET renueva presencia.
@@ -290,9 +338,12 @@ public final class ServidorWeb implements AutoCloseable {
     private static String bearer(String cabecera) {
         return cabecera != null && cabecera.startsWith("Bearer ") ? cabecera.substring(7) : null;
     }
-    private UUID cuentaEntrada(HttpExchange x) {
+    private record EntradaCuenta(UUID id,CosmeticosPartida cosmeticos) {}
+    private EntradaCuenta cuentaEntrada(HttpExchange x) {
         String cabecera = x.getRequestHeaders().getFirst("X-Tesis-Account-Authorization");
-        return cabecera == null ? null : consultarCuenta(() -> cuentas.autenticar(bearer(cabecera)));
+        if(cabecera==null)return new EntradaCuenta(null,CosmeticosPartida.originales());
+        String jwt=bearer(cabecera);
+        return consultarCuenta(() -> new EntradaCuenta(cuentas.autenticar(jwt),CosmeticosPartida.desde(cuentas.cosmeticos(jwt))));
     }
     private <T> T consultarCuenta(java.util.function.Supplier<T> consulta) {
         if (!consultasCuenta.tryAcquire())
@@ -370,7 +421,7 @@ public final class ServidorWeb implements AutoCloseable {
         return entrada.juego();
     }
     private void json(HttpExchange x, int estado, Object dato) throws IOException {
-        String cuerpo = dato instanceof CuentasSupabase.Ranking
+        String cuerpo = dato instanceof CuentasSupabase.Ranking || dato instanceof CuentasSupabase.PaseTemporada || dato instanceof CuentasSupabase.Cosmeticos || dato instanceof Vistas.Interacciones
                 ? new GsonBuilder().serializeNulls().create().toJson(dato) : gson.toJson(dato);
         enviar(x, estado, "application/json; charset=utf-8", cuerpo.getBytes(StandardCharsets.UTF_8));
     }

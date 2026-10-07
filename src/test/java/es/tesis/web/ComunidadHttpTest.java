@@ -63,6 +63,10 @@ class ComunidadHttpTest {
                 byte[] b = "[{\"display_name\":\"Lin\",\"xp\":0,\"games_finished\":0,\"wins\":0}]".getBytes(StandardCharsets.UTF_8);
                 x.sendResponseHeaders(200,b.length);x.getResponseBody().write(b);x.close();
             });
+            remoto.createContext("/rest/v1/rpc/cosmeticos", x -> {
+                byte[] b="{\"inventario\":[],\"equipamiento\":{\"avatar\":null,\"marco\":null,\"titulo\":null,\"insignia\":null,\"reverso\":null,\"placa\":null,\"interaccion\":null}}".getBytes(StandardCharsets.UTF_8);
+                x.sendResponseHeaders(200,b.length);x.getResponseBody().write(b);x.close();
+            });
             remoto.start();
             web = new ServidorWeb("127.0.0.1", 0, new CuentasSupabase(new CuentasSupabase.Configuracion(origen, "sb_publishable_test", "sb_secret_privado")));
             web.iniciar(); base = "http://127.0.0.1:" + web.puerto();

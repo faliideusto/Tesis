@@ -2,6 +2,8 @@ import {esc} from './dom.js';
 import {badge,progression} from './profile-ranks.js';
 import {createPublicProfile} from './public-profile.js';
 import {rankingView} from './ranking-panel.js';
+import {mountMissions} from './missions-panel.js';
+export {missionsView} from './missions-panel.js';
 export {rankingView} from './ranking-panel.js';
 
 const integer=value=>Math.max(0,Math.floor(Number(value)||0));
@@ -47,18 +49,9 @@ export function resetTime(value) {
   if(!Number.isFinite(time.getTime()))return 'Pendiente de confirmar';
   return `${new Intl.DateTimeFormat('es-ES',{dateStyle:'medium',timeStyle:'short'}).format(time)} (tu hora local)`;
 }
-function missionGroup(title,missions,reset) {
-  return `<section class="mission-section"><div class="mission-section-heading"><h3>${title}</h3><p>Se renuevan ${esc(resetTime(reset))}</p></div><div class="mission-grid">${missions.length?missions.map(mission=>{
-    const goal=Math.max(1,integer(mission.objetivo)),progress=Math.min(goal,integer(mission.progreso));
-    return `<article class="community-card mission-card ${mission.reclamada?'mission-claimed':''}"><span class="mission-reward">+${format(mission.xp)} XP</span><h4>${esc(mission.titulo)}</h4><p>${progress} / ${goal} · ${mission.reclamada?'Recompensa recibida':mission.completada?'Completada':'En curso'}</p><progress value="${progress}" max="${goal}" aria-label="${esc(mission.titulo)}: ${progress} de ${goal}">${progress} / ${goal}</progress><button type="button" class="${mission.completada&&!mission.reclamada?'gold-button':'community-action'}" data-claim-mission="${esc(mission.id)}" ${!mission.completada||mission.reclamada?'disabled':''}>${mission.reclamada?'Reclamada ✓':mission.completada?'Reclamar recompensa':'Sigue jugando'}</button></article>`;
-  }).join(''):'<p class="community-empty">No hay misiones disponibles en este periodo.</p>'}</div></section>`;
-}
-export function missionsView(data) {
-  return `<header class="community-heading"><span class="eyebrow">UN NUEVO RETO EN CADA ETAPA</span><h2>Misiones de la academia</h2><p>Termina partidas con tu cuenta vinculada y reclama experiencia adicional. Las victorias en empate también cuentan.</p><p class="community-fine-print">Periodos diarios a las 00:00 UTC y semanales los lunes a las 00:00 UTC. Reclama antes de que se renueven. Solo cuentan resultados desde la activación de las misiones.</p><button type="button" class="community-action" data-community-refresh>Actualizar progreso</button></header>${missionGroup('Misiones diarias',data.diarias||[],data.reinicioDiario)}${missionGroup('Misiones semanales',data.semanales||[],data.reinicioSemanal)}`;
-}
-
 // Each mount owns its generation. Leaving the page/account invalidates every pending response.
 export function mountCommunity(root,{accounts,page,onReward=()=>{},clipboard=globalThis.navigator?.clipboard,confirm=message=>globalThis.confirm(message)}={}) {
+  if(page==='missions')return mountMissions(root,{accounts,onReward});
   let alive=true,generation=0,busy=false,criterion='xp',rankingScope='global',data=null,loadError=false,friendFilter='',suggestionOffset=0,refreshTimer=null,periodTimer=null;
   const identity=accounts.identity();
   const publicProfiles=createPublicProfile(root,{accounts});
@@ -67,7 +60,7 @@ export function mountCommunity(root,{accounts,page,onReward=()=>{},clipboard=glo
   function render(status='') {
     if(!alive)return;
     if(suggestionOffset>=(data?.sugerencias||[]).length)suggestionOffset=0;
-    const view=data?(page==='friends'?friendsView(data,{filter:friendFilter,suggestionOffset}):page==='ranking'?rankingView(data,criterion,{ambito:rankingScope,profile:accounts.profile?.()||null}):missionsView(data)):`<p class="community-empty">${loadError?'No se pudo cargar esta sección.':'Cargando tu academia…'}</p>`;
+    const view=data?(page==='friends'?friendsView(data,{filter:friendFilter,suggestionOffset}):page==='ranking'?rankingView(data,criterion,{ambito:rankingScope,profile:accounts.profile?.()||null}):''):`<p class="community-empty">${loadError?'No se pudo cargar esta sección.':'Cargando tu academia…'}</p>`;
     root.innerHTML=`<div data-community-content>${view}</div><p data-community-message class="community-message" role="status" aria-live="polite" tabindex="-1">${esc(status)}</p>${data?'':'<button type="button" class="community-action" data-community-refresh>Volver a intentar</button>'}`;
     root.setAttribute('aria-busy',String(busy));
     if(busy)root.querySelectorAll('button,input,select').forEach(control=>control.disabled=true);
@@ -149,7 +142,7 @@ export function mountCommunity(root,{accounts,page,onReward=()=>{},clipboard=glo
       if(action==='eliminar'&&!confirm('¿Eliminar a esta persona de tus amigos? Para volver a añadirla tendrás que enviar una nueva solicitud.'))return;
       const messages={solicitar:'Solicitud enviada. Revisa tus solicitudes pendientes.',aceptar:'Solicitud aceptada. Ya sois amigos.',rechazar:'Solicitud rechazada.',cancelar:'Solicitud cancelada.',eliminar:'Amigo eliminado.'};
       void run(()=>accounts.friendship(button.dataset.code,action),{success:messages[action]});
-    } else if(button.hasAttribute('data-claim-mission'))void run(()=>accounts.claimMission(button.dataset.claimMission),{success:'Recompensa recibida. Tu experiencia se ha actualizado.',reward:true});
+    }
   };
   const submit=event=>{
     if(event.target.id!=='friend-request')return;

@@ -2,11 +2,16 @@ import {img, esc, resource} from './dom.js';
 import {ideaCardContents, roleCard} from './cards.js';
 import {preview} from './decisions.js';
 
+const safeCosmeticAsset = value => typeof value === 'string' && /^\/assets\/(?:Tesis-assets|seasons)\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.(?:webp|png|svg)$/.test(value) ? value : null;
+const cosmeticImage = (path, cls) => `<img class="${cls}" src="${esc(path)}" alt="" draggable="false">`;
 function playerBadge(p, local = false) {
   const name = local ? `<h2>${esc(p.nombre)}</h2>` : `<strong>${esc(p.nombre)}</strong>`;
-  return `<span class="rival-portrait ${p.rol ? '' : 'reserved-portrait'}">${img(p.rol?.arte || 'visual-v2/reserved-scholar.webp')}</span>
+  const avatar=p.cosmeticos?.avatar?.tipo==='avatar' ? safeCosmeticAsset(p.cosmeticos.avatar.asset) : null;
+  const frame=p.cosmeticos?.marco?.tipo==='marco' ? safeCosmeticAsset(p.cosmeticos.marco.asset) : null;
+  const back=p.cosmeticos?.reverso?.tipo==='reverso' ? safeCosmeticAsset(p.cosmeticos.reverso.asset) : null;
+  return `<span class="rival-portrait ${avatar?'cosmetic-portrait':p.rol?'':'reserved-portrait'} ${frame?'has-cosmetic-frame':''}" data-frame="${esc(frame?p.cosmeticos.marco.id:'')}"><span class="rival-portrait-image">${avatar?cosmeticImage(avatar,'player-avatar'):img(p.rol?.arte || 'visual-v2/reserved-scholar.webp')}</span>${frame?cosmeticImage(frame,'player-avatar-frame'):''}</span>
     <span class="rival-body"><span class="rival-title">${name}${resource('prestigio', p.prestigio, 'Prestigio')}</span><span class="rival-role">${p.rol ? esc(p.rol.nombre) : 'Personaje reservado'}</span>
-    <span class="resources">${resource('moneda', p.monedas, 'Monedas')}<span class="hand-count" aria-label="${p.cartas} ideas en mano">${img('cartas/reverso_idea.webp')} ${p.cartas}</span></span></span>`;
+    <span class="resources">${resource('moneda', p.monedas, 'Monedas')}<span class="hand-count" aria-label="${esc(p.cartas)} ideas en mano">${back?cosmeticImage(back,'player-card-back'):img('cartas/reverso_idea.webp')} ${esc(p.cartas)}</span></span></span>`;
 }
 export function rival(p, state = {}) {
   return `<section class="rival-seat" aria-label="Academia de ${esc(p.nombre)}"><button class="rival ${p.activo ? 'active' : ''}" data-command="rival" data-player="${esc(p.nombre)}" aria-label="Ver estudios de ${esc(p.nombre)}">${playerBadge(p)}${actionBolts(p,state)}</button>${rolePreview(p)}${tableStudies(p)}</section>`;
@@ -51,7 +56,7 @@ export function actionBolts(p, state) {
   return `<span class="action-bolts" role="img" aria-label="${active ? `${remaining} acciones restantes` : 'Fuera de turno'}">${[1,2].map(n => `<svg class="action-bolt ${n <= remaining ? 'available' : 'spent'}" viewBox="0 0 20 28" aria-hidden="true"><path d="M11 2 3 15h6l-1 11 9-15h-6z"/></svg>`).join('')}</span>`;
 }
 export function localPlayer(p, state) {
-  return `${playerBadge(p, true)}${actionBolts(p,state)}${rolePreview(p)}<span class="sr-only">Tu academia.</span>
+  return `${playerBadge(p, true)}${actionBolts(p,state)}${rolePreview(p)}<span class="sr-only">Tu academia.</span><span class="room-interaction-slot"></span>
     ${p.rol ? `<button class="local-role-button" data-command="ability-detail" aria-label="Ver personaje de ${esc(p.nombre)}: ${esc(p.rol.nombre)}"></button>` : ''}`;
 }
 

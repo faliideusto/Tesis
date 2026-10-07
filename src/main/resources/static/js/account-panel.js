@@ -2,6 +2,7 @@ import {accounts} from './auth.js';
 import {esc} from './dom.js';
 import {RANKS, progression, badge} from './profile-ranks.js';
 import {academyTabs,mountCommunity} from './community-panel.js';
+import {mountCustomization} from './profile-customization.js';
 
 export function progressText(progress) {
   switch(progress?.estado) {
@@ -30,8 +31,8 @@ export function profileView(profile) {
   const p=progression(profile),played=Math.max(0,Number(profile.partidasTerminadas)||0),wins=Math.max(0,Number(profile.victorias)||0);
   return `<div class="profile-shell tier-${p.rank.id}">${closeButton()}
     <h2 id="account-title" class="sr-only">Mi perfil</h2>
-    <div class="profile-main"><section class="profile-identity" aria-label="Tu rango actual">${frameCorners()}<span class="researcher-card-label">CARNET DE INVESTIGADOR</span><div class="profile-emblem">${emblemLaurels()}${badge(p.rank.id)}<span class="emblem-level">NIVEL <b>${esc(p.level)}</b></span></div><span class="rank-kicker">${esc(p.rank.title)}</span><h3>${esc(profile.nombre)}</h3><span class="identity-divider" aria-hidden="true">◇</span><span class="rank-name">${esc(p.rank.name)}</span><p class="rank-description">${esc(p.rank.description)}</p><span class="researcher-card-signature">TESIS · MIEMBRO DE LA ACADEMIA</span></section>
-    <section class="profile-record" aria-label="Progresión y estadísticas">${frameCorners()}<div class="profile-progress"><div class="profile-section-label">${academicSprig()}<span>PROGRESIÓN DE NIVEL</span></div><div class="xp-headline"><strong>${esc(p.inLevel)} <small>/ 500 XP</small></strong><div class="xp-next"><span>NIVEL ${esc(p.level)} → ${esc(p.level+1)}</span><span>${esc(p.toNextLevel)} XP para el siguiente nivel</span></div></div><div class="xp-track" role="progressbar" aria-label="Progreso al siguiente nivel" aria-valuemin="0" aria-valuemax="500" aria-valuenow="${p.inLevel}" aria-valuetext="${p.inLevel} de 500 XP"><span style="width:${p.percent}%"></span></div><p class="xp-total">${esc(p.xp)} XP acumulada <span>·</span> Tu legado sigue creciendo</p></div>
+    <div class="profile-main"><nav class="customization-view-tabs" aria-label="Vista del perfil"><span aria-current="page">Resumen</span><button type="button" data-customize>✒ Personalización</button></nav><section class="profile-identity" aria-label="Tu rango actual">${frameCorners()}<span class="researcher-card-label">CARNET DE INVESTIGADOR</span><div class="profile-emblem">${emblemLaurels()}${badge(p.rank.id)}<span class="emblem-level">NIVEL <b>${esc(p.level)}</b></span></div><span class="rank-kicker">${esc(p.rank.title)}</span><h3>${esc(profile.nombre)}</h3><span class="identity-divider" aria-hidden="true">◇</span><span class="rank-name">${esc(p.rank.name)}</span><p class="rank-description">${esc(p.rank.description)}</p><span class="researcher-card-signature">TESIS · MIEMBRO DE LA ACADEMIA</span></section>
+    <section class="profile-record" aria-label="Progresión y estadísticas">${frameCorners()}<div class="profile-progress"><div class="profile-record-heading"><div class="profile-section-label">${academicSprig()}<span>PROGRESIÓN DE NIVEL</span></div></div><div class="xp-headline"><strong>${esc(p.inLevel)} <small>/ 500 XP</small></strong><div class="xp-next"><span>NIVEL ${esc(p.level)} → ${esc(p.level+1)}</span><span>${esc(p.toNextLevel)} XP para el siguiente nivel</span></div></div><div class="xp-track" role="progressbar" aria-label="Progreso al siguiente nivel" aria-valuemin="0" aria-valuemax="500" aria-valuenow="${p.inLevel}" aria-valuetext="${p.inLevel} de 500 XP"><span style="width:${p.percent}%"></span></div><p class="xp-total">${esc(p.xp)} XP acumulada <span>·</span> Tu legado sigue creciendo</p></div>
     <div class="profile-stat-grid"><div>${frameCorners()}<span class="stat-glyph" aria-hidden="true">▤</span><strong>${esc(played)}</strong><span>Partidas terminadas</span></div><div>${frameCorners()}<span class="stat-glyph" aria-hidden="true">♛</span><strong>${esc(wins)}</strong><span>Victorias</span></div><div>${frameCorners()}<span class="stat-glyph" aria-hidden="true">✦</span><strong>${played?Math.round(wins/played*100):0}<small>%</small></strong><span>Porcentaje de victorias</span></div></div>
     <div class="next-rank-card">${frameCorners()}${p.nextRank?`${badge(p.nextRank.id,{small:true})}<div><span>EL SIGUIENTE HORIZONTE</span><strong>${esc(p.nextRank.name)}</strong><p>Nivel ${p.nextRank.start} · ${Math.max(0,(p.nextRank.start-1)*500-p.xp)} XP por recorrer</p></div>`:`${badge('eterno',{small:true})}<div><span>EL MAYOR HONOR DE LA ACADEMIA</span><strong>Un legado eterno</strong><p>Has alcanzado el último rango. Tus niveles continúan.</p></div>`}</div></section></div>
     <section class="rank-journey" aria-label="Ruta de rangos">${frameCorners()}<div class="journey-heading">${academicSprig()}<div><span class="eyebrow">DE LA PRIMERA IDEA AL LEGADO</span><h3>Tu camino en Tesis</h3></div><span class="cosmetic-note">Prestigio visual. Sin ventajas en partida.</span></div><ol class="rank-path">${RANKS.map((rank,i)=>`<li class="rank-step ${i<p.index?'achieved':i===p.index?'current':i===p.index+1?'locked next':'locked'}" ${i===p.index?'aria-current="step"':''} title="${esc(rank.name)} · nivel ${rank.start}">${badge(rank.id,{small:true})}<div class="rank-plaque"><strong>${esc(rank.name)}</strong><span>NIV. ${rank.start}${i===p.index?' · ACTUAL':i<p.index?' · ✓':''}</span></div>${i===p.index+1?'<span class="next-rank-ribbon">SIGUIENTE</span>':''}</li>`).join('')}</ol></section>
@@ -50,9 +51,9 @@ export function initAccountPanel() {
   const panel=document.getElementById('account-panel'),opener=document.getElementById('account-open');
   let mode='login',working=false,loginIdentityPending=false,lastView='',restoring=true,connectionFailed=false,returnFocus=null,returnScroll=0,operation=0;
   let academyPage='profile',community=null,lastIdentity=accounts.identity();
-  const routes={'#perfil':'profile','#amigos':'friends','#ranking':'ranking','#misiones':'missions'};
+  const routes={'#perfil':'profile','#amigos':'friends','#ranking':'ranking','#misiones':'missions','#personalizacion':'customization'};
   const hashes=Object.fromEntries(Object.entries(routes).map(([hash,page])=>[page,hash]));
-  const labels={profile:'Mi perfil',friends:'Amigos',ranking:'Ranking global',missions:'Misiones'};
+  const labels={profile:'Mi perfil',friends:'Amigos',ranking:'Ranking global',missions:'Misiones',customization:'Personalización'};
   const app=document.getElementById('app');
   function leave() {
     operation++;working=false;panel.removeAttribute('aria-busy');
@@ -137,14 +138,22 @@ export function initAccountPanel() {
     else panel.innerHTML=unavailable?unavailableView():authView(mode);
     if(accounts.signedIn()&&profile) {
       const navigation=panel.querySelector('.academy-navigation');
-      navigation.insertAdjacentHTML('afterend',academyTabs(academyPage));
+      navigation.insertAdjacentHTML('afterend',academyTabs(academyPage==='customization'?'profile':academyPage));
       if(academyPage!=='profile') {
         const shell=panel.querySelector('.profile-shell');
         Array.from(shell.children).forEach(child=>{if(!child.matches('.academy-navigation,.community-tabs'))child.hidden=true;});
-        shell.insertAdjacentHTML('beforeend','<h2 id="community-title" class="sr-only">Mi academia</h2><section class="community-panel" aria-labelledby="community-title"></section>');
-        panel.setAttribute('aria-labelledby','community-title');
-        community=mountCommunity(panel.querySelector('.community-panel'),{accounts,page:academyPage,onReward:()=>{void accounts.refreshProfile().catch(()=>{});}});
-      } else panel.setAttribute('aria-labelledby','account-title');
+        if(academyPage==='customization') {
+          shell.insertAdjacentHTML('beforeend','<section class="customization-root" aria-labelledby="customization-title"></section>');
+          panel.setAttribute('aria-labelledby','customization-title');
+          community=mountCustomization(panel.querySelector('.customization-root'),{accounts,profile,onSummary:()=>openPage('profile',returnFocus)});
+        } else {
+          shell.insertAdjacentHTML('beforeend','<h2 id="community-title" class="sr-only">Mi academia</h2><section class="community-panel" aria-labelledby="community-title"></section>');
+          panel.setAttribute('aria-labelledby','community-title');
+          community=mountCommunity(panel.querySelector('.community-panel'),{accounts,page:academyPage,onReward:()=>{void accounts.refreshProfile().catch(()=>{});}});
+        }
+      } else {
+        panel.setAttribute('aria-labelledby','account-title');
+      }
       panel.querySelectorAll('[data-academy-page]').forEach(button=>button.onclick=()=>{openPage(button.dataset.academyPage,returnFocus);panel.querySelector(`[data-academy-page="${academyPage}"]`)?.focus();});
     } else panel.setAttribute('aria-labelledby','account-title');
     panel.dataset.view=accounts.signedIn()?'profile':unavailable?'unavailable':'auth';
@@ -153,6 +162,7 @@ export function initAccountPanel() {
     panel.querySelector('.account-close').onclick=closePage;
     panel.querySelectorAll('[data-auth-mode]').forEach(button=>button.onclick=()=>{mode=button.dataset.authMode;draw(true);});
     const dismiss=panel.querySelector('#account-dismiss');if(dismiss)dismiss.onclick=closePage;
+    const customize=panel.querySelector('[data-customize]');if(customize)customize.onclick=()=>{openPage('customization',returnFocus);panel.querySelector('#customization-title')?.focus();};
     const edit=panel.querySelector('#account-edit');if(edit)edit.onclick=()=>{const form=panel.querySelector('#account-rename');form.hidden=!form.hidden;edit.setAttribute('aria-expanded',String(!form.hidden));if(!form.hidden)form.querySelector('input').focus();};
     const refresh=panel.querySelector('#account-refresh');if(refresh)refresh.onclick=()=>perform(()=>accounts.refreshProfile());
     const logout=panel.querySelector('#account-logout');if(logout)logout.onclick=()=>perform(()=>accounts.logout());

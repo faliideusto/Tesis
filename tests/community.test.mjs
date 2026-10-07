@@ -11,6 +11,13 @@ async function module(name){
 }
 const {friendsView,rankingView,missionsView,mountCommunity}= (await module('community-panel.js')).namespace;
 const hostile='<img src=x onerror="bad()">';
+const {publicProfileView}=(await module('public-profile.js')).namespace;
+const publicHtml=publicProfileView({nombre:hostile,codigo:'0000000000000001',nivel:20,xp:9620,partidasTerminadas:60,victorias:24,enLinea:true,presenciaDisponible:false});
+assert.ok(!publicHtml.includes('<img src=x'));
+assert.match(publicHtml,/40%/);assert.match(publicHtml,/Presencia no disponible/);
+assert.ok(!publicHtml.includes('account-edit')&&!publicHtml.includes('account-logout'));
+const personLink=friendsView({codigo:'0000000000000000',amigos:[{nombre:'Bruno',codigo:'0000000000000001',nivel:20}]});
+assert.match(personLink,/data-public-profile="0000000000000001"/);
 assert.ok(!friendsView({codigo:hostile,amigos:[{codigo:hostile,nombre:hostile,nivel:2}]}).includes('<img src=x'));
 assert.match(friendsView({codigo:'ABC',amigos:[],recibidas:[],enviadas:[]}),/Todavía no tienes amigos/);
 const ranked=rankingView({entradas:[{posicion:1,nombre:hostile,nivel:2,xp:500,victorias:3,partidas:5,yo:true}],propia:{posicion:90,nivel:1,xp:10}},'victorias');
@@ -19,7 +26,7 @@ const missions=missionsView({diarias:[{id:hostile,titulo:hostile,objetivo:1,prog
 assert.ok(!missions.includes('<img src=x'));assert.match(missions,/value="1" max="1"/);assert.match(missions,/data-claim-mission="claimed" disabled/);assert.match(missions,/tu hora local/);assert.match(missions,/00:00 UTC/);
 
 class Root {
-  constructor(){this.listeners={};this.controls=[];this.message={textContent:'',focus(){}};this.ownerDocument={activeElement:null};}
+  constructor(){this.listeners={};this.controls=[];this.message={textContent:'',focus:()=>{this.ownerDocument.activeElement=this.message;}};this.ownerDocument={activeElement:null};}
   set innerHTML(value){this.html=value;this.controls=[];for(const found of value.matchAll(/<(button|input|select)\b([^>]*)>/g)){
     const attributes=new Map([...found[2].matchAll(/([\w-]+)(?:="([^"]*)")?/g)].map(match=>[match[1],match[2]??'']));
     const control={id:attributes.get('id')||'',value:attributes.get('value')||'',dataset:{},disabled:attributes.has('disabled'),hasAttribute:key=>attributes.has(key),focus:()=>{this.ownerDocument.activeElement=control;},select(){},closest(){return this;}};
@@ -60,6 +67,7 @@ const missionData={diarias:[{id:'d',titulo:'Juega una partida',objetivo:1,progre
 const missionRoot=new Root();mountCommunity(missionRoot,{accounts:{...account,missions:async()=>missionData,claimMission:()=>{claims++;return new Promise(value=>resolveClaim=value);}},page:'missions',onReward:()=>rewards++});
 await tick();const claim=missionRoot.querySelector('[data-claim-mission]');missionRoot.ownerDocument.activeElement=claim;
 await missionRoot.click(claim);await missionRoot.click(claim);assert.equal(claims,1,'Reclamo concurrente bloqueado');
+assert.equal(missionRoot.ownerDocument.activeElement,missionRoot.message,'Una acción pendiente mantiene el foco dentro del panel para permitir Escape');
 resolveClaim({...missionData,diarias:[{...missionData.diarias[0],reclamada:true}]});await tick();assert.equal(rewards,1);assert.match(missionRoot.innerHTML,/Reclamada ✓/);
 
 let removals=0;

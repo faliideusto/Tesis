@@ -116,6 +116,10 @@ export function createAccounts({fetcher=globalThis.fetch, storage=globalThis.ses
   }
   return {initialize,accessToken,login,register,logout,refreshProfile,rename,
     community:()=>request('comunidad'),
+    presence:()=>request('presencia',{}),
+    publicProfile:codigo=>request(`perfil-publico?codigo=${encodeURIComponent(codigo)}`),
+    invitations:()=>request('invitaciones'),
+    rejectInvitation:id=>request(`invitaciones/${encodeURIComponent(id)}/rechazar`,{}),
     friendship:(codigo,accion)=>request('amigos',{codigo,accion}),
     ranking:(criterio='xp')=>request(`ranking?criterio=${encodeURIComponent(criterio)}`),
     missions:()=>request('misiones'),

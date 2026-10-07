@@ -66,6 +66,20 @@ public final class SalaJuego {
 
     public synchronized Vistas.Sala estado(String token) { return vista(autenticar(token)); }
 
+    synchronized String validarInvitador(String token, UUID cuenta, UUID destinatario) {
+        Jugador jugador = autenticar(token);
+        if (jugador != anfitrion) throw new ErrorSala(403, "Solo el anfitrión puede invitar amigos.");
+        if (cuenta == null || !cuenta.equals(cuentas.get(jugador)))
+            throw new ErrorSala(403, "La cuenta no corresponde al anfitrión de esta sala.");
+        if (!admiteInvitado(destinatario)) throw new ErrorSala(409, "La sala ya no admite esta invitación.");
+        return anfitrion.nombre();
+    }
+
+    synchronized boolean admiteInvitado(UUID cuenta) {
+        return !caducada && !iniciada && miembros.size() < es.tesis.reglas.ReglasAcademicas.MAX_JUGADORES
+                && (cuenta == null || !cuentas.containsValue(cuenta));
+    }
+
     public synchronized Vistas.Sala iniciar(String token, Long version) {
         var jugador = autenticar(token);
         if (jugador != anfitrion) throw new ErrorSala(403, "Solo el anfitrión puede iniciar la partida.");

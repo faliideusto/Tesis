@@ -63,6 +63,14 @@ export const api = {
   forget: () => { identity=null; sessionStorage.removeItem(KEY); },
   create: nombre => enter('salas',nombre),
   join: (codigo,nombre) => enter(`salas/${encodeURIComponent(codigo.trim().toUpperCase())}/unirse`,nombre),
+  inviteFriend: codigo => request(route('invitar'),{codigo},true,true),
+  acceptInvitation: async id => {
+    const token=await accounts.accessToken(), actor=accounts.identity();
+    if(!token)throw new Error('Inicia sesión para aceptar la invitación.');
+    const access=await request(`invitaciones/${encodeURIComponent(id)}/aceptar`,{},false,false,token);
+    if(actor!==accounts.identity()||!accounts.signedIn())throw new Error('La cuenta ha cambiado. Vuelve a abrir tu sesión.');
+    return accept(access);
+  },
   state: () => request(route('estado'),undefined,true),
   start: revision => request(route('iniciar'),{revision},true),
   action: (revision,tipo,option={}) => request(route('accion'),{revision,tipo,...option},true)

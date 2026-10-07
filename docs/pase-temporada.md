@@ -4,11 +4,11 @@ Base preparada en `codex/infra-pase-temporada`. La UI de Misiones sigue intacta.
 
 ## Temporadas y progreso
 
-Ranking y pase comparten el identificador `temporada:YYYY-MM` y el calendario de meses naturales de `Europe/Madrid`: desde las 00:00 del primer día hasta las 00:00 del siguiente mes, límite final exclusivo. Esto respeta los cambios de horario de verano. La primera temporada se llama **Crónicas del Archivo** y contiene un pase gratuito de 10 niveles.
+Ranking y pase comparten el identificador `temporada:YYYY-MM` y el calendario de trimestres naturales de `Europe/Madrid`: desde las 00:00 del primer día hasta las 00:00 del primer día tres meses después, límite final exclusivo. Esto respeta los cambios de horario de verano. La primera temporada se llama **Crónicas del Archivo** y contiene un pase gratuito de 10 niveles.
 
-El progreso del pase se guarda por usuario y temporada, separado de la XP permanente y de las estadísticas del ranking. Al abrir otro mes se crea un progreso nuevo; se conserva el historial anterior. No se borran inventario ni equipamiento. Las recompensas ya desbloqueadas pueden reclamarse también al consultar su temporada pasada.
+El progreso del pase se guarda por usuario y temporada, separado de la XP permanente y de las estadísticas del ranking. Al comenzar otra temporada se crea un progreso nuevo; se conserva el historial anterior. No se borran inventario ni equipamiento. Las recompensas ya desbloqueadas pueden reclamarse también al consultar su temporada pasada.
 
-Configuración inicial provisional: nivel 1 con 0 puntos, 500 puntos entre niveles, nivel 10 con 4.500 puntos. La primera recompensa está disponible desde el nivel 1. Los puntos proceden de recibos autoritativos de partidas terminadas y misiones reclamadas, por ahora a razón de un punto por cada XP que registra el recibo. Esta conversión sólo alimenta el contador independiente: reclamar cosméticos no concede XP, puntos adicionales ni ventajas de juego. La curva se configura por temporada y la API comunica los umbrales a la futura UI.
+Configuración inicial provisional: nivel 1 con 0 puntos, 500 puntos entre niveles, nivel 10 con 4.500 puntos. La primera recompensa está disponible desde el nivel 1. Los puntos proceden de recibos autoritativos de partidas terminadas y misiones reclamadas, con las reglas documentadas en [Recompensas trimestrales](recompensas-temporadas-trimestrales.md): misiones 1:1 con su XP y partidas 200 puntos más 200 por victoria o 100 por segundo puesto. Esta conversión sólo alimenta el contador independiente: reclamar cosméticos no concede XP, puntos adicionales ni ventajas de juego. La curva se configura por temporada y la API comunica los umbrales a la futura UI.
 
 Cada fuente tiene un recibo único para evitar abonar dos veces una partida o misión. La activación recupera los recibos del mes actual, sin convertir de golpe todo el historial vitalicio. Los recibos tardíos se asignan al mes de su fecha autoritativa; no se acredita una fuente fechada en el futuro antes de tiempo.
 
@@ -45,7 +45,7 @@ La identidad procede del Bearer de la cuenta Supabase. Los cuerpos HTTP no acept
 
 | Operación HTTP | Cuerpo / parámetros | Resultado |
 | --- | --- | --- |
-| `GET /api/pase` | Sin parámetro para el mes actual; `?temporada=temporada:YYYY-MM` para historial | Temporada, curva, progreso y recompensas |
+| `GET /api/pase` | Sin parámetro para la temporada actual; `?temporada=temporada:YYYY-MM` para historial | Temporada, curva, progreso y recompensas |
 | `POST /api/pase/reclamar` | `{temporada, id}` | Estado actualizado del pase |
 | `GET /api/cosmeticos` | — | Inventario y seis slots de equipamiento |
 | `POST /api/cosmeticos/equipar` | `{tipo, id}`; `id: null` para vaciar | Inventario y loadout actualizados |

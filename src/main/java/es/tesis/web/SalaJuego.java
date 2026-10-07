@@ -212,7 +212,7 @@ public final class SalaJuego {
         if (!cuentas.containsKey(jugador)) return new Vistas.Progreso("INVITADO", false, null, null);
         if (resultado == null) return new Vistas.Progreso("VINCULADA", true, null, null);
         int xp = resultado.participantes.stream().filter(p -> p.user_id() != null
-                && p.user_id().equals(cuentas.get(jugador))).findFirst().map(p -> p.winner() ? 150 : 100).orElse(0);
+                && p.user_id().equals(cuentas.get(jugador))).findFirst().map(p -> p.winner() ? 300 : 200).orElse(0);
         return new Vistas.Progreso(resultado.estado, true,
                 resultado.estado.equals("CONFIRMADA") ? xp : null, partidaId);
     }

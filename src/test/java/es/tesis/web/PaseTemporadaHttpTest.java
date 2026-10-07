@@ -96,6 +96,17 @@ class PaseTemporadaHttpTest {
             e.respuesta=COSMETICOS;var inventario=e.pedir("/api/cosmeticos","GET",null,e.jwt);assertEquals(200,inventario.statusCode());assertFalse(inventario.body().contains("privado"));assertTrue(inventario.body().contains("\"avatar\":null"));
         }
     }
+    @Test void admiteTrimestreSinPerderArchivoMensualYRechazaDuracionesArbitrarias() throws Exception {
+        try(var e=new Entorno()) {
+            e.respuesta=PASE.replace("2026-11-01T00:00:00+01:00","2027-01-01T00:00:00+01:00");
+            var trimestre=e.pedir("/api/pase","GET",null,e.jwt);
+            assertEquals(200,trimestre.statusCode());assertTrue(trimestre.body().contains("2027-01-01"));
+            e.respuesta=PASE;assertEquals(200,e.pedir("/api/pase","GET",null,e.jwt).statusCode());
+            e.respuesta=PASE.replace("2026-11-01T00:00:00+01:00","2026-12-01T00:00:00+01:00");
+            assertEquals(503,e.pedir("/api/pase","GET",null,e.jwt).statusCode());
+        }
+    }
+
     @Test void reclamaDosVecesYEquipaOQuitaSinActorDeCliente() throws Exception {
         try(var e=new Entorno()) {
             e.respuesta=PASE.replace("\"reclamada\":false","\"reclamada\":true");

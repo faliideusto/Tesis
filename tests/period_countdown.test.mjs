@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import vm from 'node:vm';
+let tick,interval,cleared,clock=Date.parse('2026-10-07T12:00:00Z');
+class Clock extends Date {static now(){return clock;}}
+const context=vm.createContext({Date:Clock,setInterval(fn,ms){tick=fn;interval=ms;return 7;},clearInterval(id){cleared=id;}});
+const mod=new vm.SourceTextModule(await readFile(new URL('../src/main/resources/static/js/period-countdown.js',import.meta.url),'utf8'),{context});
+await mod.link(()=>{});await mod.evaluate();
+const {remainingCountdown,mountPeriodCountdown}=mod.namespace;
+const fin='2026-10-07T12:00:02Z';
+assert.equal(remainingCountdown(fin,clock),'0 h · 0 min · 2 s restantes');
+assert.equal(remainingCountdown(fin,clock+2000,'Renovando…'),'Renovando…');
+assert.equal(remainingCountdown('invalid',clock),'Tiempo restante pendiente de confirmar');
+assert.equal(remainingCountdown('2026-12-31T23:00:00Z',clock),'85 días · 11 h · 0 min · 0 s restantes');
+const attributes={'data-countdown-end':fin,'data-countdown-label':'Renovación','data-countdown-ended':'Renovando…'};
+const node={textContent:'',getAttribute:key=>attributes[key]};
+let visibility;
+const root={querySelectorAll:()=>[node],ownerDocument:{visibilityState:'visible',addEventListener(type,fn){assert.equal(type,'visibilitychange');visibility=fn;},removeEventListener(type,fn){assert.equal(fn,visibility);visibility=null;}}};
+const mounted=mountPeriodCountdown(root);
+assert.equal(interval,1000);assert.equal(node.textContent,'Renovación: 0 h · 0 min · 2 s restantes');
+clock+=1000;tick();assert.equal(node.textContent,'Renovación: 0 h · 0 min · 1 s restantes');
+clock+=1000;visibility();assert.equal(node.textContent,'Renovación: Renovando…');
+attributes['data-countdown-end']='2026-10-07T12:00:10Z';tick();assert.equal(node.textContent,'Renovación: 0 h · 0 min · 8 s restantes','Reads new server end after a period refresh');
+mounted.destroy();assert.equal(cleared,7);assert.equal(visibility,null);
+console.log('Countdown: fecha servidor, segundos, vencimiento, renovación y cleanup PASS');

@@ -101,7 +101,7 @@ class ProgresionPartidasTest {
             var confirmada = sala.estado(host);
             assertEquals("CONFIRMADA", confirmada.progreso().estado());
             assertEquals(finalizada.revision(), confirmada.revision());
-            assertEquals(finalizada.partida().ganadores().contains("Ana") ? 150 : 100, confirmada.progreso().xp());
+            assertEquals(finalizada.partida().ganadores().contains("Ana") ? 300 : 200, confirmada.progreso().xp());
             assertEquals("INVITADO", sala.estado(tokens.get("Guest")).progreso().estado());
             assertEquals(1, escrituras.get());
             assertThrows(ErrorSala.class, () -> sala.actuar(host,

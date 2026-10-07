@@ -3,6 +3,7 @@ import {badge,progression} from './profile-ranks.js';
 import {createPublicProfile} from './public-profile.js';
 import {rankingView} from './ranking-panel.js';
 import {mountMissions} from './missions-panel.js';
+import {mountPeriodCountdown,remainingCountdown} from './period-countdown.js';
 export {missionsView} from './missions-panel.js';
 export {rankingView} from './ranking-panel.js';
 
@@ -44,11 +45,7 @@ export function friendsView(data,{filter='',suggestionOffset=0}={}) {
   const stats=[['friends','Amigos',friends.length],['received','Solicitudes recibidas',received.length],['sent','Solicitudes enviadas',sent.length],['online','En línea ahora',presenceAvailable?friends.filter(person=>person.enLinea).length:null]];
   return `<header class="community-heading friend-heading"><span class="eyebrow">INVESTIGAR EN COMPAÑÍA</span><h2>Tu círculo académico</h2><p>Conecta por código, añade compañeros y forma tu círculo en la Academia.<br>Puedes tener hasta 100 contactos, incluidas las solicitudes pendientes.</p></header><div class="friend-stat-grid">${stats.map(([kind,label,count])=>`<article class="community-card friend-stat friend-stat-${kind}">${corners()}<span class="friend-stat-glyph">${kind==='online'?'<i class="friend-online-light" aria-hidden="true"></i>':icon(kind)}</span><div><h3>${label}</h3><strong ${count===null?'aria-label="Presencia no disponible"':''}>${count===null?'—':format(count)}</strong></div></article>`).join('')}</div><div class="friend-invite community-card">${corners()}<div class="friend-own-code"><label for="friend-own-code">${icon('link')}Tu código de amistad</label><div class="friend-code-line"><input id="friend-own-code" readonly value="${esc(data.codigo)}" aria-label="Tu código de amistad"><button type="button" class="community-action friend-gold" data-copy-code>${icon('copy')}Copiar</button></div><p>Este código público identifica tu perfil; para entrar en una partida usa el código de sala.</p></div><form id="friend-request"><label for="friend-code">${icon('add')}Añadir un amigo por código</label><div class="friend-code-line"><input id="friend-code" name="codigo" required maxlength="32" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Código de tu amigo"><button class="gold-button friend-gold" ${atCapacity?'disabled title="Has alcanzado el límite de 100 contactos"':''}>${icon('sent')}Enviar solicitud</button></div><button type="button" class="community-action friend-refresh" data-community-refresh>${icon('refresh')}Actualizar amigos</button></form></div><div class="community-friend-grid">${people('Tus amigos',friends,'friends',filter,presenceAvailable)}${people('Solicitudes recibidas',received,'received')}${people('Solicitudes enviadas',sent,'sent')}</div>${suggestionsView(data.sugerencias||[],suggestionOffset,atCapacity)}`;
 }
-export function resetTime(value) {
-  const time=new Date(value);
-  if(!Number.isFinite(time.getTime()))return 'Pendiente de confirmar';
-  return `${new Intl.DateTimeFormat('es-ES',{dateStyle:'medium',timeStyle:'short'}).format(time)} (tu hora local)`;
-}
+export function resetTime(value) {return remainingCountdown(value);}
 // Each mount owns its generation. Leaving the page/account invalidates every pending response.
 export function mountCommunity(root,{accounts,page,onReward=()=>{},clipboard=globalThis.navigator?.clipboard,confirm=message=>globalThis.confirm(message)}={}) {
   if(page==='missions')return mountMissions(root,{accounts,onReward});
@@ -102,7 +99,7 @@ export function mountCommunity(root,{accounts,page,onReward=()=>{},clipboard=glo
     clearTimeout(periodTimer);
     if(!alive||page!=='ranking'||!['semanal','temporada'].includes(rankingScope))return;
     const end=new Date(data?.periodo?.fin).getTime();if(!Number.isFinite(end))return;
-    periodTimer=setTimeout(refreshExpiredPeriod,backoff||Math.max(50,Math.min(3600000,end-Date.now()+50)));
+    periodTimer=setTimeout(refreshExpiredPeriod,backoff||Math.max(50,Math.min(3600000,end>Date.now()?end-Date.now()+50:30000)));
   }
   function refreshExpiredPeriod() {
     if(!alive||page!=='ranking')return;
@@ -184,7 +181,8 @@ export function mountCommunity(root,{accounts,page,onReward=()=>{},clipboard=glo
   }
   root.addEventListener('input',input);root.addEventListener('click',click);root.addEventListener('submit',submit);root.addEventListener('change',change);
   render();void load();
+  const countdown=page==='ranking'?mountPeriodCountdown(root):null;
   if(page==='ranking')root.ownerDocument?.addEventListener?.('visibilitychange',visibility);
   if(page==='friends'&&root.ownerDocument?.visibilityState!==undefined)refreshTimer=setTimeout(refreshFriends,30000);
-  return {destroy(){alive=false;++generation;publicProfiles.destroy();clearTimeout(refreshTimer);clearTimeout(periodTimer);root.ownerDocument?.removeEventListener?.('visibilitychange',visibility);root.removeEventListener('input',input);root.removeEventListener('click',click);root.removeEventListener('submit',submit);root.removeEventListener('change',change);}};
+  return {destroy(){alive=false;++generation;countdown?.destroy();publicProfiles.destroy();clearTimeout(refreshTimer);clearTimeout(periodTimer);root.ownerDocument?.removeEventListener?.('visibilitychange',visibility);root.removeEventListener('input',input);root.removeEventListener('click',click);root.removeEventListener('submit',submit);root.removeEventListener('change',change);}};
 }

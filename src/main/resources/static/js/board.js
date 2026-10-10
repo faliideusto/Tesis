@@ -33,10 +33,12 @@ export function board(state) {
   document.getElementById('board').dataset.players = state.jugadores.length;
   document.getElementById('board').classList.toggle('privacy', state.bloqueada);
   update('turn-panel', `<span>RONDA ${state.ronda}${state.ultimaRonda ? ' · ÚLTIMA' : ''}</span><strong>${state.fase === 'SELECCION_ROLES' ? 'Elige ' : state.fase === 'FIN_PARTIDA' ? 'Partida finalizada' : state.fase === 'FIN_RONDA' ? 'Cierre de ronda' : 'Turno de '}${['SELECCION_ROLES','TURNO_JUGADOR'].includes(state.fase) ? esc(state.actual) : ''}</strong>`);
+  // Whoever the table is waiting on is lit, both on their turn and while choosing a character.
+  const spotlight = ['SELECCION_ROLES','TURNO_JUGADOR'].includes(state.fase);
   document.getElementById('rivals').dataset.count = others.length;
-  update('rivals', others.map(p=>rival({...p,activo:state.fase==='TURNO_JUGADOR' && p.activo},state)).join(''));
+  update('rivals', others.map(p=>rival({...p,activo:spotlight && p.activo},state)).join(''));
   if (!document.getElementById('activity-current')) update('decks', `<section class="table-activity" aria-label="Narrador de la mesa"><span class="eyebrow">CRÓNICA DE TESIS</span><div id="activity-current" role="status" aria-live="polite" aria-atomic="true"></div><div id="activity-controls" class="activity-controls"></div></section>`);
-  document.getElementById('local').classList.toggle('active', state.fase === 'TURNO_JUGADOR' && me.activo);
+  document.getElementById('local').classList.toggle('active', spotlight && me.activo);
   update('local', localPlayer(me, state)); update('studies', tableStudies(me, true));
   for (const anchor of table.querySelectorAll('.rival:is(:hover,:focus-visible), .local-role-button:is(:hover,:focus-visible)')) positionRolePreview(anchor);
   document.getElementById('studies').classList.toggle('no-studies', !me.estudios.length);

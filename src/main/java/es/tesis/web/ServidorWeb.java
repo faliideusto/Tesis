@@ -313,7 +313,7 @@ public final class ServidorWeb implements AutoCloseable {
 
     private void matchmaking(HttpExchange x, String ruta, String metodo) throws IOException {
         String operacion = ruta.equals("/api/matchmaking") ? "buscar" : ruta.substring("/api/matchmaking/".length());
-        if (!Set.of("buscar", "estado", "confirmar", "cancelar").contains(operacion))
+        if (!Set.of("buscar", "estado", "confirmar", "cancelar", "bots").contains(operacion))
             throw new ErrorSala(404, "Ruta no encontrada.");
         if (!(operacion.equals("estado") ? "GET" : "POST").equals(metodo))
             throw new ErrorSala(405, "Método no permitido.");
@@ -332,7 +332,7 @@ public final class ServidorWeb implements AutoCloseable {
         if (operacion.equals("confirmar")) {
             texto(cuerpo, "grupo", true);
             json(x, 200, matchmaking.confirmar(token, cuerpo.get("grupo").getAsString()));
-        } else json(x, 200, matchmaking.cancelar(token));
+        } else json(x, 200, operacion.equals("bots") ? matchmaking.rellenar(token) : matchmaking.cancelar(token));
     }
 
     private static String bearer(String cabecera) {

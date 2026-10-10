@@ -8,6 +8,7 @@ import java.util.*;
 public final class GestorMatchmaking {
     private static final long PRESENCIA_MS = 30_000;
     private static final long CONFIRMACION_MS = 20_000;
+    private static final long ESPERA_BOTS_MS = 15_000;
     private static final long RECUPERACION_MS = Duration.ofHours(24).toMillis();
     private static final int MAX_SOLICITUDES = 2048;
     private final GestorSalas salas;
@@ -16,7 +17,7 @@ public final class GestorMatchmaking {
     private long orden;
 
     public record Vista(String token, int jugadores, String fase, int reunidos, int confirmados,
-                        boolean listo, String grupo, long hasta, Vistas.AccesoSala acceso) {}
+                        boolean listo, String grupo, long hasta, Vistas.AccesoSala acceso, boolean bots) {}
 
     private static final class Solicitud {
         final String token, nombre;
@@ -24,6 +25,7 @@ public final class GestorMatchmaking {
         final UUID cuenta;
         final CosmeticosPartida cosmeticos;
         final long orden;
+        final long creada;
         long actividad, terminada;
         String fase = "BUSCANDO";
         Grupo grupo;
@@ -31,7 +33,7 @@ public final class GestorMatchmaking {
         Vistas.AccesoSala acceso;
         Solicitud(String token, String nombre, int jugadores, UUID cuenta,CosmeticosPartida cosmeticos, long orden, long ahora) {
             this.token = token; this.nombre = nombre; this.jugadores = jugadores;
-            this.cuenta = cuenta; this.orden = orden; actividad = ahora;
+            this.cuenta = cuenta; this.orden = orden; creada = ahora; actividad = ahora;
             this.cosmeticos=cuenta==null?CosmeticosPartida.originales():Objects.requireNonNull(cosmeticos);
         }
         boolean activa() { return fase.equals("BUSCANDO") || fase.equals("CONFIRMACION"); }
@@ -97,6 +99,23 @@ public final class GestorMatchmaking {
             }
         }
         return vista(solicitud);
+    }
+
+    /** Deja de esperar a otras personas y empieza una mesa de práctica completada con bots. */
+    public synchronized Vista rellenar(String token) {
+        limpiar();
+        var solicitud = autenticar(token);
+        solicitud.actividad = reloj.millis();
+        if (solicitud.fase.equals("ASIGNADA")) return vista(solicitud);
+        if (solicitud.fase.equals("CONFIRMACION")) throw new ErrorSala(409, "Ya hay una mesa esperando tu confirmación.");
+        if (!solicitud.fase.equals("BUSCANDO")) throw new ErrorSala(409, "La búsqueda ya no está activa.");
+        if (!admiteBots(solicitud)) throw new ErrorSala(409, "Sigue buscando un poco más antes de jugar con bots.");
+        solicitud.acceso = salas.crearPartidaConBots(solicitud.nombre, solicitud.cuenta, solicitud.cosmeticos, solicitud.jugadores);
+        solicitud.fase = "ASIGNADA"; solicitud.terminada = reloj.millis();
+        return vista(solicitud);
+    }
+    private boolean admiteBots(Solicitud solicitud) {
+        return solicitud.fase.equals("BUSCANDO") && reloj.millis() - solicitud.creada >= ESPERA_BOTS_MS;
     }
 
     public synchronized Vista cancelar(String token) {
@@ -169,6 +188,6 @@ public final class GestorMatchmaking {
                 ? (int) solicitudes.values().stream().filter(s -> s.fase.equals("BUSCANDO") && s.jugadores == solicitud.jugadores).count() : 0;
         return new Vista(solicitud.token, solicitud.jugadores, solicitud.fase, reunidos,
                 grupo == null ? 0 : (int) grupo.miembros.stream().filter(s -> s.listo).count(), solicitud.listo,
-                grupo == null ? null : grupo.id, grupo == null ? 0 : grupo.hasta, solicitud.acceso);
+                grupo == null ? null : grupo.id, grupo == null ? 0 : grupo.hasta, solicitud.acceso, admiteBots(solicitud));
     }
 }

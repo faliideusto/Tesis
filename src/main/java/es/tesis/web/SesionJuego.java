@@ -29,7 +29,7 @@ public final class SesionJuego {
     public static Vistas.Configuracion configuracion() {
         int maximo = ReglasAcademicas.MAX_JUGADORES;
         return new Vistas.Configuracion(ReglasAcademicas.MIN_JUGADORES, maximo, 8,
-                "El mazo mantiene siempre los 8 tipos de idea. El reparto y los robos usan las probabilidades de cada artículo, con reposición. Admite entre 3 y 5 jugadores. No hay IA.");
+                "El mazo mantiene siempre los 8 tipos de idea. El reparto y los robos usan las probabilidades de cada artículo, con reposición. Admite entre 3 y 5 jugadores.");
     }
 
     public synchronized Vistas.Estado crear(List<String> nombres) {
@@ -69,6 +69,13 @@ public final class SesionJuego {
         comprobarMiembro(jugador);
         if (motor.partida().jugadorActual() != jugador) throw new ErrorSala(403, "No es tu turno.");
         return ejecutar(p, jugador);
+    }
+
+    /** Quien debe decidir ahora, o null si la mesa no espera a nadie. */
+    synchronized Jugador enTurno() {
+        if (motor == null) return null;
+        var fase = motor.partida().faseActual();
+        return fase == FaseDeTurno.SELECCION_ROLES || fase == FaseDeTurno.TURNO_JUGADOR ? motor.partida().jugadorActual() : null;
     }
 
     synchronized void avanzarRondaAutomatica() {

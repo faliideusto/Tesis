@@ -61,6 +61,7 @@ export const api = {
   matchState: () => request('matchmaking/estado',undefined,false,false,matchIdentity?.token),
   matchConfirm: grupo => request('matchmaking/confirmar',{grupo},false,false,matchIdentity?.token),
   matchCancel: () => request('matchmaking/cancelar',{},false,false,matchIdentity?.token),
+  matchBots: () => request('matchmaking/bots',{},false,false,matchIdentity?.token),
   matchAccept: access => { const sala=accept(access); api.matchForget(); return sala; },
   identity: () => identity,
   forget: () => { identity=null; sessionStorage.removeItem(KEY); },

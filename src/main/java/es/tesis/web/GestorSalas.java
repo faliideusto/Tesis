@@ -88,6 +88,29 @@ public final class GestorSalas {
         return resultado;
     }
 
+    /** Mesa de práctica: una persona, que es la anfitriona, y el resto de asientos automáticos. */
+    synchronized Vistas.AccesoSala crearPartidaConBots(String nombre, UUID cuenta, CosmeticosPartida cosmeticos, int jugadores) {
+        if (jugadores < 3 || jugadores > 5) throw new IllegalArgumentException("Se necesitan entre 3 y 5 jugadores.");
+        String humano = SalaJuego.validarNombre(nombre);
+        limpiar();
+        if (salas.size() >= 256) throw new ErrorSala(409, "Hay demasiadas salas abiertas. Inténtalo más tarde.");
+        String codigo;
+        do {
+            var texto = new StringBuilder();
+            for (int i = 0; i < 5; i++) texto.append(ALFABETO.charAt(azar.nextInt(ALFABETO.length())));
+            codigo = texto.toString();
+        } while (salas.containsKey(codigo));
+        var sala = new SalaJuego(codigo, reloj, azar, progresion);
+        var acceso = sala.unirse(humano, cuenta, cosmeticos);
+        var candidatos = new ArrayList<>(CerebroBot.nombres());
+        candidatos.removeIf(humano::equalsIgnoreCase);
+        Collections.shuffle(candidatos, azar);
+        candidatos.subList(0, jugadores - 1).forEach(sala::unirBot);
+        sala.iniciar(acceso.playerToken(), sala.estado(acceso.playerToken()).revision());
+        salas.put(codigo, sala);
+        return new Vistas.AccesoSala(codigo, acceso.playerToken(), sala.estado(acceso.playerToken()));
+    }
+
     public void limpiar() {
         long limite = reloj.millis() - caducidad.toMillis();
         salas.entrySet().removeIf(e -> e.getValue().caducar(limite));

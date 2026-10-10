@@ -18,8 +18,9 @@ export function createMatchmaking({api, panel, onRoom, onHome, status}) {
       } else {
         const confirming=view.fase==='CONFIRMACION';
         host.innerHTML=`<span class="eyebrow">LA ACADEMIA SE REÚNE</span><h2 id="match-title" tabindex="-1">${confirming?'¡Mesa encontrada!':'Buscando partida'}</h2>
-          <p>Mesa de ${esc(view.jugadores)} personas</p><p id="match-count" class="match-count" role="status" aria-live="polite"></p>
-          ${confirming?`<p id="match-time"></p><button class="gold-button" data-match="ready" ${view.listo?'disabled':''}>${view.listo?'Listo · esperando al resto':'Estoy listo'}</button>`:'<p>La partida comenzará cuando todos confirméis. Puedes cancelar para cambiar el tamaño.</p>'}
+          <p>Mesa de ${esc(view.jugadores)} personas</p><p id="match-count" class="match-count" role="status" aria-live="polite"></p>${confirming?'':'<span class="match-searching" aria-hidden="true"><i></i><i></i><i></i></span>'}
+          ${confirming?`<p id="match-time"></p><button class="gold-button" data-match="ready" ${view.listo?'disabled':''}>${view.listo?'Listo · esperando al resto':'Estoy listo'}</button>`:`<p>La partida comenzará cuando todos confirméis. Puedes cancelar para cambiar el tamaño.</p>
+          <div id="match-bots" class="match-bots" hidden><strong>¿No encuentras a nadie?</strong><span>Completamos tu mesa de ${esc(view.jugadores)} y empiezas ahora mismo. Es una partida de práctica: no suma experiencia.</span><button class="match-bots-button" data-match="bots">Jugar ahora</button></div>`}
           <p id="match-error" role="status" aria-live="polite"></p><button class="text-button match-back" data-match="cancel">Cancelar búsqueda</button>`;
       }
       host.querySelector('#match-title')?.focus();
@@ -27,6 +28,9 @@ export function createMatchmaking({api, panel, onRoom, onHome, status}) {
     if (view) {
       host.querySelector('#match-count').textContent=view.fase==='CONFIRMACION'
         ? `${view.confirmados}/${view.jugadores} jugadores listos` : `${view.reunidos}/${view.jugadores} jugadores`;
+      // Se muestra sin volver a pintar el panel, para no mover el foco de quien espera.
+      const bots=host.querySelector('#match-bots');
+      if(bots) bots.hidden=!(view.fase==='BUSCANDO' && view.bots);
       const countdown=host.querySelector('#match-time');
       if(countdown) countdown.textContent=`Confirma antes de que termine el plazo: ${Math.max(0,Math.ceil((view.hasta-Date.now())/1000))} s`;
     }
@@ -80,6 +84,7 @@ export function createMatchmaking({api, panel, onRoom, onHome, status}) {
     });},
     command(command) {
       if(command==='ready' && view?.grupo) return mutate(()=>api.matchConfirm(view.grupo));
+      if(command==='bots' && view?.bots) return mutate(()=>api.matchBots());
       if(command==='cancel') return mutate(()=>api.matchCancel());
       if(command==='back' && !api.matchIdentity()) {stop();active=false;status();onHome();}
     }

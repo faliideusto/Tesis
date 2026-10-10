@@ -23,7 +23,8 @@ Motor Java para futuros cambios de reglas. Bot API oficial de Telegram y Codex C
 - [x] Implementación.
 - [x] Integración y validación local.
 - [x] Revisión del resultado combinado.
-- [ ] Configuración de token e IDs y prueba real con Telegram/GitHub.
+- [x] Configuración cifrada, conexión real de Telegram y autorización del propietario.
+- [ ] Autorizar ID de Choquet y probar una solicitud completa del bot.
 
 ## División multiagente
 Ejecución directa: infraestructura localizada; implementación y revisión secuenciales.
@@ -42,6 +43,8 @@ Sintaxis Node/PowerShell y git diff --check: PASS. Revisión manual de archivos 
 
 2026-10-10: propietario identificado desde Telegram y autorizado según el ID facilitado directamente. Proceso de identificación detenido sin trabajos activos; bot reiniciado en segundo plano en modo normal y conexión verificada en runtime.log. Lectura de main remoto personal confirmada con git ls-remote. Pendientes ID de Choquet y primera solicitud/prueba completa; no se ha intentado push remoto.
 
+2026-10-10, entrega autorizada: rama de infraestructura integrada con main personal v2.7.0 sin conflictos. Diff respecto a main limitado a doce archivos de infraestructura/documentación. Maven completo: 254 pruebas, cero fallos/errores/omitidas. Node: 22 suites PASS, incluidas 15 pruebas del bot. Empaquetado Maven PASS. Revisión manual, sintaxis PowerShell, diff --check, exclusión de .telegram-bot/target y búsqueda de credenciales en archivos de entrega PASS. Sin cambios adicionales al motor/frontend respecto a main; no se repitió QA de navegador. Operación final de entrega: avanzar main local por fast-forward, push normal al main personal, comprobar SHA remoto y reiniciar el bot. No certificar finalización del despliegue Render sin evidencia del proveedor.
+
 ## Riesgos
 Automatización ejecuta código del repositorio con los permisos del usuario; el sandbox de Codex no aísla las pruebas del publicador. Reinicios de Render pierden salas en memoria. Apagado durante push ambiguo: no repetir automáticamente.
 
@@ -51,4 +54,4 @@ Automatización ejecuta código del repositorio con los permisos del usuario; el
 2026-10-10: usuario solicita subir toda la infraestructura a main para preparar el uso de Choquet. main personal ya contiene v2.7.0, más reciente que la base v2.6.0 de esta rama. Integrar main sin revertir ese balance, validar el resultado combinado y publicar únicamente al remoto personal, excluyendo .telegram-bot/ y target/. Bot pausado mientras se integra; reiniciar al terminar. El acceso de Choquet sigue dependiendo de su ID, no de esta publicación.
 
 ## Estado
-Implementación y validación local completas. Bot activo en modo normal para el propietario; pendiente recibir y autorizar ID de Choquet. También queda comprobar permiso real de push y primer cambio/despliegue de extremo a extremo. No se ha hecho commit de esta infraestructura.
+Implementación, integración con v2.7.0 y validación completas; infraestructura comprometida en rama de tarea para entrega autorizada a main personal. Bot configurado para el propietario y pausado durante la entrega, con reinicio previsto al finalizar. Pendientes ID de Choquet y primera solicitud automática con despliegue verificado de extremo a extremo. Los datos privados permanecen exclusivamente en la carpeta ignorada.

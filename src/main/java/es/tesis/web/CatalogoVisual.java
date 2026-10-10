@@ -41,7 +41,7 @@ final class CatalogoVisual {
         } else if (h instanceof PreDoctoralHabilidad) {
             arte = "07_pre_doctoral"; texto = "Una vez por turno, añade 1 punto de trabajo a uno de tus artículos en desarrollo.";
         } else {
-            arte = "08_revisor_2"; texto = "Una vez por turno, podrás pagar 1 Moneda para retirar 1 Punto de Trabajo de un artículo rival en desarrollo.";
+            arte = "08_revisor_2"; texto = "Una vez por turno, retira 1 Punto de Trabajo de un artículo rival en desarrollo.";
         }
         return new Vistas.Rol(indice, p.nombre(), p.ordenTurno(), texto, "personajes/" + arte + ".webp", automatica);
     }

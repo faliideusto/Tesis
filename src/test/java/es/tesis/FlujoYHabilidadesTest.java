@@ -119,11 +119,48 @@ class FlujoYHabilidadesTest {
         assertEquals(1, eventos.stream().filter(e -> e.tipo().equals("partida.fin")).count());
     }
 
-    @Test void empateEnPrestigioComparteVictoria() {
+    private MotorJuegoImpl finalizarEmpatadosEnPrestigio() {
         var motor = comenzar(new PreDoctoralHabilidad(), new PreDoctoralHabilidad());
         for (Jugador jugador : motor.partida().jugadores()) for (int i = 0; i < 3; i++) estudio(jugador, 1, true);
-        motor.avanzarFase(); motor.avanzarFase(); motor.avanzarFase(); motor.avanzarFase();
+        motor.avanzarFase(); motor.avanzarFase(); motor.avanzarFase();
+        return motor;
+    }
+
+    @Test void empateEnPrestigioMonedasYCartasComparteVictoria() {
+        var motor = finalizarEmpatadosEnPrestigio();
+        motor.avanzarFase();
         assertEquals(3, motor.partida().ganadores().size());
+    }
+
+    @Test void empateEnPrestigioLoGanaQuienTieneMasMonedas() {
+        var motor = finalizarEmpatadosEnPrestigio();
+        var jugadores = motor.partida().jugadores();
+        jugadores.get(1).sumarMonedas(1);
+        // Las cartas no cuentan mientras las monedas ya deshagan el empate.
+        jugadores.get(0).añadirCartaIdea(new IdeaCarta("Extra", 1, 1, 1));
+        motor.avanzarFase();
+        assertEquals(List.of(jugadores.get(1)), motor.partida().ganadores());
+    }
+
+    @Test void empateEnPrestigioYMonedasLoGanaQuienTieneMasCartas() {
+        var motor = finalizarEmpatadosEnPrestigio();
+        var jugadores = motor.partida().jugadores();
+        jugadores.get(0).sumarMonedas(1); jugadores.get(2).sumarMonedas(1);
+        jugadores.get(2).añadirCartaIdea(new IdeaCarta("Extra", 1, 1, 1));
+        // Más cartas no compensan tener menos monedas.
+        jugadores.get(1).añadirCartaIdea(new IdeaCarta("Extra", 1, 1, 1));
+        jugadores.get(1).añadirCartaIdea(new IdeaCarta("Extra", 1, 1, 1));
+        motor.avanzarFase();
+        assertEquals(List.of(jugadores.get(2)), motor.partida().ganadores());
+    }
+
+    @Test void elDesempateNoSuperaAUnPrestigioMayor() {
+        var motor = finalizarEmpatadosEnPrestigio();
+        var jugadores = motor.partida().jugadores();
+        jugadores.get(0).sumarMonedas(10);
+        jugadores.get(1).sumarPrestigio(1);
+        motor.avanzarFase();
+        assertEquals(List.of(jugadores.get(1)), motor.partida().ganadores());
     }
 
     @Test void comiteVetaPorRolYSaltaTurnoIncluidaHabilidadAutomatica() {
@@ -283,14 +320,14 @@ class FlujoYHabilidadesTest {
         assertEquals(investigador.nombre(), motor.contexto().jugadorInicialSiguienteRonda());
     }
 
-    @Test void revisorEligeEstudioPagaUnaMonedaYNoRepite() {
+    @Test void revisorEligeEstudioSinPagarYNoRepite() {
         var motor = comenzar(new Revisor2Habilidad(), new PreDoctoralHabilidad());
         Jugador actor = motor.contexto().jugadorActual();
         Jugador otro = conRol(motor, 2);
         Estudio primero = estudio(otro, 1, false);
         Estudio segundo = estudio(otro, 1, false);
         motor.ejecutarAccion(new UsarHabilidadAccion(otro.nombre(), 1));
-        assertEquals(1, actor.monedas());
+        assertEquals(2, actor.monedas());
         assertEquals(1, primero.trabajoAcumulado());
         assertEquals(0, segundo.trabajoAcumulado());
         assertEquals(EstadoEstudio.EN_DESARROLLO, segundo.estado());
@@ -317,7 +354,7 @@ class FlujoYHabilidadesTest {
         var titular = conRol(motor, 2);
         var patente = FabricaMazos.crearIdeas().cartas().stream().filter(c -> c.nombre().equals("Patente")).findFirst().orElseThrow();
         titular.iniciarEstudio(patente); titular.iniciarEstudio(patente);
-        titular.trabajarEstudio(0,5);
+        titular.trabajarEstudio(0,4);
         motor.avanzarFase();
         assertEquals(4,titular.monedas());
         var json = new es.tesis.persistencia.SerializadorPartidaJson();
@@ -329,7 +366,7 @@ class FlujoYHabilidadesTest {
         restaurado.revisarEstudio(0);
         new EstadoTurno().entrar(recuperado.contexto());
         assertEquals(4,restaurado.monedas());
-        restaurado.trabajarEstudio(0,2); restaurado.trabajarEstudio(1,5);
+        restaurado.trabajarEstudio(0,1); restaurado.trabajarEstudio(1,4);
         assertEquals(4,restaurado.monedas());
         new EstadoTurno().entrar(recuperado.contexto());
         assertEquals(8,restaurado.monedas());
@@ -342,7 +379,7 @@ class FlujoYHabilidadesTest {
         estudio(otro, 2, false);
         motor.ejecutarAccion(new UsarHabilidadAccion(otro.nombre(), 0));
         assertEquals(1, otro.estudios().get(0).trabajoAcumulado());
-        assertEquals(1, motor.contexto().jugadorActual().monedas());
+        assertEquals(2, motor.contexto().jugadorActual().monedas());
         assertEquals(0, motor.partida().accionesBaseRealizadas());
     }
 

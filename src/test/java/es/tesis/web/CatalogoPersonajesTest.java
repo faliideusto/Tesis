@@ -19,7 +19,7 @@ class CatalogoPersonajesTest {
                 "Obtienes inmunidad frente a cualquier habilidad rival durante toda la ronda.",
                 "Al iniciar tu turno, recibe 1 Moneda por cada artículo publicado en la mesa.",
                 "Una vez por turno, añade 1 punto de trabajo a uno de tus artículos en desarrollo.",
-                "Una vez por turno, podrás pagar 1 Moneda para retirar 1 Punto de Trabajo de un artículo rival en desarrollo.");
+                "Una vez por turno, retira 1 Punto de Trabajo de un artículo rival en desarrollo.");
         for(int i=0; i<roles.size(); i++) {
             var dto = CatalogoVisual.rol(roles.get(i),i);
             assertEquals(i+1,dto.orden());

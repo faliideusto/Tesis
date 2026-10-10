@@ -18,7 +18,7 @@
  *
  * <p>Editorial cobra por todas las publicaciones en mesa al empezar su turno.
  * Pre-Doctoral aporta un punto de trabajo a un estudio propio en desarrollo.
- * El Revisor paga una moneda para quitar un punto de trabajo a un estudio
+ * El Revisor quita, sin coste, un punto de trabajo a un estudio
  * rival en desarrollo que tenga trabajo; no revisa estudios propios ni
  * publicados.
  * Plagiador solo se conserva para leer partidas antiguas y no está en el mazo nuevo.

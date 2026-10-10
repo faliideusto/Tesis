@@ -15,7 +15,7 @@ public final class FabricaMazos {
                 new IdeaCarta("Ensayo Clínico Aleatorizado", 5, 4, 7),
                 new IdeaCarta("Ensayo Comunitario", 9, 4, 9),
                 new IdeaCarta("Revisión Sistemática", 3, 5, 6),
-                new IdeaCarta("Patente", 4, 5, 5, 2)
+                new IdeaCarta("Patente", 4, 4, 5, 2)
         ), List.of(20, 20, 17, 13, 10, 6, 10, 4));
 
     }

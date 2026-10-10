@@ -54,7 +54,7 @@ final class CerebroBot {
                 case "Editorial" -> publicadosMesa;
                 case "Investigador Principal" -> yo.cartas() < 2 ? 3.5 : 2;
                 case "Decana" -> enDesarrollo > 0 ? 2.5 : 1;
-                case "Revisor 2" -> rivalConTrabajo && yo.monedas() > 0 ? 2.5 : 0.5;
+                case "Revisor 2" -> rivalConTrabajo ? 2.5 : 0.5;
                 default -> 1.5;
             } + azar.nextDouble() * 1.5;
             if (valor > mejorValor) { mejorValor = valor; mejor = rol; }
@@ -71,9 +71,9 @@ final class CerebroBot {
                 return estudio.publicado() ? -estudio.carta().prestigio() : restante(estudio);
             })).orElseThrow();
         }
-        // Revisor 2: solo gasta la moneda contra quien va por delante o está a punto de publicar.
+        // Revisor 2: la revisión es gratuita, así que siempre frena al rival más amenazante.
         Vistas.Opcion mejor = null;
-        int mejorAmenaza = 0;
+        int mejorAmenaza = -1;
         for (var opcion : opciones) {
             var rival = estado.jugadores().stream().filter(j -> j.nombre().equals(opcion.objetivo())).findFirst().orElse(null);
             if (rival == null || opcion.indice() == null) continue;
@@ -81,7 +81,7 @@ final class CerebroBot {
             int amenaza = rival.publicados() * 3 + (restante(estudio) <= 2 ? 3 : 0) + (rival.prestigio() > yo.prestigio() ? 1 : 0);
             if (amenaza > mejorAmenaza) { mejorAmenaza = amenaza; mejor = opcion; }
         }
-        return mejorAmenaza >= 3 ? mejor : null;
+        return mejor;
     }
 
     private static Vistas.Peticion accionBase(Vistas.Estado estado, Vistas.Jugador yo) {

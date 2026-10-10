@@ -229,8 +229,8 @@ public final class SalaJuego {
     }
 
     private void registrarResultado() {
-        // Las mesas con bots son de práctica: no generan progresión ni ranking.
-        if (resultado != null || progresion == null || cuentas.isEmpty() || !bots.isEmpty()) return;
+        // Los bots no tienen cuenta: se registran como cualquier participante invitado.
+        if (resultado != null || progresion == null || cuentas.isEmpty()) return;
         var finalizados = juego.resultadoFinal();
         if (finalizados.isEmpty()) return;
         var participantes = new ArrayList<es.tesis.cuentas.CuentasSupabase.Participante>();
@@ -243,7 +243,6 @@ public final class SalaJuego {
         resultado = progresion.registrar(partidaId, reloj.instant(), participantes);
     }
     private Vistas.Progreso progreso(Jugador jugador) {
-        if (!bots.isEmpty()) return new Vistas.Progreso("PRACTICA", cuentas.containsKey(jugador), null, null);
         if (!cuentas.containsKey(jugador)) return new Vistas.Progreso("INVITADO", false, null, null);
         if (resultado == null) return new Vistas.Progreso("VINCULADA", true, null, null);
         int xp = resultado.participantes.stream().filter(p -> p.user_id() != null

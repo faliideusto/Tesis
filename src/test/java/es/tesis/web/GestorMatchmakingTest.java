@@ -160,7 +160,7 @@ class GestorMatchmakingTest {
         assertTrue(sala.soyAnfitrion());
         assertEquals(4, sala.jugadores().size());
         assertEquals("EN_PARTIDA", sala.fase());
-        assertEquals("PRACTICA", sala.progreso().estado());
+        assertEquals("INVITADO", sala.progreso().estado());
         // Repetir tras una respuesta perdida recupera la misma mesa.
         assertEquals(vista.acceso().playerToken(), gestor.rellenar(ana).acceso().playerToken());
         assertEquals(vista.acceso().codigo(), gestor.estado(ana).acceso().codigo());

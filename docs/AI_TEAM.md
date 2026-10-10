@@ -78,7 +78,7 @@ Revision exterior de sala e interior de adaptador son distintas. El bloqueo prot
 
 Frontend conserva `tesis.sala` en `sessionStorage`; `api.js` encola solicitudes y cancela tras 12 s; `app.js` programa polling 900 ms después del anterior, usa generaciones/cola visual y evita aplicar respuestas antiguas. Refresh conserva identidad de esa pestaña; decisiones visuales no confirmadas se pierden, obligación del Comité persiste en motor. Fallos de red no reenvían acciones automáticamente.
 
-Todo vive en una instancia/memoria: reinicio pierde salas/tokens, no hay cuentas, recuperación por nombre, transferencia de anfitrión, expulsión ni reemplazo de jugador; los bots solo completan mesas de práctica pedidas desde matchmaking (`CerebroBot`, `SalaJuego.moverBots`). Un token robado permite usar esa identidad. `/api/game*` y cookie local existen solo en constructor loopback de compatibilidad de tests y no acceden a salas. No confundir persistencia CLI con reconexión web.
+Todo vive en una instancia/memoria: reinicio pierde salas/tokens, no hay cuentas, recuperación por nombre, transferencia de anfitrión, expulsión ni reemplazo de jugador; los bots solo completan mesas pedidas desde matchmaking y se registran como invitados (`CerebroBot`, `SalaJuego.moverBots`). Un token robado permite usar esa identidad. `/api/game*` y cookie local existen solo en constructor loopback de compatibilidad de tests y no acceden a salas. No confundir persistencia CLI con reconexión web.
 
 ## QA
 

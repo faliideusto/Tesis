@@ -20,7 +20,7 @@ export function createMatchmaking({api, panel, onRoom, onHome, status}) {
         host.innerHTML=`<span class="eyebrow">LA ACADEMIA SE REÚNE</span><h2 id="match-title" tabindex="-1">${confirming?'¡Mesa encontrada!':'Buscando partida'}</h2>
           <p>Mesa de ${esc(view.jugadores)} personas</p><p id="match-count" class="match-count" role="status" aria-live="polite"></p>${confirming?'':'<span class="match-searching" aria-hidden="true"><i></i><i></i><i></i></span>'}
           ${confirming?`<p id="match-time"></p><button class="gold-button" data-match="ready" ${view.listo?'disabled':''}>${view.listo?'Listo · esperando al resto':'Estoy listo'}</button>`:`<p>La partida comenzará cuando todos confirméis. Puedes cancelar para cambiar el tamaño.</p>
-          <div id="match-bots" class="match-bots" hidden><strong>¿No encuentras a nadie?</strong><span>Completamos tu mesa de ${esc(view.jugadores)} y empiezas ahora mismo. Es una partida de práctica: no suma experiencia.</span><button class="match-bots-button" data-match="bots">Jugar ahora</button></div>`}
+          <div id="match-bots" class="match-bots" hidden><strong>¿No encuentras a nadie?</strong><span>Completamos tu mesa de ${esc(view.jugadores)} y empiezas ahora mismo. Cuenta para tu experiencia y tus misiones.</span><button class="match-bots-button" data-match="bots">Jugar ahora</button></div>`}
           <p id="match-error" role="status" aria-live="polite"></p><button class="text-button match-back" data-match="cancel">Cancelar búsqueda</button>`;
       }
       host.querySelector('#match-title')?.focus();

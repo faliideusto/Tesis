@@ -88,7 +88,7 @@ public final class GestorSalas {
         return resultado;
     }
 
-    /** Mesa de práctica: una persona, que es la anfitriona, y el resto de asientos automáticos. */
+    /** Mesa con bots: una persona, que es la anfitriona, y el resto de asientos automáticos. */
     synchronized Vistas.AccesoSala crearPartidaConBots(String nombre, UUID cuenta, CosmeticosPartida cosmeticos, int jugadores) {
         if (jugadores < 3 || jugadores > 5) throw new IllegalArgumentException("Se necesitan entre 3 y 5 jugadores.");
         String humano = SalaJuego.validarNombre(nombre);

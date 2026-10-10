@@ -101,7 +101,7 @@ public final class GestorMatchmaking {
         return vista(solicitud);
     }
 
-    /** Deja de esperar a otras personas y empieza una mesa de práctica completada con bots. */
+    /** Deja de esperar a otras personas y empieza una mesa completada con bots. */
     public synchronized Vista rellenar(String token) {
         limpiar();
         var solicitud = autenticar(token);

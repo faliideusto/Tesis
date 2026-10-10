@@ -52,7 +52,7 @@ class SalasBotsTest {
         assertEquals("Ana", inicial.jugadores().get(0));
         assertTrue(inicial.soyAnfitrion());
         assertEquals(cantidad, new TreeSet<>(inicial.jugadores()).size());
-        assertEquals("PRACTICA", inicial.progreso().estado());
+        assertEquals("INVITADO", inicial.progreso().estado());
         assertEquals(cantidad, inicial.partida().jugadores().size());
         assertTrue(CerebroBot.nombres().containsAll(inicial.jugadores().subList(1, cantidad)));
         assertFalse(new com.google.gson.Gson().toJson(inicial).toLowerCase(Locale.ROOT).contains("bot"));
@@ -95,21 +95,34 @@ class SalasBotsTest {
         assertThrows(IllegalArgumentException.class, () -> salas.crearPartidaConBots("Ana", null, CosmeticosPartida.originales(), 6));
     }
 
-    @Test void partidaConBotsNoRegistraProgresionAunqueHayaCuenta() {
+    @Test void partidaConBotsRegistraLaProgresionDeLaCuentaYLosBotsComoInvitados() throws Exception {
         var escrituras = new AtomicInteger();
-        try (var progresion = new ProgresionPartidas((id, hash, fecha, participantes) -> escrituras.incrementAndGet())) {
+        var guardados = new java.util.concurrent.atomic.AtomicReference<List<es.tesis.cuentas.CuentasSupabase.Participante>>();
+        var guardado = new java.util.concurrent.CountDownLatch(1);
+        UUID cuenta = UUID.randomUUID();
+        try (var progresion = new ProgresionPartidas((id, hash, fecha, participantes) -> {
+            escrituras.incrementAndGet(); guardados.set(participantes); guardado.countDown();
+        })) {
             var salas = new GestorSalas(reloj, Duration.ofHours(24), progresion);
-            var acceso = salas.crearPartidaConBots("Ana", UUID.randomUUID(), CosmeticosPartida.originales(), 3);
+            var acceso = salas.crearPartidaConBots("Ana", cuenta, CosmeticosPartida.originales(), 3);
             var sala = salas.buscar(acceso.codigo());
-            assertEquals("PRACTICA", acceso.sala().progreso().estado());
-            assertTrue(acceso.sala().progreso().cuenta());
+            assertEquals("VINCULADA", acceso.sala().progreso().estado());
             terminar(sala, acceso.playerToken(), "Ana");
-            var fin = sala.estado(acceso.playerToken());
-            assertEquals("FINALIZADA", fin.fase());
-            assertEquals("PRACTICA", fin.progreso().estado());
-            assertNull(fin.progreso().xp());
-            assertNull(fin.progreso().partidaId());
+            assertEquals("FINALIZADA", sala.estado(acceso.playerToken()).fase());
+            assertTrue(guardado.await(10, java.util.concurrent.TimeUnit.SECONDS));
+            String estado = "";
+            for (int i = 0; i < 200 && !estado.equals("CONFIRMADA"); i++) {
+                estado = sala.estado(acceso.playerToken()).progreso().estado();
+                if (!estado.equals("CONFIRMADA")) Thread.sleep(25);
+            }
+            var fin = sala.estado(acceso.playerToken()).progreso();
+            assertEquals("CONFIRMADA", fin.estado());
+            assertTrue(Set.of(200, 300).contains(fin.xp()));
+            assertNotNull(fin.partidaId());
         }
-        assertEquals(0, escrituras.get());
+        assertEquals(1, escrituras.get());
+        assertEquals(3, guardados.get().size());
+        assertEquals(1, guardados.get().stream().filter(p -> cuenta.equals(p.user_id())).count());
+        assertEquals(2, guardados.get().stream().filter(p -> p.user_id() == null).count());
     }
 }

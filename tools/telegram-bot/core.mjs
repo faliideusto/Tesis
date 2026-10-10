@@ -1,8 +1,10 @@
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { setTimeout as delay } from 'node:timers/promises';
 
-export const DEFAULT_REPOSITORY = 'https://github.com/faliideusto/Ciudadela-Academica.git';
+export const DEFAULT_REPOSITORY = 'https://github.com/faliideusto/Tesis.git';
 export const HELP = 'Escribe el cambio que quieres en Tesis. Si necesito detalles, te preguntaré. Si las pruebas y la revisión pasan, lo publicaré automáticamente. /estado muestra tus solicitudes; /nuevo borra el contexto de conversación; /id muestra tu identificador.';
 
 export function validateConfig(config) {
@@ -142,10 +144,13 @@ export const REVIEW_SCHEMA = {
 };
 
 export class Worker {
-  constructor(config, dataDir, { execute = run, agent, checks, reviewer } = {}) {
+  constructor(config, dataDir, { execute = run, agent, checks, reviewer,
+    sourceRepository = resolve(dirname(fileURLToPath(import.meta.url)), '../..'), wait = delay } = {}) {
     this.config = config;
     this.dataDir = dataDir;
     this.execute = execute;
+    this.sourceRepository = sourceRepository;
+    this.wait = wait;
     this.agent = agent ?? ((cwd, prompt, dir) => this.codex(cwd, prompt, dir, RESULT_SCHEMA, 'workspace-write'));
     this.checks = checks ?? (cwd => this.testGame(cwd));
     this.reviewer = reviewer ?? ((cwd, dir) => this.codex(cwd,
@@ -155,7 +160,32 @@ export class Worker {
     mkdirSync(this.hooksDir, { recursive: true });
   }
   git(cwd, ...args) {
-    return this.execute('git', ['-c', `core.hooksPath=${this.hooksDir}`, '-c', 'core.fsmonitor=false', '-c', 'commit.gpgsign=false', ...args], { cwd });
+    return this.execute('git', ['-c', `core.hooksPath=${this.hooksDir}`, '-c', 'core.fsmonitor=false', '-c', 'commit.gpgsign=false', '-c', 'http.version=HTTP/1.1', ...args], { cwd });
+  }
+  async prepare(cwd, job) {
+    try {
+      // Copiar solo objetos/archivos versionados: nunca credenciales, conversaciones ni cambios locales.
+      await this.git(this.dataDir, 'clone', '--no-hardlinks', '--single-branch', '--branch', 'main', '--', this.sourceRepository, cwd);
+      await this.git(cwd, 'remote', 'set-url', 'origin', this.config.repositoryUrl);
+      for (let attempt = 0; ; attempt++) {
+        try {
+          // Obtener main remoto actual usando los objetos ya copiados, sin bajar todo el historial.
+          await this.git(cwd, 'fetch', '--depth=1', '--no-tags', '--', this.config.repositoryUrl, 'refs/heads/main');
+          break;
+        } catch (error) {
+          if (attempt >= 2 || !/RPC failed|curl \d+|disconnect|early EOF|timed out|Could not resolve|Failed to connect|Connection reset/i.test(error.message)) throw error;
+          await this.wait(1500 * (attempt + 1));
+        }
+      }
+      const base = await this.git(cwd, 'rev-parse', 'FETCH_HEAD');
+      await this.git(cwd, 'switch', '--detach', base);
+      await this.git(cwd, 'switch', '-c', `codex/telegram-${job.id}`);
+      return base;
+    } catch (cause) {
+      const error = new Error('No se pudo preparar una copia actualizada de main. No se ejecutó Codex ni se publicó ningún cambio.', { cause });
+      error.code = 'PREPARE_FAILED';
+      throw error;
+    }
   }
   async codex(cwd, prompt, jobDir, schema, sandbox) {
     const schemaFile = join(jobDir, sandbox === 'read-only' ? 'review-schema.json' : 'result-schema.json');
@@ -179,10 +209,8 @@ export class Worker {
     const jobDir = join(this.dataDir, 'jobs', job.id);
     const cwd = join(jobDir, 'repo');
     mkdirSync(jobDir, { recursive: true });
-    // Siempre partir de main remoto, no de la release abierta en el editor.
-    await this.git(this.dataDir, 'clone', '--single-branch', '--branch', 'main', '--', this.config.repositoryUrl, cwd);
-    const base = await this.git(cwd, 'rev-parse', 'HEAD');
-    await this.git(cwd, 'switch', '-c', `codex/telegram-${job.id}`);
+    await notify('Estoy preparando una copia actualizada del juego para revisar tu petición.');
+    const base = await this.prepare(cwd, job);
     await notify('Estoy revisando tu petición y preparando el cambio.');
     const prompt = `Eres el asistente de desarrollo de Tesis para una persona sin conocimientos de programación. Contesta en español claro. Lee AGENTS.md y las skills relevantes del repositorio. El motor Java es la autoridad de reglas.
 El propietario autoriza implementar solicitudes de este usuario. El publicador externo hace pruebas, revisión, commit y push a main; tú NO debes hacer commits, push, merges, despliegues ni cambiar referencias Git, configuración, credenciales o infraestructura. Solo modifica src/main/, src/test/, tests/*.test.mjs y documentación docs/. No cambies Supabase, Docker, pom.xml, automatización, AGENTS.md ni debilites pruebas.

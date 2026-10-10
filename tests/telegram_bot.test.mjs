@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import {
   assertAllowedPaths, childEnvironment, DEFAULT_REPOSITORY, emptyState, receive, remember, run, Store, validateConfig, Worker,
@@ -124,7 +124,7 @@ async function fixture(options = {}) {
   };
   const checks = async () => { order.push('checks'); };
   const reviewer = async () => { order.push('review'); return { approved: true, message: 'Correcto' }; };
-  const worker = new Worker(config, data, { execute, agent, checks, reviewer, ...options });
+  const worker = new Worker(config, data, { execute, agent, checks, reviewer, sourceRepository: seed, wait: async () => {}, ...options });
   return { dir, seed, remote, data, git, base, worker, calls, order, job: { id: '100', userId: 123, text: 'Cambia el texto' } };
 }
 
@@ -197,4 +197,77 @@ test('pregunta con cambios y pruebas que alteran el patch bloquean publicación'
 
 test('estado vacío no contiene identidades ni mensajes compartidos', () => {
   assert.deepEqual(emptyState(), { offset: 0, jobs: [], conversations: {}, outbox: [] });
+});
+
+test('la copia local excluye trabajo sin commit y secretos, y usa el main remoto más reciente', async () => {
+  const f = await fixture();
+  const other = join(f.dir, 'other');
+  await f.git(f.dir, 'clone', f.remote, other);
+  writeFileSync(join(other, 'src/main/game.txt'), 'main remoto nuevo\n');
+  await f.git(other, 'add', '.');
+  await f.git(other, '-c', 'user.name=Other', '-c', 'user.email=other@example.test', 'commit', '-m', 'New remote main');
+  await f.git(other, 'push', f.remote, 'HEAD:main');
+  writeFileSync(join(f.seed, 'src/main/game.txt'), 'trabajo local sin commit\n');
+  mkdirSync(join(f.seed, '.telegram-bot'));
+  writeFileSync(join(f.seed, '.telegram-bot/token.dpapi'), 'dato privado local');
+  f.worker.agent = async cwd => {
+    assert.equal(readFileSync(join(cwd, 'src/main/game.txt'), 'utf8').trim(), 'main remoto nuevo');
+    assert.equal(existsSync(join(cwd, '.telegram-bot/token.dpapi')), false);
+    return { kind: 'answer', message: 'Consulta respondida', title: '' };
+  };
+  const result = await f.worker.process(f.job);
+  assert.equal(result.status, 'answered');
+  assert.equal(readFileSync(join(f.seed, 'src/main/game.txt'), 'utf8'), 'trabajo local sin commit\n');
+  const clone = f.calls.find(call => call.args.includes('clone'));
+  assert.equal(clone.args.includes(f.seed), true);
+  assert.equal(clone.args.includes(DEFAULT_REPOSITORY), false);
+});
+
+test('fallos transitorios de fetch se reintentan sin repetir la tarea ni el push', async () => {
+  const f = await fixture();
+  const execute = f.worker.execute;
+  let fetches = 0;
+  f.worker.execute = async (file, args, opts) => {
+    if (args.includes('fetch') && ++fetches < 3) throw new Error('RPC failed; curl 18; early EOF');
+    return execute(file, args, opts);
+  };
+  const result = await f.worker.process(f.job);
+  assert.equal(result.status, 'published');
+  assert.equal(fetches, 3);
+  assert.equal(f.order.filter(step => step === 'agent').length, 1);
+  assert.equal(f.calls.filter(call => call.args.includes('push')).length, 1);
+});
+
+test('fetch persistente se detiene antes de Codex y errores de autenticación no se reintentan', async () => {
+  for (const [failure, expected] of [['RPC failed; early EOF', 3], ['Permission denied', 1]]) {
+    const f = await fixture();
+    const execute = f.worker.execute;
+    let fetches = 0;
+    f.worker.execute = async (file, args, opts) => {
+      if (args.includes('fetch')) { fetches++; throw new Error(failure); }
+      return execute(file, args, opts);
+    };
+    await assert.rejects(f.worker.process(f.job), error => error.code === 'PREPARE_FAILED');
+    assert.equal(fetches, expected);
+    assert.equal(f.order.length, 0);
+    assert.equal(f.calls.some(call => call.args.includes('push')), false);
+  }
+});
+
+test('un fallo de red después de publicar no provoca otro push', async () => {
+  const f = await fixture();
+  const execute = f.worker.execute;
+  let pushes = 0;
+  f.worker.execute = async (file, args, opts) => {
+    if (args.includes('push')) {
+      pushes++;
+      await execute(file, args, opts);
+      throw new Error('RPC failed; respuesta perdida después del push');
+    }
+    return execute(file, args, opts);
+  };
+  await assert.rejects(f.worker.process(f.job), /respuesta perdida/);
+  assert.equal(pushes, 1);
+  const publication = JSON.parse(readFileSync(join(f.data, 'jobs', f.job.id, 'publication.json'), 'utf8'));
+  assert.equal(await f.git(f.remote, 'rev-parse', 'main'), publication.commit);
 });

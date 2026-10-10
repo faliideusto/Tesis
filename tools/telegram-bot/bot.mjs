@@ -86,8 +86,10 @@ async function processQueue() {
     job.finishedAt = new Date().toISOString();
     const dir = join(dataDir, 'jobs', job.id);
     mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, 'failure.log'), error.stack ?? String(error));
-    const text = `La solicitud ${job.id} se ha detenido. No puedo confirmar su publicación. El propietario puede revisar .telegram-bot/jobs/${job.id}/, incluidas las comprobaciones y cualquier intento de publicación. No repetiré la solicitud automáticamente.`;
+    writeFileSync(join(dir, 'failure.log'), `${error.stack ?? String(error)}${error.cause ? `\nCausa:\n${error.cause.stack ?? String(error.cause)}` : ''}`);
+    const text = error.code === 'PREPARE_FAILED'
+      ? `No he podido obtener una copia actualizada del juego para la solicitud ${job.id}. Tu petición todavía no llegó a Codex y no se ha modificado ni publicado nada. Puedes volver a enviarla cuando se recupere la conexión.`
+      : `La solicitud ${job.id} se ha detenido. No puedo confirmar su publicación. El propietario puede revisar .telegram-bot/jobs/${job.id}/, incluidas las comprobaciones y cualquier intento de publicación. No repetiré la solicitud automáticamente.`;
     remember(store, job, text);
     store.tell(job.chatId, text);
     console.log(`Solicitud ${job.id}: detenida. Consulta el registro local.`);

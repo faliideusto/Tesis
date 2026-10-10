@@ -20,7 +20,7 @@ if (-not (Test-Path -LiteralPath $taskTokenPath)) {
 } else {
     Write-Host 'Se conserva el token cifrado existente. Para sustituirlo, elimina solo .telegram-bot/token.dpapi y repite la configuracion.'
 }
-$taskRepository = 'https://github.com/faliideusto/Ciudadela-Academica.git'
+$taskRepository = 'https://github.com/faliideusto/Tesis.git'
 if ($taskExisting) { $taskRepository = $taskExisting.repositoryUrl }
 $taskIdsInput = Read-Host 'IDs de Telegram autorizados, separados por comas (vacio para obtenerlos primero)'
 $taskIds = @()

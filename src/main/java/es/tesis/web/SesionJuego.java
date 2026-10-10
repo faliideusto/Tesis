@@ -243,7 +243,7 @@ public final class SesionJuego {
         } else if (h instanceof PlagiadorHabilidad) {
             c.partida().jugadores().stream().filter(otro -> otro != j && !c.estaProtegido(otro.nombre()))
                     .forEach(otro -> opciones.add(new Vistas.Opcion(otro.nombre(), null, otro.nombre())));
-        } else if (h instanceof Revisor2Habilidad && j.monedas() >= 1) {
+        } else if (h instanceof Revisor2Habilidad) {
             for (var otro : c.partida().jugadores()) {
                 if (otro == j || c.estaProtegido(otro.nombre())) continue;
                 for (int i = 0; i < otro.estudios().size(); i++) {
@@ -252,7 +252,7 @@ public final class SesionJuego {
                         opciones.add(new Vistas.Opcion(otro.nombre() + " · " + e.carta().nombre(), i, otro.nombre(), null,
                                 e.trabajoAcumulado() + "/" + e.carta().trabajoRequerido() + " → "
                                 + Math.max(0, e.trabajoAcumulado() - 1) + "/" + e.carta().trabajoRequerido()
-                                + " · −1 moneda · No consume acciones base"));
+                                + " · No consume acciones base"));
                 }
             }
         }
@@ -261,8 +261,7 @@ public final class SesionJuego {
         else if (motivo.isEmpty() && opciones.isEmpty()) {
             if (h instanceof EstadisticoHabilidad) motivo = "Necesitas un artículo propio publicado.";
             else if (h instanceof PreDoctoralHabilidad) motivo = "Necesitas un estudio propio en desarrollo.";
-            else if (h instanceof Revisor2Habilidad) motivo = j.monedas() < 1 ? "Necesitas 1 moneda para revisar."
-                    : "No hay estudios rivales en desarrollo con trabajo que puedas revisar.";
+            else if (h instanceof Revisor2Habilidad) motivo = "No hay estudios rivales en desarrollo con trabajo que puedas revisar.";
             else motivo = "No hay objetivos válidos para esta habilidad.";
         }
         return accion("HABILIDAD", "Habilidad", rol.habilidad(), motivo, opciones);

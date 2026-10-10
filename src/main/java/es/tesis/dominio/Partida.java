@@ -136,10 +136,16 @@ public class Partida {
         faseActual = FaseDeTurno.FIN_PARTIDA;
     }
 
+    /** Orden de victoria: prestigio; en empate, monedas; si persiste, cartas en mano. */
+    public static final Comparator<Jugador> ORDEN_VICTORIA = Comparator.comparingInt(Jugador::prestigio)
+            .thenComparingInt(Jugador::monedas)
+            .thenComparingInt(j -> j.cartasIdea().size());
+
+    /** Solo comparten victoria quienes siguen empatados tras aplicar todos los desempates. */
     public List<Jugador> ganadores() {
         if (faseActual != FaseDeTurno.FIN_PARTIDA) return List.of();
-        int maximo = jugadores.stream().mapToInt(Jugador::prestigio).max().orElse(0);
-        return jugadores.stream().filter(j -> j.prestigio() == maximo).toList();
+        Jugador mejor = Collections.max(jugadores, ORDEN_VICTORIA);
+        return jugadores.stream().filter(j -> ORDEN_VICTORIA.compare(j, mejor) == 0).toList();
     }
 
     private void exigirFase(FaseDeTurno esperada) {

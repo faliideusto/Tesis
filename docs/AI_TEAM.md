@@ -52,17 +52,17 @@ Los tests Java están en `src/test/java/es/tesis/` y `web/`. Las cuatro suites N
 | Comportamiento vigente | Autoridad ejecutable |
 | --- | --- |
 | 3–5 jugadores, 2 monedas y 2 ideas iniciales; cierre al terminar la ronda con alguien con 3 publicaciones | `reglas/ReglasAcademicas` y `motor/EstadoFinRonda` |
-| Fases selección → turnos → fin de ronda → nueva selección o final; ganador(es) por máximo prestigio | `motor/Estado*`, `dominio/Partida` |
+| Fases selección → turnos → fin de ronda → nueva selección o final; ganador(es) por máximo prestigio, con desempate por monedas y después por cartas en mano (`Partida.ORDEN_VICTORIA`) | `motor/Estado*`, `dominio/Partida` |
 | Primer selector aleatorio; selección circular, 2 descartes con 3 jugadores y 1 con 4/5; turnos por orden de personaje | `Partida`, `SeleccionarPersonajeAccion`, `EstadoSeleccionRoles` |
 | Hasta dos acciones base; la acción rechazada no registra consumo; fin manual permitido con acciones restantes salvo Comité pendiente | `ReglasAcademicas`, `acciones/AccionBase`, `EstadoTurno` |
 | Cobrar +2 monedas; Pensar roba una idea; iniciar paga coste/retira idea/crea estudio; trabajar aporta 1 punto base | `acciones/`, `ReglasAcademicas` |
 | Publicación automática al alcanzar trabajo requerido; suma prestigio de carta y bonus; Estadístico añade +1 a estudio propio publicado | `dominio/Estudio`, `Jugador`, `habilidades/EstadisticoHabilidad` |
 | 8 tipos de idea con reposición y pesos; costes, trabajo, prestigio e ingresos en catálogo Java | `dominio/FabricaMazos`, `Mazo`, `IdeaCarta` |
-| Patente: 4 monedas, 5 trabajo, 5 prestigio y 2 monedas por copia publicada al iniciar turno no vetado | `FabricaMazos`, `motor/EstadoTurno` |
+| Patente: 4 monedas, 4 trabajo, 5 prestigio y 2 monedas por copia publicada al iniciar turno no vetado | `FabricaMazos`, `motor/EstadoTurno` |
 | 7 roles nuevos, orden 1–7; Plagiador se conserva para compatibilidad de guardados antiguos | `FabricaMazos`, `dominio/InstantaneaPartida`, `habilidades/PlagiadorHabilidad` |
 | Comité debe nombrar rol antes de actuar/finalizar; no él mismo ni Decana; rol no elegido consume habilidad; veto salta turno y sus ingresos/efectos | `ComiteEticaHabilidad`, `ReglasAcademicas`, `MotorJuegoImpl`, `EstadoTurno` |
 | Investigador roba extra y marca primer selector siguiente; Decana es inmune desde asignación; Editorial cobra por publicaciones de toda la mesa | Habilidades correspondientes y `motor/ContextoJuegoImpl` |
-| Pre-Doctoral aporta 1 trabajo activo a estudio propio en desarrollo sin acción base; Revisor paga 1 moneda y retira 1 trabajo solo a rival en desarrollo con trabajo, sin inmunidad | `PreDoctoralHabilidad`, `Revisor2Habilidad`, `Jugador`, `Estudio` |
+| Pre-Doctoral aporta 1 trabajo activo a estudio propio en desarrollo sin acción base; Revisor retira sin coste 1 trabajo solo a rival en desarrollo con trabajo, sin inmunidad | `PreDoctoralHabilidad`, `Revisor2Habilidad`, `Jugador`, `Estudio` |
 | Habilidad activa no consume acción base y su uso se registra después de ejecución válida | `acciones/UsarHabilidadAccion`, `ReglasAcademicas` |
 | Recuperación sin repetir reparto, descartes, robos o ingresos del turno | `MotorJuegoImpl.recuperarPartida`, `Partida.restaurar`, `persistencia/` |
 
@@ -105,7 +105,7 @@ Cerrar con aceptación, plan actualizado, comandos/resultados, límites y revisi
 
 Inspección del 5 de octubre de 2026:
 
-- README: Patente se describe con coste 3; `FabricaMazos` define 4. El ejemplo CLI menciona dos jugadores; `PartidaInicial` crea tres y las reglas exigen 3–5.
+- README: el ejemplo CLI menciona dos jugadores; `PartidaInicial` crea tres y las reglas exigen 3–5.
 - `docs/WEB.md`: config pública dice 2–7, pero `SesionJuego.configuracion` usa límites 3–5; afirma consultas sin mutación y cierre manual, mientras `SalaJuego` puede avanzar tras 5 s. Describe `objetivo` público solo para Plagiador; `SesionJuego.evento` también lo incluye para Revisor 2.
 - `docs/MESA-VISUAL.md` y `habilidades/package-info.java` conservan hasta seis personas y efectos antiguos (Pre-Doctoral 2; Revisor sobre propios/publicados). Las clases ejecutables actuales difieren: 3–5, Pre-Doctoral 1 activo y Revisor solo rival en desarrollo.
 - Assets incluyen Plagiador con numeración histórica, pero el catálogo vigente crea siete roles. No derivar reglas del nombre del asset ni renumerarlo automáticamente.

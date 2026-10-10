@@ -23,15 +23,17 @@ class PerspectivaHabilidadesTest {
         assertEquals(despues.eventos(), m.ver(m.b).eventos());
     }
 
-    @Test void habilidadExplicaFaltaDeMonedasObjetivosYUsoPrevio() {
+    @Test void habilidadExplicaFaltaDeObjetivosYUsoPrevioSinExigirMonedas() {
         var m = preparar(7, 6);
         assertTrue(m.ver(m.a).acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow().motivo().contains("No hay estudios rivales"));
         estudio(m.b, 3); m.b.trabajarEstudio(0, 1); m.a.gastarMonedas(2);
-        assertEquals("Necesitas 1 moneda para revisar.", m.ver(m.a).acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow().motivo());
-        m.a.sumarMonedas(1);
-        var opcion = m.ver(m.a).acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow().opciones().get(0);
+        var habilidad = m.ver(m.a).acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow();
+        assertTrue(habilidad.disponible());
+        var opcion = habilidad.opciones().get(0);
         assertTrue(opcion.previsualizacion().contains("1/3 → 0/3"));
+        assertFalse(opcion.previsualizacion().contains("moneda"));
         m.actuar(m.a, "HABILIDAD", 0, m.b.nombre());
+        assertEquals(0, m.a.monedas()); assertEquals(0, m.b.estudios().get(0).trabajoAcumulado());
         assertTrue(m.ver(m.a).acciones().stream().filter(a -> a.id().equals("HABILIDAD")).findFirst().orElseThrow().motivo().contains("ya se ha usado"));
     }
     private record Mesa(SesionJuego sesion, Jugador a, Jugador b, Jugador c) {
@@ -259,7 +261,7 @@ class PerspectivaHabilidadesTest {
         var m=preparar(7,6); estudio(m.b,3); m.b.trabajarEstudio(0,1);
         assertThrows(IllegalArgumentException.class,()->m.actuar(m.a,"HABILIDAD",0,"Intruso"));
         m.actuar(m.a,"HABILIDAD",0,m.b.nombre()); assertEquals(0,m.b.estudios().get(0).trabajoAcumulado());
-        assertEquals(1,m.a.monedas()); assertEquals(0,m.ver(m.b).jugadores().get(1).estudios().get(0).trabajo());
+        assertEquals(2,m.a.monedas()); assertEquals(0,m.ver(m.b).jugadores().get(1).estudios().get(0).trabajo());
     }
 
     @Test void catalogoSeleccionNoDistingueElegidosYDescartadosNiSeEnviaAOtros() {

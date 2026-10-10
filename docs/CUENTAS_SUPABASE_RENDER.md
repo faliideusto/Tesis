@@ -36,7 +36,7 @@ El Dockerfile compila y copia dependencias en build; el contenedor final ejecuta
 
 ## Progreso y límites de la primera versión
 
-- Cada cuenta vinculada recibe 200 XP por terminar y 100 adicionales si gana. Todos los empatados en máximo prestigio son ganadores según el motor. Invitados y partidas abandonadas no generan XP.
+- Cada cuenta vinculada recibe 200 XP por terminar y 100 adicionales si gana. El motor desempata el máximo prestigio por monedas y después por cartas en mano; solo quienes sigan empatados comparten la victoria y los 100 XP. Invitados y partidas abandonadas no generan XP.
 - Nivel = `1 + floor(XP / 500)`. No altera cartas, costes, turnos ni ventajas. Nombre del perfil editable; el nombre y la cuenta del asiento actual permanecen fijados al entrar. No se recupera un token de sala mediante correo o nombre.
 - Se captura una sola vez un resultado mínimo con UUID propio, asientos, prestigio y ganadores. La transacción guarda partida, recibos únicos `(partida, cuenta)` y contadores conjuntamente. Los reintentos mantienen UUID/hash y no vuelven a adjudicar XP.
 - Supabase temporalmente indisponible: la partida continúa; dos trabajadores independientes reintentan resultados con espera creciente hasta 60 segundos y variación pequeña. Como máximo 4096 resultados pendientes por proceso. Las consultas de cuenta tienen límite de concurrencia dos, reservando trabajadores HTTP para salas.

@@ -73,7 +73,13 @@ class MatchmakingHttpTest {
                     .header("Content-Type", "application/json").header("Authorization", "Bearer " + token)
                     .POST(HttpRequest.BodyPublishers.ofString("{\"nombre\":\"Ana\",\"jugadores\":3}")).build();
             assertEquals(403, http.send(externo, HttpResponse.BodyHandlers.ofString()).statusCode());
-            vista(request(base, "matchmaking", token, Map.of("nombre", "Ana", "jugadores", 3)));
+            assertFalse(vista(request(base, "matchmaking", token, Map.of("nombre", "Ana", "jugadores", 3))).bots());
+            assertEquals(405, request(base, "matchmaking/bots", token, null).statusCode());
+            assertEquals(401, request(base, "matchmaking/bots", null, Map.of()).statusCode());
+            assertEquals(400, request(base, "matchmaking/bots", token, Map.of("jugadores", 3)).statusCode());
+            var pronto = request(base, "matchmaking/bots", token, Map.of());
+            assertEquals(409, pronto.statusCode(), pronto.body());
+            assertEquals("BUSCANDO", vista(request(base, "matchmaking/estado", token, null)).fase());
             assertEquals(405, request(base, "matchmaking/estado", token, Map.of()).statusCode());
             assertEquals(401, request(base, "matchmaking/estado", "Ana", null).statusCode());
             assertEquals(404, request(base, "matchmaking/estado", UUID.randomUUID().toString(), null).statusCode());

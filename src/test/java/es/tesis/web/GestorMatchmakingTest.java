@@ -143,6 +143,52 @@ class GestorMatchmakingTest {
         assertTrue(tokens.stream().allMatch(t -> gestor.estado(t).fase().equals("ASIGNADA")));
     }
 
+    @Test void botsSoloTrasLaEsperaYSinArrastrarAlRestoDeLaCola() {
+        var ana = buscar("Ana", 4); var bea = buscar("Bea", 4);
+        assertFalse(gestor.estado(ana).bots());
+        assertEquals(409, assertThrows(ErrorSala.class, () -> gestor.rellenar(ana)).estado);
+        reloj.avanzar(14_999);
+        assertFalse(gestor.estado(ana).bots());
+        assertEquals("BUSCANDO", gestor.estado(bea).fase());
+        reloj.avanzar(1);
+        assertTrue(gestor.estado(ana).bots());
+        var vista = gestor.rellenar(ana);
+        assertEquals("ASIGNADA", vista.fase());
+        assertFalse(vista.bots());
+        var sala = vista.acceso().sala();
+        assertEquals("Ana", sala.yo());
+        assertTrue(sala.soyAnfitrion());
+        assertEquals(4, sala.jugadores().size());
+        assertEquals("EN_PARTIDA", sala.fase());
+        assertEquals("PRACTICA", sala.progreso().estado());
+        // Repetir tras una respuesta perdida recupera la misma mesa.
+        assertEquals(vista.acceso().playerToken(), gestor.rellenar(ana).acceso().playerToken());
+        assertEquals(vista.acceso().codigo(), gestor.estado(ana).acceso().codigo());
+        assertEquals(409, assertThrows(ErrorSala.class, () -> gestor.cancelar(ana)).estado);
+        // Quien no lo pidió sigue en su cola.
+        assertEquals("BUSCANDO", gestor.estado(bea).fase());
+        assertEquals(1, gestor.estado(bea).reunidos());
+        assertNull(gestor.estado(bea).acceso());
+        assertTrue(gestor.estado(bea).bots());
+    }
+
+    @Test void botsNoSeOfrecenConMesaEncontradaNiTrasCancelar() {
+        var solo = buscar("Solo", 5);
+        reloj.avanzar(15_000);
+        assertTrue(gestor.estado(solo).bots());
+        var trio = grupo(3);
+        reloj.avanzar(15_000);
+        gestor.estado(solo);
+        assertEquals("CONFIRMACION", gestor.estado(trio.get(0)).fase());
+        assertFalse(gestor.estado(trio.get(0)).bots());
+        assertEquals(409, assertThrows(ErrorSala.class, () -> gestor.rellenar(trio.get(0))).estado);
+        assertEquals("CONFIRMACION", gestor.estado(trio.get(0)).fase());
+        gestor.cancelar(solo);
+        assertFalse(gestor.estado(solo).bots());
+        assertEquals(409, assertThrows(ErrorSala.class, () -> gestor.rellenar(solo)).estado);
+        assertEquals(401, assertThrows(ErrorSala.class, () -> gestor.rellenar("falso")).estado);
+    }
+
     @Test void confirmacionesConcurrentesYRepetidasAsignanUnaSolaSala() throws Exception {
         var tokens = grupo(3); String grupo = gestor.estado(tokens.get(0)).grupo();
         var pool = Executors.newFixedThreadPool(6); var salida = new CountDownLatch(1);

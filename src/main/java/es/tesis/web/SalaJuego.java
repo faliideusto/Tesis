@@ -8,6 +8,7 @@ import java.util.*;
 /** Cada operación autentica, valida y obtiene su DTO bajo el mismo bloqueo. */
 public final class SalaJuego {
     private static final long PAUSA_FIN_RONDA_MS = 5_000;
+    private static final long PAUSA_BOT_MS = 1_400;
     private final String codigo;
     private final Clock reloj;
     private final SecureRandom azar;
@@ -19,6 +20,8 @@ public final class SalaJuego {
     private boolean iniciada;
     private boolean caducada;
     private long finRondaHasta;
+    private final Set<Jugador> bots = Collections.newSetFromMap(new IdentityHashMap<>());
+    private long botHasta;
     private final Map<Jugador, UUID> cuentas = new IdentityHashMap<>();
     private final Map<Jugador,CosmeticosPartida> cosmeticos = new IdentityHashMap<>();
     private final Map<Jugador,Long> interaccionDisponible = new IdentityHashMap<>();
@@ -65,6 +68,11 @@ public final class SalaJuego {
         if (anfitrion == null) anfitrion = jugador;
         revision++; actividad = reloj.millis();
         return new Vistas.AccesoSala(codigo, token, vista(jugador));
+    }
+
+    /** Asiento automático: su token se descarta, así que nadie puede autenticarse como él. */
+    synchronized void unirBot(String nombre) {
+        bots.add(miembros.get(unirse(nombre).playerToken()));
     }
 
     static String validarNombre(String nombre) {
@@ -150,10 +158,34 @@ public final class SalaJuego {
         if (estado.fase().equals("FIN_PARTIDA")) throw new ErrorSala(409, "La partida ha terminado.");
         juego.actuar(jugador, new Vistas.Peticion(estado.revision(), peticion.tipo(), peticion.indice(), peticion.objetivo(), null));
         revision++;
+        programarFinRonda(jugador);
+        return vista(jugador);
+    }
+
+    private void programarFinRonda(Jugador jugador) {
         if (juego.estado(jugador).fase().equals("FIN_RONDA")) {
             if (finRondaHasta == 0) finRondaHasta = reloj.millis() + PAUSA_FIN_RONDA_MS;
         } else finRondaHasta = 0;
-        return vista(jugador);
+    }
+
+    /** Como el cierre de ronda, los bots avanzan en las consultas: una jugada por pausa. */
+    private void moverBots() {
+        if (!iniciada || bots.isEmpty()) return;
+        Jugador bot = juego.enTurno();
+        if (bot == null || !bots.contains(bot)) { botHasta = 0; return; }
+        long ahora = reloj.millis();
+        if (botHasta == 0) { botHasta = ahora + PAUSA_BOT_MS; return; }
+        if (ahora < botHasta) return;
+        botHasta = ahora + PAUSA_BOT_MS;
+        try {
+            juego.actuar(bot, CerebroBot.decidir(juego.estado(bot), azar));
+        } catch (RuntimeException rechazada) {
+            // Una decisión rechazada no puede dejar la mesa esperando a un bot.
+            try { juego.actuar(bot, CerebroBot.respaldo(juego.estado(bot))); }
+            catch (RuntimeException sinSalida) { return; }
+        }
+        revision++;
+        programarFinRonda(bot);
     }
 
     private void continuarRondaSiCorresponde() {
@@ -178,6 +210,7 @@ public final class SalaJuego {
 
     private Vistas.Sala vista(Jugador jugador) {
         continuarRondaSiCorresponde();
+        moverBots();
         var estado = iniciada ? vestir(juego.estado(jugador)) : null;
         String fase = !iniciada ? "LOBBY" : estado.fase().equals("FIN_PARTIDA") ? "FINALIZADA" : "EN_PARTIDA";
         registrarResultado();
@@ -196,7 +229,8 @@ public final class SalaJuego {
     }
 
     private void registrarResultado() {
-        if (resultado != null || progresion == null || cuentas.isEmpty()) return;
+        // Las mesas con bots son de práctica: no generan progresión ni ranking.
+        if (resultado != null || progresion == null || cuentas.isEmpty() || !bots.isEmpty()) return;
         var finalizados = juego.resultadoFinal();
         if (finalizados.isEmpty()) return;
         var participantes = new ArrayList<es.tesis.cuentas.CuentasSupabase.Participante>();
@@ -209,6 +243,7 @@ public final class SalaJuego {
         resultado = progresion.registrar(partidaId, reloj.instant(), participantes);
     }
     private Vistas.Progreso progreso(Jugador jugador) {
+        if (!bots.isEmpty()) return new Vistas.Progreso("PRACTICA", cuentas.containsKey(jugador), null, null);
         if (!cuentas.containsKey(jugador)) return new Vistas.Progreso("INVITADO", false, null, null);
         if (resultado == null) return new Vistas.Progreso("VINCULADA", true, null, null);
         int xp = resultado.participantes.stream().filter(p -> p.user_id() != null

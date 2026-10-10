@@ -32,6 +32,8 @@ assert.equal(calls.at(-1).init.headers.Authorization,`Bearer ${saved.token}`);
 assert.equal(calls.at(-1).init.headers['X-Tesis-Account-Authorization'],undefined);
 await restored.matchConfirm('grupo-vigente');
 assert.equal(JSON.parse(calls.at(-1).init.body).grupo,'grupo-vigente');
+await restored.matchBots();assert.equal(calls.at(-1).path,'/api/matchmaking/bots');assert.equal(calls.at(-1).init.method,'POST');
+assert.equal(calls.at(-1).init.headers.Authorization,`Bearer ${saved.token}`);
 await restored.matchCancel();assert.equal(calls.at(-1).path,'/api/matchmaking/cancelar');
 restored.matchAccept({codigo:'ABCDE',playerToken:'private-token',sala:{fase:'EN_PARTIDA'}});
 assert.equal(store.has('tesis.matchmaking'),false);
@@ -81,4 +83,14 @@ await setImmediate();
 let resolve;pending=new Promise(r=>{resolve=r;});const old=poll();
 pending=null;controller.open();resolve({fase:'ASIGNADA',acceso:{sala:{codigo:'STALE'}}});await old;
 assert.equal(rooms.length,1,'No admite una asignación de una generación anterior');
-console.log('Matchmaking: identidad, recuperación, tamaños, confirmación, cancelación y respuestas antiguas verificados');
+
+// Tras la espera, el botón completa la mesa sin pasar por la confirmación.
+let botCalls=0;fake.matchBots=async()=>{botCalls++;return {fase:'ASIGNADA',acceso:{sala:{codigo:'PRACTICA'}}};};
+identity={token:'saved',jugadores:5};next={fase:'BUSCANDO',jugadores:5,reunidos:1,bots:false};controller.open();
+await setImmediate();
+assert.match(host.innerHTML,/¿No encuentras a nadie\?/);assert.equal(nodes.get('#match-bots').hidden,true);
+await controller.command('bots');assert.equal(botCalls,0,'El botón no actúa antes de que el servidor lo ofrezca');
+next={...next,bots:true};await poll();assert.equal(nodes.get('#match-bots').hidden,false);
+await controller.command('bots');assert.equal(botCalls,1);
+assert.equal(rooms.at(-1).codigo,'PRACTICA');assert.equal(controller.active(),false);assert.equal(timers.size,0);
+console.log('Matchmaking: identidad, recuperación, tamaños, confirmación, cancelación, respuestas antiguas y mesa con bots verificados');

@@ -6,6 +6,7 @@ import {mountCustomization} from './profile-customization.js';
 
 export function progressText(progress) {
   switch(progress?.estado) {
+    case 'PRACTICA': return 'Partida de práctica · no acumula experiencia.';
     case 'INVITADO': return 'Como invitado · esta partida no acumula experiencia.';
     case 'VINCULADA': return 'Cuenta vinculada · tu progreso se guardará al terminar.';
     case 'PENDIENTE': return 'Guardando experiencia… Si el servidor reinicia antes de guardarla, puede perderse.';

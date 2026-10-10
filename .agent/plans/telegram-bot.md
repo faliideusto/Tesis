@@ -1,0 +1,54 @@
+# Bot local de Telegram para Tesis
+
+## Objetivo
+Choquet solicita cambios en un chat privado; Codex conversa, implementa y el bot publica en main tras validación automática. Render tiene Auto-Deploy activado según el usuario.
+
+## Contexto
+Inicio limpio en release/v2.6.0. Infraestructura aislada en codex/infra-telegram-bot. El usuario confirmó el remoto personal (faliideusto/Ciudadela-Academica) conectado a Render. Codex CLI 0.162.1, Node, Git y Maven disponibles; autenticación ChatGPT existente comprobada.
+
+## Alcance
+Bot local sin dependencias npm, autorización por ID, cola persistente, copias independientes, integración Codex CLI, pruebas/revisión y push normal a main. Asistente de configuración Windows y documentación.
+
+## Fuera de alcance
+Cambios al juego, migraciones automáticas, instalación de servicios y envío real de mensajes sin configurar el bot. No confirmar despliegue sin evidencia de Render. La publicación de esta infraestructura quedó autorizada posteriormente por el usuario el 2026-10-10.
+
+## Áreas afectadas
+tools/telegram-bot/, tests/telegram_bot.test.mjs, .gitignore, este plan.
+
+## Fuente de verdad
+Motor Java para futuros cambios de reglas. Bot API oficial de Telegram y Codex CLI instalado para transporte/ejecución.
+
+## Plan de implementación
+- [x] Inspección y contratos.
+- [x] Implementación.
+- [x] Integración y validación local.
+- [x] Revisión del resultado combinado.
+- [ ] Configuración de token e IDs y prueba real con Telegram/GitHub.
+
+## División multiagente
+Ejecución directa: infraestructura localizada; implementación y revisión secuenciales.
+
+## Criterios de aceptación
+Solo IDs permitidos en privado ejecutan tareas; actualizaciones no se duplican; un único publicador; fallos, cambios de infraestructura y main concurrente bloquean push; secretos fuera del repo y del entorno de comandos; conversación por usuario; instrucciones de arranque y límites explícitos.
+
+## Tests
+`node --test tests/telegram_bot.test.mjs`: 15/15 PASS, con Git real local y agentes simulados. Primera ejecución falló por permisos del sandbox Windows; repetición fuera del sandbox aprobada y correcta. Cobertura: autorización, duplicados, recuperación, privacidad de conversación, entorno sin secretos, rutas, stdin de Codex, publicación secuencial, tests/revisión fallidos, main concurrente y modificaciones durante validación.
+
+`node target/telegram-bot-smoke.mjs`: consulta real de solo lectura a Codex PASS, con stdin y esquema JSON; detectó y permitió corregir el wrapper PowerShell, sustituido por invocación Node directa de bin/codex.js. Artefactos de smoke y tests en target/, ignorados.
+
+Sintaxis Node/PowerShell y git diff --check: PASS. Revisión manual de archivos nuevos y diff: sin bloqueantes detectados. No se ejecutaron Maven ni navegador para esta infraestructura porque no cambia el juego. No se configuró Telegram ni se hizo push/commit remoto o despliegue real.
+
+2026-10-10, activación desde móvil: credencial introducida y cifrada con DPAPI en la carpeta ignorada; configuración local del repositorio personal creada sin IDs autorizados. Bot real conectado como @TesisGpt_bot, en segundo plano y modo identificación. Corregidos import de Security mediante $PSHOME (conflicto de módulos Windows/runtime) y Trim del fichero DPAPI antes de descifrar. Arranque real, getMe y ausencia de webhook verificados; todavía no se han recibido/seleccionado IDs ni se han habilitado cambios. Ningún valor secreto se incluye en este plan.
+
+2026-10-10: propietario identificado desde Telegram y autorizado según el ID facilitado directamente. Proceso de identificación detenido sin trabajos activos; bot reiniciado en segundo plano en modo normal y conexión verificada en runtime.log. Lectura de main remoto personal confirmada con git ls-remote. Pendientes ID de Choquet y primera solicitud/prueba completa; no se ha intentado push remoto.
+
+## Riesgos
+Automatización ejecuta código del repositorio con los permisos del usuario; el sandbox de Codex no aísla las pruebas del publicador. Reinicios de Render pierden salas en memoria. Apagado durante push ambiguo: no repetir automáticamente.
+
+## Decisiones
+2026-10-10: ejecución mientras el PC esté encendido, autenticación existente de Codex; publicación automática solicitada por el usuario, con comprobaciones externas al agente.
+
+2026-10-10: usuario solicita subir toda la infraestructura a main para preparar el uso de Choquet. main personal ya contiene v2.7.0, más reciente que la base v2.6.0 de esta rama. Integrar main sin revertir ese balance, validar el resultado combinado y publicar únicamente al remoto personal, excluyendo .telegram-bot/ y target/. Bot pausado mientras se integra; reiniciar al terminar. El acceso de Choquet sigue dependiendo de su ID, no de esta publicación.
+
+## Estado
+Implementación y validación local completas. Bot activo en modo normal para el propietario; pendiente recibir y autorizar ID de Choquet. También queda comprobar permiso real de push y primer cambio/despliegue de extremo a extremo. No se ha hecho commit de esta infraestructura.

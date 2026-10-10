@@ -52,13 +52,14 @@ Ejecución directa del Lead: cambios pequeños y acoplados, sin trabajo independ
 - No ejecutado: QA de navegador (`tools/qa_*.mjs`); los textos de reglas y el diálogo final solo se revisaron en el código.
 
 ## Riesgos
-- «Más cartas» se interpretó como cartas de idea en la mano (dato ya público como recuento en `Vistas.Jugador.cartas`). Si se refería a estudios en mesa, basta cambiar el tercer criterio de `Partida.ORDEN_VICTORIA` y el de `dialogs.js`.
+- «Más cartas» son las cartas de idea en la mano (dato ya público como recuento en `Vistas.Jugador.cartas`).
 - La victoria compartida ahora es mucho menos frecuente; la progresión sigue usando `Partida.ganadores`, así que el XP de victoria respeta el desempate.
 - Las partidas guardadas conservan los valores de carta con que se guardaron (una Patente antigua sigue pidiendo 5).
 
 ## Decisiones
 - 2026-10-10: `CerebroBot` usa siempre la revisión contra el rival más amenazante, porque ya no arriesga monedas.
 - 2026-10-10: el cliente no decide ganadores; solo explica el criterio comparando datos públicos.
+- 2026-10-10: Choquet confirma que «revisor 1» es Revisor 2 y que «más cartas» son las cartas en la mano.
 
 ## Estado
-Terminado, sin commit. Pendiente de confirmar la interpretación de «más cartas».
+Terminado. Integrado en `main` (commit `7a4b6ad`, merge `5b2c04d`) y publicado en `origin` y `personal`.

@@ -188,7 +188,7 @@ Escribe `0`, `cancelar` o `volver` para abandonar una selección sin ejecutar la
 | Decana | Automática: inmunidad a habilidades rivales durante toda la ronda. |
 | Editorial | Al iniciar tu turno, recibe 1 Moneda por cada artículo publicado en la mesa. No compra trabajo. |
 | Pre-Doctoral | Activa: una vez por turno aporta 1 punto de trabajo a un estudio propio en desarrollo, sin consumir acciones base. Trabajar sigue aportando 1 punto. |
-| Revisor 2 | Una vez por turno, paga 1 moneda para retirar hasta 2 puntos de trabajo de un estudio rival en desarrollo que tenga trabajo. No revisa publicaciones ni estudios propios. Decana es inmune a revisiones rivales. |
+| Revisor 2 | Una vez por turno, paga 1 moneda para retirar 1 punto de trabajo de un estudio rival en desarrollo que tenga trabajo. No revisa publicaciones ni estudios propios. Decana es inmune a revisiones rivales. |
 
 Las habilidades activas se usan una vez por turno. Las automáticas no necesitan activarse con la opción 5. El Plagiador ya no forma parte del mazo de las nuevas partidas; el lector de guardados antiguos conserva su compatibilidad.
 

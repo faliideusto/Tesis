@@ -173,7 +173,7 @@ function publicationScene(card, source, destination, third, group) {
 const identities = {
   'habilidad.plagiador':['MANOS INTERCAMBIADAS','plagiarism'],
   'habilidad.comite_etica':['EXPEDIENTE · VETO REGISTRADO','ethics'],
-  'habilidad.revisor_2':['REVISADO · −2 trabajo como máximo','review'],
+  'habilidad.revisor_2':['REVISADO · −1 trabajo','review'],
   'habilidad.decana':['DECANA · INMUNIDAD','gold'],
   'habilidad.estadistico':['SIGNIFICATIVO · +1 prestigio','statistics'],
   'habilidad.investigador_principal':['PRIORIDAD · Próxima ronda','research'],

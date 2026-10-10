@@ -16,7 +16,7 @@ public class Estudio {
 
     public void retirarTrabajo() {
         if (trabajoAcumulado == 0) throw new IllegalStateException("El estudio no tiene trabajo que retirar");
-        trabajoAcumulado = Math.max(0, Math.min(trabajoAcumulado, carta.trabajoRequerido()) - 2);
+        trabajoAcumulado = Math.max(0, Math.min(trabajoAcumulado, carta.trabajoRequerido()) - 1);
         estado = EstadoEstudio.EN_DESARROLLO;
     }
 

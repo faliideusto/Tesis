@@ -62,7 +62,7 @@ Los tests Java están en `src/test/java/es/tesis/` y `web/`. Las cuatro suites N
 | 7 roles nuevos, orden 1–7; Plagiador se conserva para compatibilidad de guardados antiguos | `FabricaMazos`, `dominio/InstantaneaPartida`, `habilidades/PlagiadorHabilidad` |
 | Comité debe nombrar rol antes de actuar/finalizar; no él mismo ni Decana; rol no elegido consume habilidad; veto salta turno y sus ingresos/efectos | `ComiteEticaHabilidad`, `ReglasAcademicas`, `MotorJuegoImpl`, `EstadoTurno` |
 | Investigador roba extra y marca primer selector siguiente; Decana es inmune desde asignación; Editorial cobra por publicaciones de toda la mesa | Habilidades correspondientes y `motor/ContextoJuegoImpl` |
-| Pre-Doctoral aporta 1 trabajo activo a estudio propio en desarrollo sin acción base; Revisor paga 1 moneda y retira hasta 2 trabajo solo a rival en desarrollo con trabajo, sin inmunidad | `PreDoctoralHabilidad`, `Revisor2Habilidad`, `Jugador`, `Estudio` |
+| Pre-Doctoral aporta 1 trabajo activo a estudio propio en desarrollo sin acción base; Revisor paga 1 moneda y retira 1 trabajo solo a rival en desarrollo con trabajo, sin inmunidad | `PreDoctoralHabilidad`, `Revisor2Habilidad`, `Jugador`, `Estudio` |
 | Habilidad activa no consume acción base y su uso se registra después de ejecución válida | `acciones/UsarHabilidadAccion`, `ReglasAcademicas` |
 | Recuperación sin repetir reparto, descartes, robos o ingresos del turno | `MotorJuegoImpl.recuperarPartida`, `Partida.restaurar`, `persistencia/` |
 

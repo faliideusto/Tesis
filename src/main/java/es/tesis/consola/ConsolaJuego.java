@@ -161,7 +161,7 @@ public final class ConsolaJuego {
             }
             if (objetivo == null) throw new IllegalArgumentException("Elige un jugador de la lista");
             if (habilidad instanceof Revisor2Habilidad) {
-                int indice = elegirEstudio(objetivo, e -> e.estado() == EstadoEstudio.EN_DESARROLLO && e.trabajoAcumulado() > 0, "Artículo para revisar (1 moneda, retira 2 puntos)");
+                int indice = elegirEstudio(objetivo, e -> e.estado() == EstadoEstudio.EN_DESARROLLO && e.trabajoAcumulado() > 0, "Artículo para revisar (1 moneda, retira 1 punto)");
                 if (indice >= 0) motor.ejecutarAccion(new UsarHabilidadAccion(objetivo.nombre(), indice));
             } else {
                 motor.ejecutarAccion(new UsarHabilidadAccion(objetivo.nombre()));
@@ -207,7 +207,7 @@ public final class ConsolaJuego {
         if (habilidad instanceof DecanaHabilidad) return "Obtienes inmunidad frente a cualquier habilidad rival durante toda la ronda.";
         if (habilidad instanceof EditorialHabilidad) return "Al iniciar tu turno, recibe 1 Moneda por cada artículo publicado en la mesa.";
         if (habilidad instanceof PreDoctoralHabilidad) return "Una vez por turno, añade 1 punto de trabajo a uno de tus artículos en desarrollo.";
-        if (habilidad instanceof Revisor2Habilidad) return "Una vez por turno, podrás pagar 1 Moneda para retirar 2 Puntos de Trabajo de un artículo rival en desarrollo.";
+        if (habilidad instanceof Revisor2Habilidad) return "Una vez por turno, podrás pagar 1 Moneda para retirar 1 Punto de Trabajo de un artículo rival en desarrollo.";
         return "Consulta las reglas de este personaje.";
     }
 

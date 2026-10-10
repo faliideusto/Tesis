@@ -31,7 +31,7 @@ public final class AvisosConsola implements ObservadorJuego {
             case "habilidad.comite_etica" -> d.get("actor") + " nombra el rol «" + d.get("rol") + "» para el veto; se aplicará si corresponde.";
             case "habilidad.estadistico" -> d.get("actor") + " añade 1 de prestigio a «" + d.get("articulo") + "».";
             case "habilidad.plagiador" -> d.get("actor") + " intercambia su mano con " + d.get("objetivo") + ".";
-            case "habilidad.revisor_2" -> d.get("actor") + " paga 1 moneda y retira hasta 2 puntos de trabajo de «" + d.get("articulo") + "» de " + d.get("objetivo") + ". El artículo queda en desarrollo.";
+            case "habilidad.revisor_2" -> d.get("actor") + " paga 1 moneda y retira 1 punto de trabajo de «" + d.get("articulo") + "» de " + d.get("objetivo") + ". El artículo queda en desarrollo.";
             case "habilidad.decana" -> d.get("actor") + " tiene la inmunidad de Decana durante toda la ronda.";
             case "partida.fin" -> "La partida ha terminado. Ganador(es): " + d.get("ganadores") + ".";
             // La consola ya informa de errores y guardados; no duplicar estos mensajes.

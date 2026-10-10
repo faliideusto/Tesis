@@ -132,14 +132,14 @@ class ReglasBalanceTest {
     }
 
     @ParameterizedTest @ValueSource(ints = {1, 2, 3})
-    void revisorRetiraHastaDosSinDejarTrabajoNegativo(int trabajo) {
+    void revisorRetiraUnPuntoPorMoneda(int trabajo) {
         var motor = comenzar(new Revisor2Habilidad());
         var actor = motor.partida().jugadorActual();
         var rival = motor.partida().jugadores().stream().filter(j -> j != actor).findFirst().orElseThrow();
         rival.iniciarEstudio(new IdeaCarta("Artículo", 1, 5, 3));
         rival.trabajarEstudio(0, trabajo);
         motor.ejecutarAccion(new UsarHabilidadAccion(rival.nombre(), 0));
-        assertEquals(Math.max(0, trabajo - 2), rival.estudios().get(0).trabajoAcumulado());
+        assertEquals(trabajo - 1, rival.estudios().get(0).trabajoAcumulado());
         assertEquals(EstadoEstudio.EN_DESARROLLO, rival.estudios().get(0).estado());
         assertEquals(1, actor.monedas());
         assertTrue(motor.partida().habilidadUsada());

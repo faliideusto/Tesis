@@ -244,7 +244,7 @@ public final class SesionJuego {
                     if (e.estado() == EstadoEstudio.EN_DESARROLLO && e.trabajoAcumulado() > 0)
                         opciones.add(new Vistas.Opcion(otro.nombre() + " · " + e.carta().nombre(), i, otro.nombre(), null,
                                 e.trabajoAcumulado() + "/" + e.carta().trabajoRequerido() + " → "
-                                + Math.max(0, e.trabajoAcumulado() - 2) + "/" + e.carta().trabajoRequerido()
+                                + Math.max(0, e.trabajoAcumulado() - 1) + "/" + e.carta().trabajoRequerido()
                                 + " · −1 moneda · No consume acciones base"));
                 }
             }
@@ -283,7 +283,7 @@ public final class SesionJuego {
             case "habilidad.comite_etica" -> actor + " registra un veto privado ante el Comité de Ética.";
             case "habilidad.estadistico" -> actor + " añade 1 de prestigio a «" + d.get("articulo") + "».";
             case "habilidad.plagiador" -> actor + " intercambia su mano con " + d.get("objetivo") + ".";
-            case "habilidad.revisor_2" -> actor + " retira hasta 2 puntos de trabajo de «" + d.get("articulo") + "», que queda en desarrollo.";
+            case "habilidad.revisor_2" -> actor + " retira 1 punto de trabajo de «" + d.get("articulo") + "», que queda en desarrollo.";
             case "habilidad.editorial.inicio" -> actor + " recibe " + d.get("monedasRecibidas") + " monedas de Editorial.";
             case "articulo.ingresos" -> actor + " recibe " + d.get("monedas") + " monedas de sus patentes publicadas.";
             case "habilidad.investigador_principal" -> actor + " elegirá primero la próxima ronda" + (Boolean.TRUE.equals(d.get("cartaRobada")) ? " y roba una idea extra." : ".");

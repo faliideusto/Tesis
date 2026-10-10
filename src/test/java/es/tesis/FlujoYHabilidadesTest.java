@@ -336,12 +336,12 @@ class FlujoYHabilidadesTest {
         assertEquals(10,restaurado.prestigio());
     }
 
-    @Test void revisorRetiraDosPuntosDeUnEstudioEnDesarrollo() {
+    @Test void revisorRetiraUnPuntoDeUnEstudioEnDesarrollo() {
         var motor = comenzar(new Revisor2Habilidad(), new PreDoctoralHabilidad());
         Jugador otro = conRol(motor, 2);
         estudio(otro, 2, false);
         motor.ejecutarAccion(new UsarHabilidadAccion(otro.nombre(), 0));
-        assertEquals(0, otro.estudios().get(0).trabajoAcumulado());
+        assertEquals(1, otro.estudios().get(0).trabajoAcumulado());
         assertEquals(1, motor.contexto().jugadorActual().monedas());
         assertEquals(0, motor.partida().accionesBaseRealizadas());
     }

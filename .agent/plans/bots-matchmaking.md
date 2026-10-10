@@ -10,7 +10,7 @@ Rama `release/v2.6.0` (creada desde `main` en 9f65280; ya contiene el nerf de Re
 - Bot heurístico en el servidor, sin servicios externos ni modelos de lenguaje.
 - Sala con una persona y `jugadores - 1` bots creada desde matchmaking.
 - Botón en la pantalla de búsqueda, disponible tras 15 s en `BUSCANDO`.
-- Aviso de partida de práctica. Los bots usan nombres de persona y no llevan etiqueta en la mesa (petición del usuario).
+- Los bots usan nombres de persona y no llevan etiqueta en la mesa (petición del usuario).
 
 ## Fuera de alcance
 - Bots en salas privadas o para sustituir a quien abandona.
@@ -20,7 +20,7 @@ Rama `release/v2.6.0` (creada desde `main` en 9f65280; ya contiene el nerf de Re
 
 ## Áreas afectadas
 - `src/main/java/es/tesis/web/CerebroBot.java` (nuevo): decide una `Vistas.Peticion` a partir de la `Vistas.Estado` del propio bot.
-- `SalaJuego`: registro de bots, avance diferido, progreso `PRACTICA`.
+- `SalaJuego`: registro de bots, avance diferido.
 - `SesionJuego`: `enTurno()`.
 - `GestorSalas.crearPartidaConBots`, `GestorMatchmaking.rellenar` y campo `bots` de `Vista`.
 - `ServidorWeb`: `POST /api/matchmaking/bots`.
@@ -33,7 +33,7 @@ Rama `release/v2.6.0` (creada desde `main` en 9f65280; ya contiene el nerf de Re
 ## Plan de implementación
 - [x] Inspección y contratos.
 - [x] Backend: cerebro, sala, gestor, matchmaking y ruta HTTP.
-- [x] Frontend: botón y aviso de práctica.
+- [x] Frontend: botón.
 - [x] Tests JUnit y Node.
 - [x] Revisión del diff combinado.
 
@@ -45,11 +45,11 @@ Ejecución directa y secuencial por el Lead: el contrato backend/frontend es peq
 - La mesa creada tiene exactamente el tamaño elegido, con la persona como anfitriona y primera identidad.
 - Los bots eligen personaje y juegan turnos completos hasta el final de la partida sin intervención.
 - Un bot nunca recibe información que no tendría una persona en su asiento.
-- Las partidas con bots no registran progresión ni ranking.
+- Las partidas con bots registran la progresión de la cuenta humana; los bots figuran como invitados sin cuenta.
 - Las mesas solo de personas se comportan igual que antes.
 
 ## Tests
-- `mvn test`: 238 tests, 0 fallos.
+- `mvn test`: 238 tests, 0 fallos (repetido tras activar la progresión).
 - Suites Node `tests/*.test.mjs`: 21 archivos, 0 fallos.
 - Manual en navegador (servidor local en 8091): búsqueda de mesa de 3, aparición del botón tras la espera, creación de la mesa, selección de personaje de los bots y primer turno completo de un bot, sin errores de consola.
 - No ejecutado: `tools/qa_matchmaking.mjs`, partida completa en navegador ni anchura móvil.
@@ -61,7 +61,8 @@ Ejecución directa y secuencial por el Lead: el contrato backend/frontend es peq
 
 ## Decisiones
 - 2026-10-10: bot heurístico en Java en lugar de un modelo de lenguaje: sin coste, sin claves ni latencia, y determinista en tests.
-- 2026-10-10: las partidas con bots son de práctica y no dan XP ni cuentan para ranking, para que no se pueda subir en la clasificación jugando contra bots. Pendiente de confirmar con el usuario.
+- 2026-10-10: las partidas con bots son de práctica y no dan XP ni cuentan para ranking, para que no se pueda subir en la clasificación jugando contra bots. Revocada el mismo día: ver siguiente.
+- 2026-10-10: el usuario decide que las partidas con bots sí dan experiencia y cuentan para misiones; se registran como cualquier partida.
 - 2026-10-10: el usuario pide que los bots lleven nombres de persona y no se marquen como bot; se retira el indicador del DTO.
 - 2026-10-10: espera mínima de 15 s decidida en el servidor (`Vista.bots`), no en el cliente, para que sobreviva a recargas.
 

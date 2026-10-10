@@ -20,7 +20,7 @@ class MazoIdeasTest {
                 "Artículo Transversal", List.of(3, 1, 2),
                 "Casos y Controles", List.of(3, 2, 3),
                 "Cohortes", List.of(4, 3, 5),
-                "Patente", List.of(4, 5, 5),
+                "Patente", List.of(4, 4, 5),
                 "Ensayo Clínico Aleatorizado", List.of(5, 4, 7),
                 "Ensayo Comunitario", List.of(9, 4, 9),
                 "Revisión Sistemática", List.of(3, 5, 6)), valores);

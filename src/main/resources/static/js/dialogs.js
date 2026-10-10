@@ -35,9 +35,18 @@ export function phaseDialog(state) {
   } else if (state.fase === 'FIN_RONDA') {
     dialog(`La ronda ${state.ronda} ha terminado`, `<div class="round-summary"><span class="round-summary-kicker">BALANCE DE LA ACADEMIA</span>${ranking(state)}<p>${state.ultimaRonda ? 'Se ha alcanzado la tercera publicación. Es hora de reconocer el legado de cada academia.' : 'Los personajes regresan al mazo. Una nueva ronda trae nuevas posibilidades.'}</p><div class="round-transition" role="status"><span>${state.ultimaRonda ? 'Preparando el resultado final' : 'Preparando la siguiente ronda'}</span><span class="round-transition-track" aria-hidden="true"><span></span></span></div></div>`, {locked:true,kind:'round'});
   } else if (state.fase === 'FIN_PARTIDA') {
-    dialog('TESIS COMPLETADA', `<div class="final-result">${img('recursos/prestigio.webp','victory-medal')}<h2>${state.ganadores.map(esc).join(' · ')}</h2><p>${state.ganadores.length > 1 ? 'Comparten' : 'Obtiene'} la victoria por prestigio.</p>${state.jugadores.filter(p=>state.ganadores.includes(p.nombre)).map(p=>`<div class="victory-publications" aria-label="Publicaciones de ${esc(p.nombre)}">${p.estudios.filter(e=>e.publicado).map(e=>img(e.carta.arte,'',e.carta.nombre)).join('')}</div>`).join('')}${ranking(state)}<div class="dialog-buttons"><button class="gold-button" data-command="home">Nueva partida</button><button class="plain-button" data-command="close">Explorar la mesa</button></div></div>`, {locked:false, subtitle:`Partida completada en ${state.ronda} rondas`});
+    dialog('TESIS COMPLETADA', `<div class="final-result">${img('recursos/prestigio.webp','victory-medal')}<h2>${state.ganadores.map(esc).join(' · ')}</h2><p>${victoryReason(state)}</p>${state.jugadores.filter(p=>state.ganadores.includes(p.nombre)).map(p=>`<div class="victory-publications" aria-label="Publicaciones de ${esc(p.nombre)}">${p.estudios.filter(e=>e.publicado).map(e=>img(e.carta.arte,'',e.carta.nombre)).join('')}</div>`).join('')}${ranking(state)}<div class="dialog-buttons"><button class="gold-button" data-command="home">Nueva partida</button><button class="plain-button" data-command="close">Explorar la mesa</button></div></div>`, {locked:false, subtitle:`Partida completada en ${state.ronda} rondas`});
   } else closeDialog();
 }
+// El servidor decide quién gana; aquí solo se explica el criterio que resolvió el resultado.
+function victoryReason(state) {
+  if (state.ganadores.length > 1) return 'Comparten la victoria: empatan en prestigio, monedas y cartas.';
+  const winner = state.jugadores.find(p => p.nombre === state.ganadores[0]);
+  const tied = winner ? state.jugadores.filter(p => p !== winner && p.prestigio === winner.prestigio) : [];
+  if (!tied.length) return 'Obtiene la victoria por prestigio.';
+  return tied.some(p => p.monedas === winner.monedas) ? 'Empate en prestigio y monedas: obtiene la victoria por tener más cartas.'
+    : 'Empate en prestigio: obtiene la victoria por tener más monedas.';
+}
 function ranking(state) {
-  return `<ol class="ranking">${[...state.jugadores].sort((a,b) => b.prestigio-a.prestigio).map(p => `<li><strong>${esc(p.nombre)}</strong><span>${p.publicados} ${p.publicados === 1 ? 'publicación' : 'publicaciones'}</span><b>${p.prestigio} prestigio</b></li>`).join('')}</ol>`;
+  return `<ol class="ranking">${[...state.jugadores].sort((a,b) => b.prestigio-a.prestigio || b.monedas-a.monedas || b.cartas-a.cartas).map(p => `<li><strong>${esc(p.nombre)}</strong><span>${p.publicados} ${p.publicados === 1 ? 'publicación' : 'publicaciones'}</span><b>${p.prestigio} prestigio</b></li>`).join('')}</ol>`;
 }

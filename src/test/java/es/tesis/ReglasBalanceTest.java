@@ -132,7 +132,7 @@ class ReglasBalanceTest {
     }
 
     @ParameterizedTest @ValueSource(ints = {1, 2, 3})
-    void revisorRetiraUnPuntoPorMoneda(int trabajo) {
+    void revisorRetiraUnPuntoSinCoste(int trabajo) {
         var motor = comenzar(new Revisor2Habilidad());
         var actor = motor.partida().jugadorActual();
         var rival = motor.partida().jugadores().stream().filter(j -> j != actor).findFirst().orElseThrow();
@@ -141,19 +141,20 @@ class ReglasBalanceTest {
         motor.ejecutarAccion(new UsarHabilidadAccion(rival.nombre(), 0));
         assertEquals(trabajo - 1, rival.estudios().get(0).trabajoAcumulado());
         assertEquals(EstadoEstudio.EN_DESARROLLO, rival.estudios().get(0).estado());
-        assertEquals(1, actor.monedas());
+        assertEquals(2, actor.monedas());
         assertTrue(motor.partida().habilidadUsada());
     }
 
-    @Test void revisorSinMonedasNoModificaUnObjetivoValido() {
+    @Test void revisorSinMonedasTambienRetiraTrabajo() {
         var motor = comenzar(new Revisor2Habilidad());
         var actor = motor.partida().jugadorActual();
         var rival = motor.partida().jugadores().stream().filter(j -> j != actor).findFirst().orElseThrow();
         rival.iniciarEstudio(new IdeaCarta("Artículo", 1, 5, 3));
         rival.trabajarEstudio(0, 1);
         actor.gastarMonedas(2);
-        var antes = motor.partida().guardar();
-        assertThrows(IllegalStateException.class, () -> motor.ejecutarAccion(new UsarHabilidadAccion(rival.nombre(), 0)));
-        assertEquals(antes, motor.partida().guardar());
+        motor.ejecutarAccion(new UsarHabilidadAccion(rival.nombre(), 0));
+        assertEquals(0, rival.estudios().get(0).trabajoAcumulado());
+        assertEquals(0, actor.monedas());
+        assertTrue(motor.partida().habilidadUsada());
     }
 }

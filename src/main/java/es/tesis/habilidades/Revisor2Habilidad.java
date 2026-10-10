@@ -16,7 +16,6 @@ public class Revisor2Habilidad implements HabilidadPersonaje {
             throw new IllegalArgumentException("Índice de estudio no válido");
         var estudio = otro.estudioEnDesarrollo(indiceEstudio);
         if (estudio.trabajoAcumulado() == 0) throw new IllegalStateException("El estudio no tiene trabajo que retirar");
-        if (!actor.gastarMonedas(1)) throw new IllegalStateException("Se necesita una moneda para revisar");
         otro.revisarEstudio(indiceEstudio);
         contexto.publicarEvento("habilidad.revisor_2", java.util.Map.of(
                 "actor", actor.nombre(), "objetivo", otro.nombre(), "articulo", estudio.carta().nombre()));

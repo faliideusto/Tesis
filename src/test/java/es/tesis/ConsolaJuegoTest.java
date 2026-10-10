@@ -126,9 +126,9 @@ class ConsolaJuegoTest {
         estudio(objetivo, "Estudio revisable", 1, 3);
         int numero = revisor.partida().jugadores().stream().filter(j -> j != actor(revisor)).toList().indexOf(objetivo) + 1;
         String avisoRevision = ejecutar(revisor, "5\n" + numero + "\n1\nsalir\n");
-        assertTrue(avisoRevision.contains("paga 1 moneda y retira 1 punto de trabajo"));
+        assertTrue(avisoRevision.contains("retira 1 punto de trabajo"));
         assertEquals(0, objetivo.estudios().get(0).trabajoAcumulado());
-        assertEquals(1, actor(revisor).monedas());
+        assertEquals(2, actor(revisor).monedas());
     }
 
     @Test void comiteNotificaVetoYTransicionDeRonda() {

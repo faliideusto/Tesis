@@ -16,7 +16,7 @@ El código de amistad no es un token de acceso ni un código de sala. Los listad
 
 ## Ranking global
 
-Tres clasificaciones: XP (y su nivel derivado), victorias y partidas terminadas. Cada consulta incluye los primeros 50 perfiles y la posición propia, incluso fuera del listado. Los empates en la métrica elegida comparten posición; el código ordena su presentación de forma estable. Las victorias empatadas en prestigio siguen contando según el motor.
+Tres clasificaciones: XP (y su nivel derivado), victorias y partidas terminadas. Cada consulta incluye los primeros 50 perfiles y la posición propia, incluso fuera del listado. Los empates en la métrica elegida comparten posición; el código ordena su presentación de forma estable. Las victorias compartidas (empate en prestigio, monedas y cartas en mano) siguen contando según el motor.
 
 Nombre visible, código y estadísticas de juego de las cuentas aparecen en el ranking para otras personas con sesión. El ranking no expone el correo ni el historial de partidas. La XP de misiones cuenta para el ranking de XP.
 

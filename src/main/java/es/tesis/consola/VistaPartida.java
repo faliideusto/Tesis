@@ -59,7 +59,7 @@ final class VistaPartida {
 
     void resultado() {
         salida.println("\n=== RESULTADO FINAL ===");
-        motor.partida().jugadores().stream().sorted(Comparator.comparingInt(Jugador::prestigio).reversed()).forEach(this::resumen);
+        motor.partida().jugadores().stream().sorted(Partida.ORDEN_VICTORIA.reversed()).forEach(this::resumen);
         salida.println("Ganador(es): " + motor.partida().ganadores().stream().map(Jugador::nombre).toList());
         salida.println("Puedes consultar el estado o el historial, guardar, exportar, cargar otra partida o salir.");
     }

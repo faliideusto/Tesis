@@ -189,10 +189,11 @@ body:has(.hand .game-card:is(:hover,:focus-visible)) #tooltip{display:none}
 .board .narrator-link{position:relative;max-width:100%;min-height:32px;margin-top:10px;padding:6px 14px;border:1px solid #a88651a8;border-radius:6px;background:#d4ae6326;color:#f5db9d;font:600 12px/1.4 var(--ui);overflow-wrap:anywhere;cursor:pointer}
 .board .narrator-link:hover,.board .narrator-link:focus-visible{background:#d4ae6370;outline:2px solid #e1bb75;outline-offset:2px}
 @media(min-width:1000px) and (min-height:650px){
-  .board .decks,.board[data-players] .decks{top:39svh;left:50%;right:auto;width:min(32vw,420px);transform:translateX(-50%)}
+  .board .decks,.board[data-players] .decks{top:39svh;left:50%;right:auto;width:min(32vw,420px);transform:translate(-50%,min(0px,calc(16svh - 10px - 100%)))}
   .board[data-players="4"] .decks,.board[data-players="5"] .decks{width:min(22vw,330px)}
-  /* Reserve the space above the local academy; long names remain readable by scrolling. */
-  .board .table-activity{max-height:calc(16svh - 10px)}
+  /* The narrator grows with its content instead of scrolling; beyond its reserved
+     space it rises towards the open center so it never covers the local academy. */
+  .board .table-activity{max-height:none;overflow:visible}
   .board[data-players="4"] .table-activity,.board[data-players="5"] .table-activity{padding:11px 14px}
   /* Anchor notices above the narrator even when their text spans several lines. */
   .board .phase-message{top:calc(39svh - 8px);left:35%;width:30%;max-height:6svh;transform:translateY(-100%)}

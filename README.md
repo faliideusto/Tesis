@@ -198,14 +198,14 @@ El reparto inicial y todos los robos usan la misma distribución con reposición
 
 | Artículo | Probabilidad |
 | --- | ---: |
-| Ecológico | 20% |
-| Transversal | 20% |
-| Casos y Controles | 17% |
+| Ecológico | 13% |
+| Transversal | 13% |
+| Casos y Controles | 13% |
 | Cohortes | 13% |
-| Revisión Sistemática | 10% |
-| Ensayo Clínico Aleatorizado | 10% |
-| Ensayo Comunitario | 6% |
-| Patente | 4% |
+| Revisión Sistemática | 13% |
+| Ensayo Clínico Aleatorizado | 13% |
+| Ensayo Comunitario | 13% |
+| Patente | 9% |
 
 **Patente** es la única carta legendaria: cuesta 4 monedas y 4 de trabajo, da
 5 de prestigio y genera 2 monedas al inicio de cada turno de su propietario

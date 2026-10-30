@@ -6,7 +6,8 @@ const safeCosmeticAsset = value => typeof value === 'string' && /^\/assets\/(?:T
 const cosmeticImage = (path, cls) => `<img class="${cls}" src="${esc(path)}" alt="" draggable="false">`;
 function playerBadge(p, local = false) {
   const name = local ? `<h2>${esc(p.nombre)}</h2>` : `<strong>${esc(p.nombre)}</strong>`;
-  const avatar=p.cosmeticos?.avatar?.tipo==='avatar' ? safeCosmeticAsset(p.cosmeticos.avatar.asset) : null;
+  // Once the role is revealed its art replaces the cosmetic avatar; the frame stays.
+  const avatar=!p.rol && p.cosmeticos?.avatar?.tipo==='avatar' ? safeCosmeticAsset(p.cosmeticos.avatar.asset) : null;
   const frame=p.cosmeticos?.marco?.tipo==='marco' ? safeCosmeticAsset(p.cosmeticos.marco.asset) : null;
   const back=p.cosmeticos?.reverso?.tipo==='reverso' ? safeCosmeticAsset(p.cosmeticos.reverso.asset) : null;
   return `<span class="rival-portrait ${avatar?'cosmetic-portrait':p.rol?'':'reserved-portrait'} ${frame?'has-cosmetic-frame':''}" data-frame="${esc(frame?p.cosmeticos.marco.id:'')}"><span class="rival-portrait-image">${avatar?cosmeticImage(avatar,'player-avatar'):img(p.rol?.arte || 'visual-v2/reserved-scholar.webp')}</span>${frame?cosmeticImage(frame,'player-avatar-frame'):''}</span>

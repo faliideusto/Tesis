@@ -73,7 +73,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline-color:#f3c
  .board .rivals[data-count="3"]>.rival-seat:last-child{left:66%}
  .board .rivals[data-count="3"]>.rival-seat:first-child{top:6svh}
  .board[data-players="4"] .decks{top:max(39svh,calc(6svh + 8.213vw + clamp(108px,14.25svh,162px) + 50px))}
- .board[data-players="3"] .decks,.board[data-players="5"] .decks{width:min(calc(12vw + 24px),300px)}
+ .board[data-players="3"] .decks,.board[data-players="5"] .decks{width:min(calc(14vw + 48px),330px)}
 }
 .board .table-study-status{font-family:var(--ui);font-weight:600;color:#e7d6b8;text-shadow:0 1px 2px #000,0 2px 5px #000,0 0 8px #07131e;letter-spacing:.02em}
 .board .table-study-status>span{display:block;line-height:1.2}

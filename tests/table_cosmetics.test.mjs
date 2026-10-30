@@ -16,7 +16,8 @@ html=rival(custom);assert(html.includes(`src="${avatar}"`));assert(html.includes
 assert.equal(rolePreview(custom),'','Avatar/loadout never reveals a hidden role');assert(html.includes('Personaje reservado'));
 assert.equal((html.match(/player-avatar-frame/g)||[]).length,1,'One frame surrounds the portrait only');assert(/rival-portrait[^]*player-avatar-frame[^]*<\/span>\s*<span class="rival-body"/.test(html));
 const role={nombre:'Decana',habilidad:'Inmunidad',arte:'personajes/05_decana.webp',orden:4};
-html=localPlayer({...custom,rol:role},{fase:'TURNO_JUGADOR',accionesRestantes:1});assert(html.includes('local-role-button'));assert(html.includes('player-role-preview'));assert(html.includes('Decana'));assert(html.includes(avatar));
+html=localPlayer({...custom,rol:role},{fase:'TURNO_JUGADOR',accionesRestantes:1});assert(html.includes('local-role-button'));assert(html.includes('player-role-preview'));assert(html.includes('Decana'));assert(!html.includes(avatar),'Revealed role replaces the avatar');assert(/rival-portrait-image"><img[^>]*05_decana\.webp/.test(html));assert(html.includes(`src="${frame}"`));
+html=rival({...custom,rol:role});assert(!html.includes(avatar));assert(/rival-portrait-image"><img[^>]*05_decana\.webp/.test(html));
 for(const bad of ['https://evil.test/a.png','/assets/seasons/../secret.png','/assets/seasons/a.png?tracker=1','/assets/seasons/a.png" onerror="bad','/assets/seasons/%2e%2e/a.png']){
  const invalid={...base,cosmeticos:{avatar:cosmetic('avatar',bad),marco:cosmetic('marco',bad),reverso:cosmetic('reverso',bad)}};
  html=rival(invalid);assert(html.includes('reserved-scholar.webp'));assert(html.includes('cartas/reverso_idea.webp'));assert(!html.includes('player-avatar-frame'));assert.equal(ownerCardBack({jugadores:[invalid]},'Ana'),'/assets/Tesis-assets/cartas/reverso_idea.webp');

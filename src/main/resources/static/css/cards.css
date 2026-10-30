@@ -8,7 +8,7 @@
 .game-card:not(:disabled):hover{filter:drop-shadow(0 0 7px #f2cd8ab0);transform:translateY(-7px)}
 .game-card:disabled{filter:grayscale(.7) brightness(.65);cursor:not-allowed}
 .game-card.selected{filter:drop-shadow(0 0 10px #c58eff);outline:2px solid #edc66e;outline-offset:3px}
-.role-card .role-art{position:absolute;left:7%;top:8%;width:86%;height:53%;object-fit:cover;object-position:50% 28%;z-index:0}
+.role-card .role-art{position:absolute;left:4.5%;top:4.5%;width:91%;height:52.5%;object-fit:cover;object-position:50% 28%;z-index:0}
 .role-card .card-name{top:56.8%;height:8.5%;font-size:6.5cqw;left:9%;width:82%;line-height:1.05}
 .role-order{position:absolute;top:3.58%;left:6.05%;width:18.75%;height:12.5%;display:grid;place-items:center;z-index:3;color:#f1d497;text-shadow:0 2px 2px #000}
 .role-order b{font:400 13cqw/1 Georgia,serif;font-variant-numeric:lining-nums tabular-nums}

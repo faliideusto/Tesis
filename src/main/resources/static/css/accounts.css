@@ -294,3 +294,10 @@
 #account-panel[data-page="profile"] .profile-section-label>span:last-child{color:#f7e4b9}
 #account-panel[data-page="profile"] .rank-step.current:after{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:142px;max-width:96%;height:86px;border:1px solid #ffe0a0;border-radius:7px;background:linear-gradient(135deg,#dea6420b,#daa44614);box-shadow:inset 0 0 0 3px #e6b05e12,0 0 8px #edb456,0 0 22px #e49b3c55;z-index:0;pointer-events:none}
 #account-panel[data-page="profile"] .current .rank-plaque{box-shadow:inset 0 0 0 3px #051522,inset 0 0 0 4px #937c4b44,0 0 15px #e3a54a}
+
+/* Placas de rango: los nombres largos ("Ayudante doctor", "Investigador principal")
+   caben en una línea cuando hay sitio; si no, se parten centrados y todas las placas
+   de la fila crecen a la misma altura para que el nivel nunca quede tapado. */
+#account-panel[data-page="profile"] .rank-plaque{width:min(100%,184px);max-width:100%;flex:1 0 auto;gap:2px;text-align:center}
+#account-panel[data-page="profile"] .rank-plaque strong{display:block;max-width:100%;line-height:1.08;text-wrap:balance;overflow-wrap:break-word;hyphens:manual}
+#account-panel[data-page="profile"] .rank-plaque>span{margin-top:0}

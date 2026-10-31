@@ -262,3 +262,6 @@ dialog .study-row.published{border-color:#ac855a}
  .board .utility>button{transition:none}
  .board .table-study.game-card{transition:none}
 }
+.card-detail .article-description{font:13px/1.7 var(--ui);color:#2f4552;border-left:2px solid #b8924f;padding:2px 0 2px 12px;margin:10px 0 14px;text-align:left}
+/* Los siete personajes caben en una sola fila; las cartas se encogen lo necesario. */
+@media(min-width:801px){.role-selection{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);max-width:none;gap:12px;padding-bottom:26px}.role-selection .game-card{width:100%;max-width:216px;justify-self:center}}

@@ -44,7 +44,7 @@ export function board(state) {
   document.getElementById('studies').classList.toggle('no-studies', !me.estudios.length);
   document.getElementById('hand').style.setProperty('--hand-count', Math.max(1,state.mano.length));
   const hand = document.getElementById('hand');
-  const handHtml = state.mano.map(c => ideaCard(c)).join('') || '<p class="empty-hand">Sin ideas en la mano<br><small>Consulta las acciones disponibles.</small></p>';
+  const handHtml = state.mano.map(c => ideaCard(c)).join('') ;
   // Keep the focused/hovered card alive when a public update leaves our hand unchanged.
   if (renderedHands.get(hand) !== handHtml) {
     hand.innerHTML = handHtml;

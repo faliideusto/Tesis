@@ -1,4 +1,5 @@
 import {esc} from './dom.js';
+import {FEATURES} from './features.js';
 import {badge,progression} from './profile-ranks.js';
 import {createPublicProfile} from './public-profile.js';
 import {rankingView} from './ranking-panel.js';
@@ -15,7 +16,7 @@ const academyTabIcons={
   ranking:'<path d="M8 3h8v8a4 4 0 0 1-8 0zM10 16h4v5h-4zM7 21h10v2H7z"/><path d="M8 5H3v3a5 5 0 0 0 5 5m8-8h5v3a5 5 0 0 1-5 5" fill="none" stroke="currentColor" stroke-width="2"/>',
   missions:'<path d="M2 4q5-2 10 1 5-3 10-1v16q-5-2-10 1-5-3-10-1zM12 5v16M5 8h4M5 11h4M5 14h4M15 8h4M15 11h4M15 14h4" fill="none" stroke="currentColor" stroke-width="1.5"/>'
 };
-export const academyTabs=active=>`<nav class="community-tabs" aria-label="Secciones de tu academia">${[['profile','Mi perfil'],['friends','Amigos'],['ranking','Ranking global'],['missions','Misiones']].map(([id,title])=>`<button type="button" data-academy-page="${id}" ${active===id?'aria-current="page"':''}><svg class="academy-tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${academyTabIcons[id]}</svg><span>${title}</span></button>`).join('')}</nav>`;
+export const academyTabs=active=>`<nav class="community-tabs" aria-label="Secciones de tu academia">${[['profile','Mi perfil'],['friends','Amigos'],['ranking','Ranking global'],...(FEATURES.misiones?[['missions','Misiones']]:[])].map(([id,title])=>`<button type="button" data-academy-page="${id}" ${active===id?'aria-current="page"':''}><svg class="academy-tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${academyTabIcons[id]}</svg><span>${title}</span></button>`).join('')}</nav>`;
 const icons={friends:academyTabIcons.friends,received:'<path d="M2 5h20v14H2z"/><path d="m2 5 10 8L22 5" fill="none" stroke="#132331" stroke-width="1.8"/>',sent:'<path d="m2 10 20-8-5 20-5-8z"/><path d="m12 14 10-12" fill="none" stroke="#132331" stroke-width="1.5"/>',link:'<path d="m9 15 6-6M8 11l-2 2a4 4 0 0 0 6 6l3-3M16 13l2-2a4 4 0 0 0-6-6L9 8" fill="none" stroke="currentColor" stroke-width="2.2"/>',add:'<circle cx="9" cy="7" r="4"/><path d="M1 22v-5a8 8 0 0 1 16 0v5M20 3v8M16 7h8" stroke="currentColor" stroke-width="2"/>',copy:'<path d="M8 3h12v16H8zM4 7v16h12" fill="none" stroke="currentColor" stroke-width="1.8"/>',refresh:'<path d="M21 9a9 9 0 0 0-16-3L2 9m0-6v6h6M3 15a9 9 0 0 0 16 3l3-3m0 6v-6h-6" fill="none" stroke="currentColor" stroke-width="1.8"/>',search:'<circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m15 15 7 7" stroke="currentColor" stroke-width="1.8"/>',share:'<circle cx="5" cy="12" r="3"/><circle cx="19" cy="5" r="3"/><circle cx="19" cy="19" r="3"/><path d="m5 12 14-7M5 12l14 7" stroke="currentColor" stroke-width="2"/>'};
 const icon=id=>`<svg class="friend-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${icons[id]||icons.friends}</svg>`;
 const corners=()=>'<span class="friend-frame-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';

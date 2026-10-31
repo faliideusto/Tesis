@@ -163,7 +163,13 @@ public final class SalaJuego {
     }
 
     private void programarFinRonda(Jugador jugador) {
-        if (juego.estado(jugador).fase().equals("FIN_RONDA")) {
+        var estado = juego.estado(jugador);
+        if (estado.fase().equals("FIN_RONDA") && estado.ultimaRonda()) {
+            // Tras la última ronda no hay pantalla de transición: se muestra el resultado directamente.
+            finRondaHasta = 0;
+            juego.avanzarRondaAutomatica();
+            revision++;
+        } else if (estado.fase().equals("FIN_RONDA")) {
             if (finRondaHasta == 0) finRondaHasta = reloj.millis() + PAUSA_FIN_RONDA_MS;
         } else finRondaHasta = 0;
     }

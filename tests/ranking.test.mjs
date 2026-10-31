@@ -17,7 +17,7 @@ assert.match(result,/data-ranking-scope="semanal" aria-current="page"/);
 assert.match(result,/option value="victorias" selected/);
 assert.match(result,/ranking-self/);assert.match(result,/Rango<\/th>/);
 assert.match(result,/350 \/ 500 XP/,'El progreso conserva XP vitalicia en un ranking semanal sin XP propia');
-assert.match(result,/data-public-profile="A"/);assert.match(result,/Distinción Oro/);
+assert.match(result,/data-public-profile="A"/);assert.match(result,/Distinción Postdoctoral/);
 const zero=rankingView({entradas:[],propia:null});assert.ok(!zero.includes('podium-place-1'));assert.match(zero,/aún no tiene investigadores/);assert.match(zero,/Tu posición aparecerá/);
 const one=rankingView({entradas:entries.slice(0,1),propia:null},'xp',{profile});assert.ok(one.includes('podium-place-1'));assert.ok(!one.includes('podium-place-2'));
 const tied=rankingView({entradas:[entries[0],{...entries[1],posicion:1}],propia:null});assert.equal((tied.match(/aria-label="Posición 1"/g)||[]).length,2,'Empates de posición conservan la posición entregada por el servidor');

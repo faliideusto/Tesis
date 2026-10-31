@@ -58,7 +58,7 @@ Los tests Java están en `src/test/java/es/tesis/` y `web/`. Las cuatro suites N
 | Cobrar +2 monedas; Pensar roba una idea; iniciar paga coste/retira idea/crea estudio; trabajar aporta 1 punto base | `acciones/`, `ReglasAcademicas` |
 | Publicación automática al alcanzar trabajo requerido; suma prestigio de carta y bonus; Estadístico añade +1 a estudio propio publicado | `dominio/Estudio`, `Jugador`, `habilidades/EstadisticoHabilidad` |
 | 8 tipos de idea con reposición y pesos; costes, trabajo, prestigio e ingresos en catálogo Java | `dominio/FabricaMazos`, `Mazo`, `IdeaCarta` |
-| Patente: 4 monedas, 4 trabajo, 5 prestigio y 2 monedas por copia publicada al iniciar turno no vetado | `FabricaMazos`, `motor/EstadoTurno` |
+| Patente: 2 monedas, 4 trabajo, 5 prestigio y 2 monedas por copia publicada al iniciar turno no vetado | `FabricaMazos`, `motor/EstadoTurno` |
 | 7 roles nuevos, orden 1–7; Plagiador se conserva para compatibilidad de guardados antiguos | `FabricaMazos`, `dominio/InstantaneaPartida`, `habilidades/PlagiadorHabilidad` |
 | Comité debe nombrar rol antes de actuar/finalizar; no él mismo ni Decana; rol no elegido consume habilidad; veto salta turno y sus ingresos/efectos | `ComiteEticaHabilidad`, `ReglasAcademicas`, `MotorJuegoImpl`, `EstadoTurno` |
 | Investigador roba extra y marca primer selector siguiente; Decana es inmune desde asignación; Editorial cobra por publicaciones de toda la mesa | Habilidades correspondientes y `motor/ContextoJuegoImpl` |

@@ -27,7 +27,7 @@ async function fixture(initialHash='',offline=false,refresh=async()=>{}) {
     enabled:()=>true,onChange:fn=>listener=fn,initialize:async()=>{if(offline)throw new Error('503');},refreshProfile:refresh,
     login:async()=>{identity='Ana';listener();}};
   const context=vm.createContext({document,location,history,FormData:class{get(key){return {email:'ana@example.test',password:'clave123'}[key];}},Event:class{},window:{scrollY:100,scrollTo(){},addEventListener:(type,fn)=>windowEvents.set(type,fn)}});
-  const exports={accounts,esc:String,RANKS:[],progression:()=>({rank:{id:'madera',name:'Madera'},level:1,index:0}),badge:()=>'',academyTabs:()=>'',profileCosmeticParts:()=>({}),
+  const exports={accounts,FEATURES:{misiones:true,personalizacion:true},esc:String,RANKS:[],progression:()=>({rank:{id:'madera',name:'Madera'},level:1,index:0}),badge:()=>'',academyTabs:()=>'',profileCosmeticParts:()=>({}),
     mountCommunity:(_,options)=>{const mount={page:options.page,destroyed:false,destroy(){this.destroyed=true;}};mounts.push(mount);return mount;},
     mountCustomization:(_,options)=>{const mount={page:'customization',onSummary:options.onSummary,destroyed:false,destroy(){this.destroyed=true;}};mounts.push(mount);return mount;}};
   const dependency=new vm.SyntheticModule(Object.keys(exports),function(){for(const [key,value] of Object.entries(exports))this.setExport(key,value);},{context});

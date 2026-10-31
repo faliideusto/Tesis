@@ -9,7 +9,7 @@ import {initAccountPanel, progressText} from './account-panel.js';
 import {homeCommunity} from './home-community.js';
 import {img, esc} from './dom.js';
 import {board} from './board.js';
-import {ideaCard, ideaCardContents, roleCard} from './cards.js';
+import {ideaCard, ideaCardContents, roleCard, articleDescription} from './cards.js';
 import {studies, articleChoices} from './players.js';
 import {dialog, closeDialog, phaseDialog, reconcileDialog, informationalDialogOpen} from './dialogs.js';
 import {endTurnWarning, preview, ideaUnavailableReason, highlightTargets, clearTargets} from './decisions.js';
@@ -22,7 +22,7 @@ let state = null, room = null, busy = false, selectedRole = null, pendingAction 
 let timer, screen = 'home', generation = 0;
 const app = document.getElementById('app');
 const connection = document.createElement('div');
-const homeMessage = 'Reúne a tu academia. Cada persona juega desde su dispositivo, con su mano privada y una mesa compartida.';
+const homeMessage = 'Reúne a tu grupo de investigación para jugar desde dispositivos separados en una sala privada.';
 const academyIntro = (community=false) => `${community?'':`<div class="academy-brand">${img('Logo/logo_tesis.webp','home-logo','Tesis')}<span>EL JUEGO DE LA INVESTIGACIÓN</span></div>`}<span class="eyebrow"><i aria-hidden="true"></i> La diferencia está en la ciencia</span>
     <h1>Construye tu<br><em>legado científico.</em></h1><p>${homeMessage}</p>
     <div class="home-features"><span><strong>3–5</strong> jugadores</span><span><strong>Una</strong> mesa compartida</span><span><strong>Tu</strong> mano privada</span></div>
@@ -216,7 +216,7 @@ function help() {
     </div></section>
     <section class="rules-section" aria-labelledby="rules-final"><h2 id="rules-final" tabindex="-1"><span>06</span> El final y la victoria</h2><p>Cuando alguien alcanza <strong>3 estudios publicados</strong>, continuáis los turnos pendientes de esa ronda. Al acabarla se compara el prestigio total y termina la partida.</p><div class="rules-example"><h3>Tres publicaciones activan el final; el prestigio decide</h3><p>Ana publica su tercer estudio y tiene 5 de prestigio. Bruno aún juega en esa ronda y termina con 7 de prestigio y 2 publicaciones. <strong>Gana Bruno.</strong></p></div><div class="rules-note"><strong>Desempate.</strong> Si varias personas terminan con el mismo prestigio máximo, gana quien tenga <strong>más monedas</strong>. Si también empatan en monedas, gana quien tenga <strong>más cartas en la mano</strong>. Solo si el empate continúa se comparte la victoria.</div><p>Los estudios en desarrollo no dan prestigio. Sí cuentan las mejoras del Estadístico y las Patentes publicadas; una Patente cuenta como una publicación para activar el final.</p></section>
     <section class="rules-section" aria-labelledby="rules-consulta"><h2 id="rules-consulta" tabindex="-1">Consulta rápida</h2><details class="rules-reference"><summary>Cartas de idea: costes, trabajo y prestigio</summary><div><p>El mazo es <strong>inagotable y con reposición</strong>: cada idea robada sigue las probabilidades de la tabla, también en el reparto inicial. Pueden repetirse cartas.</p><div class="rules-table-scroll" role="region" aria-label="Catálogo de ideas" tabindex="0"><table><caption>Valores y probabilidad de cada idea</caption><thead><tr><th scope="col">Idea</th><th scope="col">Monedas</th><th scope="col">Trabajo</th><th scope="col">Prestigio</th><th scope="col">Probabilidad</th></tr></thead><tbody>${[
-      ['Artículo Ecológico',2,1,1,'13%'],['Artículo Transversal',3,1,2,'13%'],['Casos y Controles',3,2,3,'13%'],['Cohortes',4,3,5,'13%'],['Revisión Sistemática',3,5,6,'13%'],['Ensayo Clínico Aleatorizado',5,4,7,'13%'],['Ensayo Comunitario',9,4,9,'13%'],['Patente',4,4,5,'9%']
+      ['Artículo Ecológico',2,1,1,'13%'],['Artículo Transversal',3,1,2,'13%'],['Casos y Controles',3,2,3,'13%'],['Cohortes',4,3,5,'13%'],['Revisión Sistemática',2,5,6,'13%'],['Ensayo Clínico Aleatorizado',5,4,7,'13%'],['Ensayo Comunitario',9,4,9,'13%'],['Patente',2,4,5,'9%']
     ].map(([name,...values])=>`<tr><th scope="row">${name}</th>${values.map(value=>`<td>${value}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p><strong>Patente · Legendaria:</strong> una vez publicada, genera <strong>2 monedas al inicio de cada turno tuyo</strong>. Varias Patentes acumulan sus ingresos. Un turno vetado no genera ingresos.</p></div></details><details class="rules-reference"><summary>Jugar desde varios dispositivos y volver a la sala</summary><div><p>Comparte el código para que cada persona entre desde su navegador. Al recargar recuperas tu identidad en la misma pestaña. Mantén esa pestaña para volver a tu partida: abrir otra no recupera tu identidad por nombre.</p><p>Las salas caducan tras 24 horas sin actividad válida y desaparecen si se reinicia el servidor.</p></div></details></section>
     <div class="rules-guide-footer"><button type="button" class="plain-button" data-command="rules-section" data-section="preparacion">Volver a la preparación ↑</button><button type="button" class="gold-button" data-command="close">Listo para jugar</button></div>
     </article>`, {wide:true, kind:'info', subtitle:'Una guía para empezar y consultar durante la partida.'});
@@ -250,6 +250,7 @@ function inspect(c, study = null, player = null) {
   const canWork = study && player === state.yo && state.acciones.find(a => a.id === 'TRABAJAR')?.disponible
     && state.acciones.find(a => a.id === 'TRABAJAR')?.opciones.some(o => o.indice === study.indice);
   dialog(c.nombre, `<div class="card-detail">${ideaCard(c,{command:'noop'})}<div><span class="eyebrow">${study ? study.publicado ? 'ARTÍCULO PUBLICADO' : 'ESTUDIO EN DESARROLLO' : 'CARTA DE IDEA'}</span><h2>${esc(c.nombre)}</h2>
+    ${articleDescription(c.nombre) ? `<p class="article-description">${esc(articleDescription(c.nombre))}</p>` : ''}
     <dl><div><dt>Coste de inicio</dt><dd>${c.coste} monedas</dd></div><div><dt>Trabajo requerido</dt><dd>${c.trabajo} puntos</dd></div><div><dt>Prestigio</dt><dd>${c.prestigio}${study?.prestigioExtra ? ` + ${study.prestigioExtra}` : ''}</dd></div></dl>
     ${c.ingresoPorTurno ? `<p>Legendaria. Mientras esté publicada, recibes ${c.ingresoPorTurno} monedas al iniciar tu turno.</p>` : ''}
     ${study ? `<p>Progreso: ${study.trabajo} / ${c.trabajo}</p>` : ''}

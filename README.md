@@ -207,7 +207,7 @@ El reparto inicial y todos los robos usan la misma distribución con reposición
 | Ensayo Comunitario | 13% |
 | Patente | 9% |
 
-**Patente** es la única carta legendaria: cuesta 4 monedas y 4 de trabajo, da
+**Patente** es la única carta legendaria: cuesta 2 monedas y 4 de trabajo, da
 5 de prestigio y genera 2 monedas al inicio de cada turno de su propietario
 mientras esté publicada. Cada copia publicada aporta sus ingresos. Los artículos
 publicados no son objetivos válidos del Revisor 2. Recuperar una partida no vuelve a cobrar

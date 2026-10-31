@@ -13,7 +13,7 @@ const exports={
   api:{identity:()=>null},accounts:{signedIn:()=>true,refreshProfile:async()=>{profileReads++;}},
   initAccountPanel:()=>{},startPresence:()=>{},progressText:p=>p?.estado==='CONFIRMADA'?`Guardado ${p.xp}`:p?.estado || '',
   homeCommunity:()=>'',
-  img:()=>'',esc:String,board:()=>{},ideaCard:()=>{},ideaCardContents:()=>'',roleCard:()=>{},studies:()=>{},articleChoices:()=>{},
+  img:()=>'',esc:String,board:()=>{},ideaCard:()=>{},ideaCardContents:()=>'',roleCard:()=>{},articleDescription:()=>'',studies:()=>{},articleChoices:()=>{},
   dialog:()=>{},closeDialog:()=>{},phaseDialog:()=>{phaseDialogs++;},reconcileDialog:()=>{},informationalDialogOpen:()=>false,
   endTurnWarning:()=>{},preview:()=>{},ideaUnavailableReason:()=>{},highlightTargets:()=>{},clearTargets:()=>{},
   notify:()=>{},feedback:()=>{},resetFeedback:()=>{},transition:async()=>{transitions++;},settled:()=>{},resetEffects:()=>{},

@@ -1,4 +1,5 @@
 import {accounts} from './auth.js';
+import {FEATURES} from './features.js';
 import {esc} from './dom.js';
 import {RANKS, progression, badge} from './profile-ranks.js';
 import {academyTabs,mountCommunity} from './community-panel.js';
@@ -31,7 +32,7 @@ export function profileView(profile) {
   const p=progression(profile),played=Math.max(0,Number(profile.partidasTerminadas)||0),wins=Math.max(0,Number(profile.victorias)||0);
   return `<div class="profile-shell tier-${p.rank.id}">${closeButton()}
     <h2 id="account-title" class="sr-only">Mi perfil</h2>
-    <div class="profile-main"><nav class="customization-view-tabs" aria-label="Vista del perfil"><span aria-current="page">Resumen</span><button type="button" data-customize>✒ Personalización</button></nav><section class="profile-identity" aria-label="Tu rango actual">${frameCorners()}<span class="researcher-card-label">CARNET DE INVESTIGADOR</span><div class="profile-emblem">${emblemLaurels()}${badge(p.rank.id)}<span class="emblem-level">NIVEL <b>${esc(p.level)}</b></span></div><span class="rank-kicker">${esc(p.rank.title)}</span><h3>${esc(profile.nombre)}</h3><span class="identity-divider" aria-hidden="true">◇</span><span class="rank-name">${esc(p.rank.name)}</span><p class="rank-description">${esc(p.rank.description)}</p><span class="researcher-card-signature">TESIS · MIEMBRO DE LA ACADEMIA</span></section>
+    <div class="profile-main">${FEATURES.personalizacion?'<nav class="customization-view-tabs" aria-label="Vista del perfil"><span aria-current="page">Resumen</span><button type="button" data-customize>✒ Personalización</button></nav>':''}<section class="profile-identity" aria-label="Tu rango actual">${frameCorners()}<span class="researcher-card-label">CARNET DE INVESTIGADOR</span><div class="profile-emblem">${emblemLaurels()}${badge(p.rank.id)}<span class="emblem-level">NIVEL <b>${esc(p.level)}</b></span></div><span class="rank-kicker">${esc(p.rank.title)}</span><h3>${esc(profile.nombre)}</h3><span class="identity-divider" aria-hidden="true">◇</span><span class="rank-name">${esc(p.rank.name)}</span><p class="rank-description">${esc(p.rank.description)}</p><span class="researcher-card-signature">TESIS · MIEMBRO DE LA ACADEMIA</span></section>
     <section class="profile-record" aria-label="Progresión y estadísticas">${frameCorners()}<div class="profile-progress"><div class="profile-record-heading"><div class="profile-section-label">${academicSprig()}<span>PROGRESIÓN DE NIVEL</span></div></div><div class="xp-headline"><strong>${esc(p.inLevel)} <small>/ 500 XP</small></strong><div class="xp-next"><span>NIVEL ${esc(p.level)} → ${esc(p.level+1)}</span><span>${esc(p.toNextLevel)} XP para el siguiente nivel</span></div></div><div class="xp-track" role="progressbar" aria-label="Progreso al siguiente nivel" aria-valuemin="0" aria-valuemax="500" aria-valuenow="${p.inLevel}" aria-valuetext="${p.inLevel} de 500 XP"><span style="width:${p.percent}%"></span></div><p class="xp-total">${esc(p.xp)} XP acumulada <span>·</span> Tu legado sigue creciendo</p></div>
     <div class="profile-stat-grid"><div>${frameCorners()}<span class="stat-glyph" aria-hidden="true">▤</span><strong>${esc(played)}</strong><span>Partidas terminadas</span></div><div>${frameCorners()}<span class="stat-glyph" aria-hidden="true">♛</span><strong>${esc(wins)}</strong><span>Victorias</span></div><div>${frameCorners()}<span class="stat-glyph" aria-hidden="true">✦</span><strong>${played?Math.round(wins/played*100):0}<small>%</small></strong><span>Porcentaje de victorias</span></div></div>
     <div class="next-rank-card">${frameCorners()}${p.nextRank?`${badge(p.nextRank.id,{small:true})}<div><span>EL SIGUIENTE HORIZONTE</span><strong>${esc(p.nextRank.name)}</strong><p>Nivel ${p.nextRank.start} · ${Math.max(0,(p.nextRank.start-1)*500-p.xp)} XP por recorrer</p></div>`:`${badge('eterno',{small:true})}<div><span>EL MAYOR HONOR DE LA ACADEMIA</span><strong>Un legado eterno</strong><p>Has alcanzado el último rango. Tus niveles continúan.</p></div>`}</div></section></div>
@@ -51,7 +52,7 @@ export function initAccountPanel() {
   const panel=document.getElementById('account-panel'),opener=document.getElementById('account-open');
   let mode='login',working=false,loginIdentityPending=false,lastView='',restoring=true,connectionFailed=false,returnFocus=null,returnScroll=0,operation=0;
   let academyPage='profile',community=null,lastIdentity=accounts.identity();
-  const routes={'#perfil':'profile','#amigos':'friends','#ranking':'ranking','#misiones':'missions','#personalizacion':'customization'};
+  const routes={'#perfil':'profile','#amigos':'friends','#ranking':'ranking',...(FEATURES.misiones?{'#misiones':'missions'}:{}),...(FEATURES.personalizacion?{'#personalizacion':'customization'}:{})};
   const hashes=Object.fromEntries(Object.entries(routes).map(([hash,page])=>[page,hash]));
   const labels={profile:'Mi perfil',friends:'Amigos',ranking:'Ranking global',missions:'Misiones',customization:'Personalización'};
   const app=document.getElementById('app');
@@ -59,7 +60,7 @@ export function initAccountPanel() {
     operation++;working=false;panel.removeAttribute('aria-busy');
     community?.destroy();community=null;lastView='';
     panel.hidden=true;app.inert=false;app.hidden=false;document.body.classList.remove('account-page-active');
-    document.title='Tesis · La mesa del conocimiento';
+    document.title='Tesis · El juego de mesa investigador';
     window.scrollTo(0,returnScroll);
     (returnFocus?.isConnected&&returnFocus!==document.body?returnFocus:opener).focus({preventScroll:true});
     document.dispatchEvent(new Event('tesis:account-return'));

@@ -5,13 +5,15 @@ const icons = {
   profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
 };
 
+import {FEATURES} from './features.js';
+
 /** Static entry points. Account navigation owns authentication and destination state. */
 export function homeCommunity() {
   const entries = [
     ['perfil', 'profile', 'Mi perfil', 'Identidad y progreso'],
     ['amigos', 'friends', 'Amigos', 'Reúne a tu academia'],
     ['ranking', 'ranking', 'Ranking global', 'Tu puesto en la academia'],
-    ['misiones', 'missions', 'Misiones', 'Retos diarios y semanales'],
+    ...(FEATURES.misiones ? [['misiones', 'missions', 'Misiones', 'Retos diarios y semanales']] : []),
   ];
   return `<section class="home-community" aria-labelledby="home-community-title">
     <div class="home-community-heading"><h2 id="home-community-title">Tu academia</h2><span>CRECE. COMPARTE. COMPITE.</span></div>

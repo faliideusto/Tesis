@@ -190,3 +190,6 @@ dialog.rules-dialog.wide{width:min(1120px,94vw);height:min(820px,92svh);max-heig
  .home-screen.home-hub .setup-panel .access-note{margin-top:9px;padding-top:8px}
 }
 @media(prefers-reduced-motion:reduce){.home-screen.home-hub .home-copy,.home-screen.home-hub .setup-panel,.home-screen.home-hub .showcase-card,.home-screen.home-hub .academy-atmosphere span{animation:none;will-change:auto}.home-screen.home-hub :is(button,a,input){transition:none}.home-screen.home-hub .play-featured:hover,.home-screen.home-hub .gold-button:hover{transform:none}}
+.home-screen.home-hub .rejoin-card{margin-bottom:14px;border-color:#f0c591;box-shadow:0 0 0 1px #f0c59155,inset 0 1px #ffe6c315}
+.home-screen.home-hub .rejoin-card p strong{display:inline;font:inherit;font-weight:700;color:#f7ead7}
+.home-screen.home-hub .rejoin-card .gold-button{margin:0}

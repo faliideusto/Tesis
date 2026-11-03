@@ -192,4 +192,36 @@ class SalasTest {
             assertThrows(ErrorSala.class,()->m.actuar(nombre,"COBRAR",null,null));
         }
     }
+
+    @Test void partidaActivaDevuelveElAsientoDeLaCuentaSoloDuranteLaPartida() {
+        var cuenta=UUID.randomUUID(); var otra=UUID.randomUUID();
+        var acceso=gestor.crear("Fali",cuenta); var sala=gestor.buscar(acceso.codigo());
+        assertNull(gestor.partidaActiva(cuenta),"Un lobby no cuenta como partida en curso");
+        var invitado=sala.unirse("Bea",otra); sala.unirse("Cai");
+        sala.iniciar(acceso.playerToken(),sala.estado(acceso.playerToken()).revision());
+        var recuperada=gestor.partidaActiva(cuenta);
+        assertEquals(acceso.codigo(),recuperada.codigo());
+        assertEquals(acceso.playerToken(),recuperada.playerToken());
+        assertEquals("Fali",recuperada.sala().yo());
+        assertEquals(invitado.playerToken(),gestor.partidaActiva(otra).playerToken());
+        assertNull(gestor.partidaActiva(UUID.randomUUID()));
+    }
+
+    @Test void partidaActivaIgnoraSalasCaducadasYPrefiereLaMasReciente() {
+        var reloj=new Clock() {
+            Instant ahora=Instant.parse("2026-01-01T00:00:00Z");
+            public ZoneId getZone() { return ZoneOffset.UTC; }
+            public Clock withZone(ZoneId zona) { return this; }
+            public Instant instant() { return ahora; }
+        };
+        var gestorReloj=new GestorSalas(reloj,Duration.ofHours(1));
+        var cuenta=UUID.randomUUID();
+        var vieja=gestorReloj.crearPartidaConBots("Fali",cuenta,CosmeticosPartida.originales(),3);
+        reloj.ahora=reloj.ahora.plusSeconds(60);
+        var nueva=gestorReloj.crearPartidaConBots("Fali",cuenta,CosmeticosPartida.originales(),3);
+        assertEquals(nueva.codigo(),gestorReloj.partidaActiva(cuenta).codigo());
+        reloj.ahora=reloj.ahora.plus(Duration.ofMinutes(61));
+        assertNull(gestorReloj.partidaActiva(cuenta));
+        assertNotEquals(vieja.codigo(),nueva.codigo());
+    }
 }

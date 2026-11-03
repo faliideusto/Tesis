@@ -75,6 +75,23 @@ class CuentasHttpTest {
             assertEquals(404, pedir(base, "/api/recompensas", "{}", cuenta, null).statusCode());
             assertEquals(401, pedir(base, "/api/salas", "{\"nombre\":\"Fake\"}", null, "fake").statusCode());
             assertEquals(200, pedir(base, "/api/salas/" + codigo + "/estado", null, token, "fake").statusCode());
+            // Reconexión: solo la cuenta autenticada recupera su asiento y solo con la partida en curso.
+            assertEquals(401, pedir(base, "/api/salas/activa", null, null, null).statusCode());
+            assertEquals(401, pedir(base, "/api/salas/activa", null, null, "fake").statusCode());
+            assertEquals("{}", pedir(base, "/api/salas/activa", null, null, cuenta).body());
+            assertEquals(200, pedir(base, "/api/salas/" + codigo + "/unirse", "{\"nombre\":\"Bea\"}", null, null).statusCode());
+            assertEquals(200, pedir(base, "/api/salas/" + codigo + "/unirse", "{\"nombre\":\"Cai\"}", null, null).statusCode());
+            long revision = JsonParser.parseString(pedir(base, "/api/salas/" + codigo + "/estado", null, token, null).body())
+                    .getAsJsonObject().get("revision").getAsLong();
+            assertEquals(200, pedir(base, "/api/salas/" + codigo + "/iniciar", "{\"revision\":" + revision + "}", token, null).statusCode());
+            var activa = pedir(base, "/api/salas/activa", null, null, cuenta);
+            assertEquals(200, activa.statusCode());
+            var recuperada = JsonParser.parseString(activa.body()).getAsJsonObject();
+            assertEquals(codigo, recuperada.get("codigo").getAsString());
+            assertEquals(token, recuperada.get("playerToken").getAsString());
+            assertEquals("Ana", recuperada.getAsJsonObject("sala").get("yo").getAsString());
+            assertEquals("EN_PARTIDA", recuperada.getAsJsonObject("sala").get("fase").getAsString());
+            assertEquals(405, pedir(base, "/api/salas/activa", "{}", null, cuenta).statusCode());
             // Dos consultas lentas de perfil no deben ocupar los cuatro trabajadores del juego.
             var esperando = new java.util.concurrent.CountDownLatch(2);
             var liberar = new java.util.concurrent.CountDownLatch(1);

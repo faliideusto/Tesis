@@ -64,6 +64,9 @@ export const api = {
   matchBots: () => request('matchmaking/bots',{},false,false,matchIdentity?.token),
   matchAccept: access => { const sala=accept(access); api.matchForget(); return sala; },
   identity: () => identity,
+  // Solo con cuenta: el servidor devuelve el asiento de la partida en curso, si existe.
+  activeRoom: () => request('salas/activa',undefined,false,true,null,true),
+  rejoin: access => accept(access),
   forget: () => { identity=null; sessionStorage.removeItem(KEY); },
   create: nombre => enter('salas',nombre),
   join: (codigo,nombre) => enter(`salas/${encodeURIComponent(codigo.trim().toUpperCase())}/unirse`,nombre),

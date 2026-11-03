@@ -52,6 +52,19 @@ public final class GestorSalas {
         return sala;
     }
 
+    /** Partida en curso más reciente en la que participa la cuenta, o null si no hay ninguna. */
+    Vistas.AccesoSala partidaActiva(UUID cuenta) {
+        Objects.requireNonNull(cuenta);
+        long limite = reloj.millis() - caducidad.toMillis();
+        SalaJuego elegida = null; long reciente = -1;
+        for (var sala : salas.values()) {
+            if (sala.caducar(limite)) continue;
+            long actividad = sala.actividadPartidaActiva(cuenta);
+            if (actividad > reciente) { reciente = actividad; elegida = sala; }
+        }
+        return elegida == null ? null : elegida.reconectar(cuenta);
+    }
+
     /** Construye una mesa completa antes de hacerla visible en el registro. */
     synchronized List<Vistas.AccesoSala> crearPartida(List<String> nombres, List<UUID> cuentas) {
         return crearPartida(nombres,cuentas,Collections.nCopies(nombres==null?0:nombres.size(),CosmeticosPartida.originales()));

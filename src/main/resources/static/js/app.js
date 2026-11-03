@@ -85,6 +85,38 @@ function home(mode='play',restoreFocus=false) {
   document.querySelector?.('.home-account-slot')?.append(accountOpener);
   if(mode!=='play' || restoreFocus) document.getElementById('academy-access-title')?.focus({preventScroll:true});
   roomInvitations.refreshLobby();
+  offerActiveRoom().catch(()=>{});
+}
+let activeCheck=0, activeActor=null;
+// Tras cerrar el navegador, la cuenta recupera su asiento en la partida en curso.
+async function offerActiveRoom() {
+  const check=++activeCheck;
+  document.querySelector('.rejoin-card')?.remove();
+  if(screen!=='home'||!accounts.signedIn?.())return;
+  const actor=accounts.identity();
+  let access;
+  try { access=await api.activeRoom(); } catch { return; }
+  if(check!==activeCheck||screen!=='home'||actor!==accounts.identity()||!access?.codigo)return;
+  const panel=document.querySelector('.setup-panel');
+  if(!panel)return;
+  const card=document.createElement('div');
+  card.className='play-featured rejoin-card';card.setAttribute('role','status');
+  card.innerHTML=`<span class="play-featured-icon" aria-hidden="true">↺</span><span class="eyebrow">PARTIDA EN CURSO</span><h3>Tu mesa sigue abierta</h3><p>Conservas tu asiento como <strong>${esc(access.sala.yo)}</strong> en la sala <strong>${esc(access.codigo)}</strong>.</p><button class="gold-button" data-command="rejoin">Volver a la partida <span aria-hidden="true">→</span></button>`;
+  panel.prepend(card);
+  if(api.identity()?.codigo===access.codigo)panel.querySelector('.resume')?.remove();
+}
+accounts.onChange?.(()=>{
+  const actor=accounts.identity?.()||null;
+  if(actor===activeActor)return;
+  activeActor=actor;offerActiveRoom().catch(()=>{});
+});
+async function rejoinActiveRoom() {
+  const access=await api.activeRoom();
+  if(!access?.codigo) {
+    document.querySelector('.rejoin-card')?.remove();
+    const error=new Error('Esa partida ya ha terminado o ha caducado.');error.status=410;throw error;
+  }
+  return api.rejoin(access);
 }
 function homeAccess(mode) {
   const resume=api.identity()?'<button class="text-button resume" data-command="resume">↪ Reanudar mi sala</button>':'';
@@ -298,6 +330,7 @@ document.addEventListener('click', async e => {
     case 'private-join': home('private-join'); break;
     case 'home': home('play',true); break;
     case 'resume': screen='connecting'; run(() => api.state()); break;
+    case 'rejoin': run(rejoinActiveRoom); break;
     case 'start-game': run(() => api.start(room.revision)); break;
     case 'help': help(); break;
     case 'rules-section': {

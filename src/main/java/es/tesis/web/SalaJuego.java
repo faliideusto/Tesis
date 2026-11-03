@@ -75,6 +75,30 @@ public final class SalaJuego {
         bots.add(miembros.get(unirse(nombre).playerToken()));
     }
 
+    /** Última actividad si la cuenta ocupa un asiento en una partida en curso; -1 si no. */
+    synchronized long actividadPartidaActiva(UUID cuenta) {
+        return jugadorActivo(cuenta) == null ? -1 : actividad;
+    }
+
+    /**
+     * Devuelve el acceso del asiento vinculado a esta cuenta para que pueda volver
+     * tras cerrar el navegador. La cuenta autenticada demuestra la propiedad del asiento.
+     */
+    synchronized Vistas.AccesoSala reconectar(UUID cuenta) {
+        Jugador jugador = jugadorActivo(cuenta);
+        if (jugador == null) return null;
+        String token = miembros.entrySet().stream().filter(e -> e.getValue() == jugador)
+                .map(Map.Entry::getKey).findFirst().orElseThrow();
+        actividad = reloj.millis();
+        return new Vistas.AccesoSala(codigo, token, vista(jugador));
+    }
+
+    private Jugador jugadorActivo(UUID cuenta) {
+        if (cuenta == null || caducada || !iniciada || !juego.resultadoFinal().isEmpty()) return null;
+        return cuentas.entrySet().stream().filter(e -> cuenta.equals(e.getValue()))
+                .map(Map.Entry::getKey).findFirst().orElse(null);
+    }
+
     static String validarNombre(String nombre) {
         if (nombre == null || nombre.isBlank() || nombre.length() > 24 || nombre.chars().anyMatch(Character::isISOControl))
             throw new IllegalArgumentException("El nombre debe tener entre 1 y 24 caracteres sin saltos de línea.");

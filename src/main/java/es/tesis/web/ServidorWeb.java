@@ -238,6 +238,15 @@ public final class ServidorWeb implements AutoCloseable {
             EntradaCuenta cuenta = cuentaEntrada(x);
             json(x, 201, salas.crear(nombre(cuerpoSala(x, Set.of("nombre"))), cuenta.id(),cuenta.cosmeticos())); return;
         }
+        if (ruta.equals("/api/salas/activa")) {
+            if (!metodo.equals("GET")) throw new ErrorSala(405, "Método no permitido.");
+            if (x.getRequestURI().getRawQuery() != null) throw new IllegalArgumentException("Esta ruta no admite consultas.");
+            String jwt = bearer(x.getRequestHeaders().getFirst("X-Tesis-Account-Authorization"));
+            if (jwt == null) throw new ExcepcionCuenta(401, "Inicia sesión para recuperar tu partida.");
+            UUID cuenta = consultarCuenta(() -> cuentas.autenticar(jwt));
+            var acceso = salas.partidaActiva(cuenta);
+            json(x, 200, acceso == null ? Map.of() : acceso); return;
+        }
         if (partes.length != 5 || !Set.of("unirse", "estado", "iniciar", "accion", "invitar", "interacciones").contains(partes[4]))
             throw new ErrorSala(404, "Ruta no encontrada.");
         String operacion = partes[4];

@@ -101,7 +101,7 @@ await panel.link(panelDependency);await panel.evaluate();
 assert.match(panel.namespace.progressText({estado:'CONFIRMADA',xp:150}),/150 XP/);
 assert.match(panel.namespace.progressText({estado:'INVITADO'}),/no acumula/);
 assert.match(panel.namespace.progressText({estado:'PENDIENTE'}),/puede perderse/);
-const hostile=panel.namespace.profileView({nombre:'<img src=x onerror="alert(1)">',nivel:75,xp:37000,partidasTerminadas:2,victorias:1});
+const hostile=panel.namespace.profileView({nombre:'<img src=x onerror="alert(1)">',nivel:25,xp:12000,partidasTerminadas:2,victorias:1});
 assert.ok(!hostile.includes('<img src=x'),'El nombre del perfil debe quedar escapado');
 assert.match(hostile,/&lt;img src=x onerror=&quot;alert\(1\)&quot;&gt;/);
 assert.match(hostile,/tier-eterno/);assert.match(hostile,/aria-valuenow="0"/);

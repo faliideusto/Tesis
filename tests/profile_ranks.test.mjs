@@ -6,7 +6,7 @@ const mod=new vm.SourceTextModule(await readFile(new URL('../src/main/resources/
 await mod.link(()=>{throw new Error('Las distinciones no necesitan APIs ni estado de partida');});
 await mod.evaluate();
 const {RANKS,progression,badge}=mod.namespace;
-assert.deepEqual(Array.from(RANKS,rank=>rank.start),[1,5,10,20,35,50,75]);
+assert.deepEqual(Array.from(RANKS,rank=>rank.start),[1,3,6,10,15,20,25]);
 for(const [i,rank] of RANKS.entries()) {
   const result=progression({nivel:rank.start,xp:(rank.start-1)*500});
   assert.equal(result.rank.id,rank.id);
@@ -26,7 +26,7 @@ assert.equal(progression({nivel:1,xp:0}).rank.id,'madera');
 assert.equal(progression({nivel:2,xp:500}).inLevel,0);
 assert.equal(progression({nivel:2,xp:650}).percent,30);
 assert.equal(progression({nivel:2,xp:650}).toNextLevel,350);
-assert.equal(progression({nivel:2,xp:650}).rankPercent,25);
+assert.equal(progression({nivel:2,xp:650}).rankPercent,50);
 assert.equal(progression({nivel:99,xp:49250}).rank.id,'eterno');
 assert.equal(progression({nivel:99,xp:49250}).rankPercent,100);
 // Si los campos discrepan, no adjudicamos un nivel inventado al usuario.

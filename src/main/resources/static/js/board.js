@@ -2,6 +2,7 @@ import {img, esc, update} from './dom.js';
 import {ideaCard} from './cards.js';
 import {rival, localPlayer, tableStudies, positionRolePreview} from './players.js';
 import {orientTableStudies} from './table-perspective.js';
+import {turnTimerMarkup} from './turn-timer.js';
 
 const icons = {COBRAR:'cobrar', PENSAR:'pensar', INICIAR:'iniciar_estudio', TRABAJAR:'trabajar', FIN_TURNO:'finalizar_turno'};
 const renderedHands = new WeakMap();
@@ -32,7 +33,7 @@ export function board(state) {
   const others = state.jugadores.filter(p => p !== me);
   document.getElementById('board').dataset.players = state.jugadores.length;
   document.getElementById('board').classList.toggle('privacy', state.bloqueada);
-  update('turn-panel', `<span>RONDA ${state.ronda}${state.ultimaRonda ? ' · ÚLTIMA' : ''}</span><strong>${state.fase === 'SELECCION_ROLES' ? 'Elige ' : state.fase === 'FIN_PARTIDA' ? 'Partida finalizada' : state.fase === 'FIN_RONDA' ? 'Cierre de ronda' : 'Turno de '}${['SELECCION_ROLES','TURNO_JUGADOR'].includes(state.fase) ? esc(state.actual) : ''}</strong>`);
+  update('turn-panel', `<span>RONDA ${state.ronda}${state.ultimaRonda ? ' · ÚLTIMA' : ''}${['SELECCION_ROLES','TURNO_JUGADOR'].includes(state.fase) ? turnTimerMarkup(state.turnoHasta) : ''}</span><strong>${state.fase === 'SELECCION_ROLES' ? 'Elige ' : state.fase === 'FIN_PARTIDA' ? 'Partida finalizada' : state.fase === 'FIN_RONDA' ? 'Cierre de ronda' : 'Turno de '}${['SELECCION_ROLES','TURNO_JUGADOR'].includes(state.fase) ? esc(state.actual) : ''}</strong>`);
   // Whoever the table is waiting on is lit, both on their turn and while choosing a character.
   const spotlight = ['SELECCION_ROLES','TURNO_JUGADOR'].includes(state.fase);
   document.getElementById('rivals').dataset.count = others.length;

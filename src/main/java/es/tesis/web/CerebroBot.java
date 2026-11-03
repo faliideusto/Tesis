@@ -39,6 +39,18 @@ final class CerebroBot {
         return peticion(estado, "FIN_TURNO", null, null);
     }
 
+    /** Jugada por tiempo agotado: personaje al azar, habilidad inicial al azar y fin de turno. */
+    static Vistas.Peticion tiempoAgotado(Vistas.Estado estado, Random azar) {
+        if (estado.fase().equals("SELECCION_ROLES"))
+            return peticion(estado, "SELECCIONAR", estado.seleccion().get(azar.nextInt(estado.seleccion().size())).indice(), null);
+        var habilidad = accion(estado, "HABILIDAD");
+        if (estado.habilidadPendiente() && habilidad != null && !habilidad.opciones().isEmpty()) {
+            var opcion = habilidad.opciones().get(azar.nextInt(habilidad.opciones().size()));
+            return peticion(estado, "HABILIDAD", opcion.indice(), opcion.objetivo());
+        }
+        return peticion(estado, "FIN_TURNO", null, null);
+    }
+
     private static Vistas.Peticion personaje(Vistas.Estado estado, Random azar) {
         var yo = yo(estado);
         long enDesarrollo = yo.estudios().stream().filter(e -> !e.publicado()).count();

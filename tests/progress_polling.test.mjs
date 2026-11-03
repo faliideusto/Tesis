@@ -17,7 +17,7 @@ const exports={
   dialog:()=>{},closeDialog:()=>{},phaseDialog:()=>{phaseDialogs++;},reconcileDialog:()=>{},informationalDialogOpen:()=>false,
   endTurnWarning:()=>{},preview:()=>{},ideaUnavailableReason:()=>{},highlightTargets:()=>{},clearTargets:()=>{},
   notify:()=>{},feedback:()=>{},resetFeedback:()=>{},transition:async()=>{transitions++;},settled:()=>{},resetEffects:()=>{},
-  chooseRole:()=>{},chooseVeto:()=>{},victory:()=>{}
+  chooseRole:()=>{},chooseVeto:()=>{},victory:()=>{},mountTurnTimers:()=>({tick(){},destroy(){}})
 };
 const dependency=new vm.SyntheticModule(Object.keys(exports),function(){for(const [name,value] of Object.entries(exports))this.setExport(name,value);},{context});
 const source=await readFile(new URL('../src/main/resources/static/js/app.js',import.meta.url),'utf8');

@@ -1,12 +1,12 @@
 // Distinciones visuales del perfil. No intervienen en las reglas ni conceden XP.
 export const RANKS = Object.freeze([
   {id:'madera', file:'Graduado', name:'Graduado', start:1, title:'Aprendiz de la academia', color:'#bf9264', glow:'#8e6134', description:'Toda gran idea empieza con una primera página.'},
-  {id:'bronce', file:'Master', name:'Máster', start:5, title:'Investigador emergente', color:'#dc9b65', glow:'#b86335', description:'Tu curiosidad comienza a dejar huella.'},
-  {id:'plata', file:'Predoctoral', name:'Predoctoral', start:10, title:'Erudito de la academia', color:'#d5e3f2', glow:'#89b0ce', description:'El conocimiento encuentra una voz propia.'},
-  {id:'oro', file:'Postdoctoral', name:'Postdoctoral', start:20, title:'Maestro del conocimiento', color:'#f4ce73', glow:'#dba339', description:'Tus ideas brillan en los salones de la academia.'},
-  {id:'platino', file:'Ayudante-doctor', name:'Ayudante doctor', start:35, title:'Eminencia científica', color:'#a9eee5', glow:'#56cabe', description:'Una trayectoria que inspira nuevas generaciones.'},
-  {id:'diamante', file:'Investigador-principal', name:'Investigador principal', start:50, title:'Guardián del saber', color:'#a9dfff', glow:'#609ffc', description:'El tiempo convierte tu legado en algo excepcional.'},
-  {id:'eterno', file:'Catedratico', name:'Catedrático', start:75, title:'Leyenda de la academia', color:'#f3cd78', glow:'#b377ff', description:'Un legado escrito en oro. Un conocimiento sin límites.'},
+  {id:'bronce', file:'Master', name:'Máster', start:3, title:'Investigador emergente', color:'#dc9b65', glow:'#b86335', description:'Tu curiosidad comienza a dejar huella.'},
+  {id:'plata', file:'Predoctoral', name:'Predoctoral', start:6, title:'Erudito de la academia', color:'#d5e3f2', glow:'#89b0ce', description:'El conocimiento encuentra una voz propia.'},
+  {id:'oro', file:'Postdoctoral', name:'Postdoctoral', start:10, title:'Maestro del conocimiento', color:'#f4ce73', glow:'#dba339', description:'Tus ideas brillan en los salones de la academia.'},
+  {id:'platino', file:'Ayudante-doctor', name:'Ayudante doctor', start:15, title:'Eminencia científica', color:'#a9eee5', glow:'#56cabe', description:'Una trayectoria que inspira nuevas generaciones.'},
+  {id:'diamante', file:'Investigador-principal', name:'Investigador principal', start:20, title:'Guardián del saber', color:'#a9dfff', glow:'#609ffc', description:'El tiempo convierte tu legado en algo excepcional.'},
+  {id:'eterno', file:'Catedratico', name:'Catedrático', start:25, title:'Leyenda de la academia', color:'#f3cd78', glow:'#b377ff', description:'Un legado escrito en oro. Un conocimiento sin límites.'},
 ].map(rank=>Object.freeze(rank)));
 
 export function progression(profile) {

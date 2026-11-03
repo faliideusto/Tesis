@@ -6,6 +6,15 @@ let matchIdentity;
 try { matchIdentity = JSON.parse(sessionStorage.getItem(MATCH_KEY) || 'null'); } catch { matchIdentity = null; }
 try { identity = JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch { identity = null; }
 let queue = Promise.resolve();
+let serverOffset = null;
+// La cabecera Date trunca a segundos y llega con retraso: ninguna muestra supera el desfase real,
+// así que la mayor reciente es la mejor estimación. Un salto grande hacia atrás indica un reloj ajustado.
+function observeServerDate(response) {
+  const date = Date.parse(response?.headers?.get?.('Date') || '');
+  if (!Number.isFinite(date)) return;
+  const sample = date - Date.now();
+  if (serverOffset === null || sample > serverOffset || serverOffset - sample > 5000) serverOffset = sample;
+}
 function searchToken() {
   // getRandomValues también funciona al jugar por HTTP dentro de la red local.
   const bytes=crypto.getRandomValues(new Uint8Array(16));
@@ -31,6 +40,7 @@ function request(path, body, authenticated = false, account = false, token = nul
         method: body === undefined ? 'GET' : 'POST', cache:'no-store', headers,
         signal:controller.signal, body:body === undefined ? undefined : JSON.stringify(body)
       });
+      observeServerDate(response);
       const data = await response.json();
       if (!response.ok) { const error = new Error(data.error || 'No se pudo completar la solicitud.'); error.status=response.status; throw error; }
       return data;
@@ -63,6 +73,7 @@ export const api = {
   matchCancel: () => request('matchmaking/cancelar',{},false,false,matchIdentity?.token),
   matchBots: () => request('matchmaking/bots',{},false,false,matchIdentity?.token),
   matchAccept: access => { const sala=accept(access); api.matchForget(); return sala; },
+  serverNow: () => Date.now() + (serverOffset ?? 0),
   identity: () => identity,
   // Solo con cuenta: el servidor devuelve el asiento de la partida en curso, si existe.
   activeRoom: () => request('salas/activa',undefined,false,true,null,true),

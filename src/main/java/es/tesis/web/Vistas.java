@@ -6,7 +6,8 @@ import java.util.List;
 public final class Vistas {
     private Vistas() {}
     public record Sala(String codigo, long revision, String fase, String yo, String anfitrion,
-                       boolean soyAnfitrion, List<String> jugadores, Estado partida, Progreso progreso) {}
+                       boolean soyAnfitrion, List<String> jugadores, Estado partida, Progreso progreso,
+                       Long turnoHasta) {}
     public record Progreso(String estado, boolean cuenta, Integer xp, java.util.UUID partidaId) {}
     public record InteraccionPropia(String interactionId,long disponibleEn) {}
     public record EventoInteraccion(long numero,String emisor,String objetivo,String interactionId,long fecha) {}

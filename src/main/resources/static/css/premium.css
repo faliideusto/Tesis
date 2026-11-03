@@ -265,3 +265,8 @@ dialog .study-row.published{border-color:#ac855a}
 .card-detail .article-description{font:13px/1.7 var(--ui);color:#2f4552;border-left:2px solid #b8924f;padding:2px 0 2px 12px;margin:10px 0 14px;text-align:left}
 /* Los siete personajes caben en una sola fila; las cartas se encogen lo necesario. */
 @media(min-width:801px){.role-selection{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);max-width:none;gap:12px;padding-bottom:26px}.role-selection .game-card{width:100%;max-width:216px;justify-self:center}}
+/* Cuenta atrás del turno: acompaña a la ronda sin cambiar la altura del panel. */
+.board .turn-panel .turn-timer{display:inline-block;margin-left:.9em;padding:1px 7px;border:1px solid #dbb38166;border-radius:999px;font:700 10px/1.3 var(--ui);letter-spacing:.06em;color:#f7eddf;background:#dbb3811a;font-variant-numeric:tabular-nums;white-space:nowrap}
+.board .turn-panel .turn-timer.urgent{color:#ffe1d6;border-color:#e2735a;background:#e2735a33;animation:turn-timer-pulse 1s ease-in-out infinite}
+@keyframes turn-timer-pulse{50%{box-shadow:0 0 0 3px #e2735a33}}
+@media (prefers-reduced-motion:reduce){.board .turn-panel .turn-timer.urgent{animation:none}}

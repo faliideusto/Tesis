@@ -115,7 +115,10 @@ class GestorMatchmakingTest {
         var tokens = grupo(3); confirmarTodos(tokens);
         var acceso = gestor.estado(tokens.get(0)).acceso();
         reloj.avanzar(Duration.ofHours(23).toMillis());
-        assertEquals(acceso, gestor.estado(tokens.get(0)).acceso());
+        // La mesa puede haber avanzado por tiempo de turno agotado; el acceso sigue siendo el mismo.
+        var recuperado = gestor.estado(tokens.get(0)).acceso();
+        assertEquals(acceso.codigo(), recuperado.codigo());
+        assertEquals(acceso.playerToken(), recuperado.playerToken());
         reloj.avanzar(Duration.ofHours(1).toMillis());
         assertEquals(404, assertThrows(ErrorSala.class, () -> gestor.estado(tokens.get(0))).estado);
     }

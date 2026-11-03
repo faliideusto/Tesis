@@ -9,6 +9,8 @@ import java.util.*;
 public final class SalaJuego {
     private static final long PAUSA_FIN_RONDA_MS = 5_000;
     private static final long PAUSA_BOT_MS = 1_400;
+    /** Tiempo de cada persona para decidir en su turno o al elegir personaje. */
+    static final long LIMITE_TURNO_MS = 60_000;
     private final String codigo;
     private final Clock reloj;
     private final SecureRandom azar;
@@ -22,6 +24,9 @@ public final class SalaJuego {
     private long finRondaHasta;
     private final Set<Jugador> bots = Collections.newSetFromMap(new IdentityHashMap<>());
     private long botHasta;
+    private Jugador turnoJugador;
+    private String turnoClave;
+    private long turnoHasta;
     private final Map<Jugador, UUID> cuentas = new IdentityHashMap<>();
     private final Map<Jugador,CosmeticosPartida> cosmeticos = new IdentityHashMap<>();
     private final Map<Jugador,Long> interaccionDisponible = new IdentityHashMap<>();
@@ -176,6 +181,8 @@ public final class SalaJuego {
         var jugador = autenticar(token);
         if (peticion == null) throw new IllegalArgumentException("Falta la acción.");
         continuarRondaSiCorresponde();
+        // Una jugada que llega con el tiempo ya vencido encuentra el turno pasado y recibe 409.
+        vigilarTurno();
         comprobarVersion(peticion.revision());
         if (!iniciada) throw new ErrorSala(409, "La partida todavía no ha comenzado.");
         var estado = juego.estado(jugador);
@@ -218,6 +225,40 @@ public final class SalaJuego {
         programarFinRonda(bot);
     }
 
+    /**
+     * Si una persona agota su tiempo, el servidor juega por ella lo mínimo: elige un personaje al azar,
+     * resuelve al azar una habilidad inicial obligatoria y termina el turno. Como los bots y el cierre
+     * de ronda, avanza en las consultas de cualquier jugador de la sala.
+     */
+    private void vigilarTurno() {
+        if (!iniciada) return;
+        Jugador actual = juego.enTurno();
+        if (actual == null || bots.contains(actual)) { turnoJugador = null; turnoHasta = 0; return; }
+        String clave = juego.claveTurno();
+        long ahora = reloj.millis();
+        if (actual != turnoJugador || !clave.equals(turnoClave)) {
+            turnoJugador = actual; turnoClave = clave; turnoHasta = ahora + LIMITE_TURNO_MS;
+            return;
+        }
+        if (ahora < turnoHasta) return;
+        juego.anunciarTiempoAgotado(actual);
+        revision++;
+        // Resolver una habilidad inicial no cede el turno: se repite hasta que lo hace.
+        for (int jugada = 0; jugada < 4 && juego.enTurno() == actual && clave.equals(juego.claveTurno()); jugada++) {
+            try {
+                juego.actuar(actual, CerebroBot.tiempoAgotado(juego.estado(actual), azar));
+            } catch (RuntimeException rechazada) {
+                try { juego.actuar(actual, CerebroBot.respaldo(juego.estado(actual))); }
+                catch (RuntimeException sinSalida) { break; }
+            }
+            revision++;
+            programarFinRonda(actual);
+        }
+        // El siguiente turno empieza a contar ahora, aunque nadie consultara justo al vencer.
+        turnoJugador = null; turnoHasta = 0;
+        vigilarTurno();
+    }
+
     private void continuarRondaSiCorresponde() {
         if (finRondaHasta == 0 || reloj.millis() < finRondaHasta) return;
         finRondaHasta = 0;
@@ -240,12 +281,15 @@ public final class SalaJuego {
 
     private Vistas.Sala vista(Jugador jugador) {
         continuarRondaSiCorresponde();
+        vigilarTurno();
         moverBots();
+        vigilarTurno();
         var estado = iniciada ? vestir(juego.estado(jugador)) : null;
         String fase = !iniciada ? "LOBBY" : estado.fase().equals("FIN_PARTIDA") ? "FINALIZADA" : "EN_PARTIDA";
         registrarResultado();
         return new Vistas.Sala(codigo, revision, fase, jugador.nombre(), anfitrion.nombre(), jugador == anfitrion,
-                miembros.values().stream().map(Jugador::nombre).toList(), estado, progreso(jugador));
+                miembros.values().stream().map(Jugador::nombre).toList(), estado, progreso(jugador),
+                turnoHasta == 0 ? null : turnoHasta);
     }
 
     private Vistas.Estado vestir(Vistas.Estado estado) {

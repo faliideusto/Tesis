@@ -78,6 +78,24 @@ public final class SesionJuego {
         return fase == FaseDeTurno.SELECCION_ROLES || fase == FaseDeTurno.TURNO_JUGADOR ? motor.partida().jugadorActual() : null;
     }
 
+    /** Distingue dos turnos seguidos de la misma persona: cambia con la fase y la ronda. */
+    synchronized String claveTurno() {
+        return motor == null ? "" : motor.partida().faseActual() + ":" + motor.partida().ronda();
+    }
+
+    /** Anuncio público previo a la jugada automática de quien agota su tiempo. */
+    synchronized void anunciarTiempoAgotado(Jugador jugador) {
+        comprobarMiembro(jugador);
+        registrarEvento(new Vistas.Evento(0, jugador.nombre() + " agota su tiempo y el turno pasa automáticamente.",
+                false, "turno.tiempo_agotado", jugador.nombre(), null, null, null, false, null));
+    }
+
+    private void registrarEvento(Vistas.Evento e) {
+        eventos.add(new Vistas.Evento(eventos.isEmpty() ? 1 : eventos.get(eventos.size() - 1).numero() + 1,
+                e.texto(), e.publicacion(), e.tipo(), e.actor(), e.objetivo(), e.estudio(), e.cantidad(), e.robo(), e.rolPublico()));
+        if (eventos.size() > 80) eventos.remove(0);
+    }
+
     synchronized void avanzarRondaAutomatica() {
         if (motor.partida().faseActual() != FaseDeTurno.FIN_RONDA) return;
         ejecutar(new Vistas.Peticion(revision, "SIGUIENTE_RONDA", null, null, null), null);
@@ -311,14 +329,13 @@ public final class SesionJuego {
                 case "articulo.ingresos" -> ((Number) d.get("monedas")).intValue();
                 default -> null;
             };
-            eventos.add(new Vistas.Evento(eventos.isEmpty() ? 1 : eventos.get(eventos.size() - 1).numero() + 1,
+            registrarEvento(new Vistas.Evento(0,
                     texto, "PUBLICADO".equals(d.get("estado")), e.tipo(), actor,
                     Set.of("habilidad.plagiador", "habilidad.revisor_2").contains(e.tipo()) ? String.valueOf(d.get("objetivo")) : null,
                     estudio, cantidad, "accion.pensar".equals(e.tipo()) || Boolean.TRUE.equals(d.get("cartaRobada")),
                     // Snapshot at the public turn event, never infer a historical role
                     // from a later round or from a client's private player projection.
                     revelaRol ? CatalogoVisual.rol(motor.partida().jugadorActual().personaje(), -1) : null));
-            if (eventos.size() > 80) eventos.remove(0);
         }
     }
 }

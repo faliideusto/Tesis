@@ -15,12 +15,14 @@ import {dialog, closeDialog, phaseDialog, reconcileDialog, informationalDialogOp
 import {endTurnWarning, preview, ideaUnavailableReason, highlightTargets, clearTargets} from './decisions.js';
 import {notify, feedback, resetFeedback} from './feedback.js';
 import {transition, settled, resetEffects, chooseRole, chooseVeto, victory} from './effects.js';
+import {mountTurnTimers} from './turn-timer.js';
 
 let visualBusy = false;
 let renderQueue=Promise.resolve(), latestRoom=null;
 let state = null, room = null, busy = false, selectedRole = null, pendingAction = null, selectedTarget = null;
 let timer, screen = 'home', generation = 0;
 const app = document.getElementById('app');
+const turnTimers = mountTurnTimers(document, () => api.serverNow?.() ?? Date.now());
 const connection = document.createElement('div');
 const homeMessage = 'Reúne a tu grupo de investigación para jugar desde dispositivos separados en una sala privada.';
 const academyIntro = (community=false) => `${community?'':`<div class="academy-brand">${img('Logo/logo_tesis.webp','home-logo','Tesis')}<span>EL JUEGO DE LA INVESTIGACIÓN</span></div>`}<span class="eyebrow"><i aria-hidden="true"></i> La diferencia está en la ciencia</span>
@@ -167,7 +169,7 @@ async function applyRoom(next, force=false) {
   const before=state, current=generation;
   const sameRoom=room?.codigo===next.codigo;
   if (!sameRoom) { resetFeedback(); resetEffects();roomInteractions.reset(); }
-  const after=next.partida ? {...next.partida, yo:next.yo} : null;
+  const after=next.partida ? {...next.partida, yo:next.yo, turnoHasta:next.turnoHasta ?? null} : null;
   visualBusy=true; document.body.classList.add('visual-busy');
   try {
     const roleConfirmation=sameRoom && before && after?.eventos.some(e=>e.numero>(before.eventos.at(-1)?.numero || 0) && e.tipo==='accion.seleccionar_personaje' && e.actor===after.yo);
@@ -185,7 +187,7 @@ async function applyRoom(next, force=false) {
     roomInvitations.refreshLobby();
     const accountOpener=document.getElementById('account-open'),progress=document.getElementById('account-progress');
     document.body.append(accountOpener,progress);
-    board(state); feedback(sameRoom ? before : null,state); settled(sameRoom ? before : null,state);
+    board(state); turnTimers.tick(); feedback(sameRoom ? before : null,state); settled(sameRoom ? before : null,state);
     roomInteractions.update();
     accountOpener.classList.add('in-board');document.querySelector('#board .utility').append(accountOpener,progress);
     const accountPageOpen=!document.getElementById('account-panel').hidden;

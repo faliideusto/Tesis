@@ -1,5 +1,9 @@
 # Base de datos de Tesis 2.0.0
 
+## Ganadores con desempate (2026-11-03)
+
+La migración `202611030001_ganadores_desempate.sql`, posterior a010, redefine solo la validación de ganadores de `registrar_resultado`. El motor Java decide la victoria por prestigio y, en empate, por monedas e ideas; la RPC exigía que todo jugador con el prestigio máximo fuese ganador, así que un empate resuelto por desempate se rechazaba con HTTP 400 y ninguna cuenta de la mesa recibía XP (con o sin invitados). Ahora exige al menos un ganador y que todos los ganadores tengan el prestigio máximo. XP, pase, recibos e idempotencia no cambian. Prueba: `tests/ganadores_desempate.sql`. Aplicar una vez en Supabase; las partidas ya rechazadas no se recuperan automáticamente.
+
 ## Catálogo definitivo de Crónicas del Archivo
 
 La migración `202610070008_assets_cronicas.sql`, posterior a007, sustituye únicamente presentación: diez rutas PNG bajo `/assets/seasons/cronicas-del-archivo/`, dos títulos con `asset:null` y metadata `assets` de la interacción (`libro`, `hoja-01`, `hoja-02`, `impacto`). Conserva doce IDs, derechos, progreso y equipamiento. El trigger de identidad admite cambios solo en `asset`/`assets`; pase, colección e inventario consultan el arte actual sin reescribir snapshots. Verificación administrativa de solo lectura: `tests/verificar_assets_cronicas.sql`. No volver a aplicar005–007; aplicar008 completa como transacción una vez autorizada.

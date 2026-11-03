@@ -96,9 +96,11 @@ try {
   await db.exec(await readFile(new URL('recompensas_trimestres.sql', import.meta.url), 'utf8'));
   const trimestral = await db.query(await readFile(new URL('verificar_recompensas_trimestres.sql', import.meta.url), 'utf8'));
   if (trimestral.rows.some(r => r.resultado !== 'PASS')) throw new Error('Falló verificación readonly trimestres: '+JSON.stringify(trimestral.rows));
+  await db.exec(await readFile(new URL('../migrations/202611030001_ganadores_desempate.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('ganadores_desempate.sql', import.meta.url), 'utf8'));
   const {rows} = await db.query('select count(*)::integer as perfiles from public.profiles');
   if (rows[0].perfiles !== 0) throw new Error('El script no revirtió los perfiles de prueba');
-  console.log('PASS PostgreSQL WASM: doce migraciones; perfiles/resultados, comunidad y presencia, perfiles e invitaciones, ranking y pase trimestral, colección y archivo, assets definitivos y metadata, misiones diarias/semanales/mensuales, permisos/RLS y rollback.');
+  console.log('PASS PostgreSQL WASM: trece migraciones; perfiles/resultados, comunidad y presencia, perfiles e invitaciones, ranking y pase trimestral, colección y archivo, assets definitivos y metadata, misiones diarias/semanales/mensuales, ganadores por desempate, permisos/RLS y rollback.');
   console.log('No verifica Supabase Auth/PostgREST ni concurrencia con varias conexiones.');
 } finally {
   await db.close();

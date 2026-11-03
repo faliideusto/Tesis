@@ -1,5 +1,9 @@
 # Base de datos de Tesis 2.0.0
 
+## Victoria a 200 XP (2026-11-03)
+
+La migración `202611030002_victoria_200xp.sql`, posterior a `202611030001`, sube el bonus de victoria de `registrar_resultado` de 100 a 200 XP: cada cuenta recibe 200 XP por terminar la partida y los ganadores 200 más (400 en total). Amplía `reward_ledger_xp_check` para admitir 400. Puntos de pase, recibos e idempotencia no cambian, y las partidas ya registradas conservan su XP. Prueba: `tests/victoria_200xp.sql`. Aplicar una vez en Supabase.
+
 ## Ganadores con desempate (2026-11-03)
 
 La migración `202611030001_ganadores_desempate.sql`, posterior a010, redefine solo la validación de ganadores de `registrar_resultado`. El motor Java decide la victoria por prestigio y, en empate, por monedas e ideas; la RPC exigía que todo jugador con el prestigio máximo fuese ganador, así que un empate resuelto por desempate se rechazaba con HTTP 400 y ninguna cuenta de la mesa recibía XP (con o sin invitados). Ahora exige al menos un ganador y que todos los ganadores tengan el prestigio máximo. XP, pase, recibos e idempotencia no cambian. Prueba: `tests/ganadores_desempate.sql`. Aplicar una vez en Supabase; las partidas ya rechazadas no se recuperan automáticamente.

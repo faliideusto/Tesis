@@ -100,9 +100,11 @@ try {
   await db.exec(await readFile(new URL('ganadores_desempate.sql', import.meta.url), 'utf8'));
   await db.exec(await readFile(new URL('../migrations/202611030002_victoria_200xp.sql', import.meta.url), 'utf8'));
   await db.exec(await readFile(new URL('victoria_200xp.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('../migrations/202611050001_misiones_especiales.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('misiones_especiales.sql', import.meta.url), 'utf8'));
   const {rows} = await db.query('select count(*)::integer as perfiles from public.profiles');
   if (rows[0].perfiles !== 0) throw new Error('El script no revirtió los perfiles de prueba');
-  console.log('PASS PostgreSQL WASM: catorce migraciones; perfiles/resultados, comunidad y presencia, perfiles e invitaciones, ranking y pase trimestral, colección y archivo, assets definitivos y metadata, misiones diarias/semanales/mensuales, ganadores por desempate, victoria a 200 XP, permisos/RLS y rollback.');
+  console.log('PASS PostgreSQL WASM: quince migraciones; perfiles/resultados, comunidad y presencia, perfiles e invitaciones, ranking y pase trimestral, colección y archivo, assets definitivos y metadata, misiones diarias/semanales/mensuales, ganadores por desempate, victoria a 200 XP, misiones especiales (Cum Laude y Victoria aplastante), permisos/RLS y rollback.');
   console.log('No verifica Supabase Auth/PostgREST ni concurrencia con varias conexiones.');
 } finally {
   await db.close();

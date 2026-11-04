@@ -57,9 +57,23 @@ class MisionesSupabaseTest {
         cuentas.reclamarMision(jwt,m.id());assertEquals("{\"p_id\":\"temporada:jugar10:2026-10\"}",cuerpo.get());
         assertEquals(400,assertThrows(ExcepcionCuenta.class,()->cuentas.reclamarMision(jwt,"temporada:jugar10:2026-13")).estado());
     }
+    static final String ESPECIALES = ACTUAL.replace("\"reinicioTemporada\"", """
+        "especiales":[{"id":"especial:cumlaude","titulo":"Cum Laude","descripcion":"Gana una partida con 20 o más puntos de prestigio.","objetivo":1,"progreso":1,"xp":0,"puntosPase":0,"completada":true,"reclamada":false,"recompensa":{"id":"especial_cum_laude","tipo":"marco","nombre":"Cum Laude","asset":"/assets/seasons/misiones-especiales/marcos/marco-cum-laude.png","assets":null,"rareza":"legendario"}},{"id":"especial:paliza5","titulo":"Victoria aplastante","descripcion":"Gana sacando 5.","objetivo":1,"progreso":0,"xp":500,"puntosPase":500,"completada":false,"reclamada":false,"recompensa":null}],"reinicioTemporada\"""".strip());
+    @Test void proyectaMisionesEspecialesConMarcoYReclamaPorId() {
+        respuesta.set(ESPECIALES);
+        var misiones=cuentas.misiones(jwt);
+        assertEquals(2,misiones.especiales().size());
+        var cum=misiones.especiales().get(0); var paliza=misiones.especiales().get(1);
+        assertEquals("marco",cum.recompensa().tipo());assertEquals("especial_cum_laude",cum.recompensa().id());assertEquals(0,cum.xp());
+        assertNull(paliza.recompensa());assertEquals(500,paliza.xp());
+        cuentas.reclamarMision(jwt,"especial:cumlaude");assertEquals("{\"p_id\":\"especial:cumlaude\"}",cuerpo.get());
+        assertEquals(400,assertThrows(ExcepcionCuenta.class,()->cuentas.reclamarMision(jwt,"especial:Cum Laude")).estado());
+        respuesta.set(ESPECIALES.replace("/assets/seasons/misiones-especiales/marcos/marco-cum-laude.png","https://evil.test/m.png"));
+        assertEquals(503,assertThrows(ExcepcionCuenta.class,()->cuentas.misiones(jwt)).estado());
+    }
     @Test void despliegueAntiguoNoInventaMisionesMensuales() {
         respuesta.set(BASE);var m=cuentas.misiones(jwt);
-        assertTrue(m.temporada().isEmpty());assertNull(m.reinicioTemporada());
+        assertTrue(m.temporada().isEmpty());assertNull(m.reinicioTemporada());assertTrue(m.especiales().isEmpty());
     }
     @Test void rechazaCantidadIncoherenteYFechaInvalida() {
         respuesta.set(ACTUAL.replace("\"puntosPase\":1000","\"puntosPase\":999"));

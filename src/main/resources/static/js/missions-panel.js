@@ -63,7 +63,7 @@ export function mountMissions(root,{accounts,onReward=()=>{}}){
       const updated=await(kind==='mission'?accounts.claimMission(id):accounts.claimSeasonReward(pass.temporada.id,id));
       if(!valid(token))return;
       if(kind==='mission')data=updated;else pass=updated;
-      notice=kind==='mission'?(mission.recompensa?`${types[mission.recompensa.tipo]||'Cosmético'} «${mission.recompensa.nombre}» añadido a tu colección. Equípalo desde tu perfil.`:'Misión reclamada. Progreso actualizado desde el servidor.'):'Cosméticos reclamados: ya están en tu colección permanente.';
+      notice=kind==='mission'?(mission.recompensa?`${types[mission.recompensa.tipo]||'Cosmético'} «${mission.recompensa.nombre}» añadido a tu colección y equipado en tu perfil.`:'Misión reclamada. Progreso actualizado desde el servidor.'):'Cosméticos reclamados: ya están en tu colección permanente.';
       if(kind==='mission')await Promise.resolve(onReward());
     }catch(error){if(!valid(token))return;notice=(error?.message||'No se pudo confirmar la reclamación.')+' Actualiza el progreso para comprobar su estado antes de volver a reclamar.';}
     if(!valid(token))return;

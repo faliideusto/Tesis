@@ -1,5 +1,5 @@
 -- Tesis: misiones especiales permanentes (una sola vez por cuenta), visibles desde el inicio.
---   especial:cumlaude  Gana una partida con 20 o más de prestigio -> marco «Cum Laude».
+--   especial:cumlaude  Gana una partida con 20 o más de prestigio -> marco «Cum Laude», que se equipa al reclamarlo.
 --   especial:paliza5   Gana sacando 5 o más de prestigio al segundo -> +500 XP, sin puntos de pase.
 -- Se calculan solo con resultados del servidor (match_participants). Cuentan las partidas
 -- registradas desde la activación de la comunidad. Aplicar una vez tras 202611030002.
@@ -109,7 +109,12 @@ begin
             -- Premio cosmético: no concede XP ni puntos de pase.
             select * into strict premio from private.cosmetics_catalog where id = e.recompensa;
             insert into private.cosmetics_inventory(user_id,cosmetic_id,kind) values(actor,premio.id,premio.kind)
-            on conflict do nothing;
+            on conflict do nothing returning cosmetic_id into insertada;
+            -- Se equipa solo al reclamarlo (una vez): no hace falta la pantalla de personalización.
+            if insertada is not null then
+                insert into private.cosmetics_loadout(user_id,kind,cosmetic_id) values(actor,premio.kind,premio.id)
+                on conflict(user_id,kind) do update set cosmetic_id = excluded.cosmetic_id;
+            end if;
         else
             insert into private.mission_claims(user_id,mission_id,xp) values(actor,p_id,e.xp)
             on conflict(user_id,mission_id) do nothing returning mission_id into insertada;

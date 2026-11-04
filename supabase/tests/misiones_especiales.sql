@@ -53,8 +53,11 @@ begin
     if (select xp from public.profiles)<>antes then raise exception 'El marco no debe dar XP'; end if;
     if not exists(select 1 from jsonb_array_elements(public.cosmeticos()->'inventario') i where i->>'id'='especial_cum_laude')
        then raise exception 'Marco fuera del inventario'; end if;
-    perform public.equipar_cosmetico('marco','especial_cum_laude');
-    if public.cosmeticos()->'equipamiento'->>'marco'<>'especial_cum_laude' then raise exception 'Marco no equipable'; end if;
+    if public.cosmeticos()->'equipamiento'->>'marco' is distinct from 'especial_cum_laude' then raise exception 'El marco debe equiparse al reclamarlo'; end if;
+    -- Una segunda reclamación no vuelve a equiparlo si la persona lo cambió.
+    perform public.equipar_cosmetico('marco',null);
+    perform public.reclamar_mision('especial:cumlaude');
+    if public.cosmeticos()->'equipamiento'->>'marco' is not null then raise exception 'Reclamar otra vez no debe reequipar'; end if;
 end $$;
 
 select set_config('request.jwt.claim.sub','91000000-0000-0000-0000-000000000002',true);

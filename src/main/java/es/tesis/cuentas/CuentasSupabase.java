@@ -28,9 +28,9 @@ public final class CuentasSupabase implements AutoCloseable {
     public record PeriodoRanking(String id, String inicio, String fin, String zonaHoraria) {}
     public record Ranking(String criterio, String ambito, PeriodoRanking periodo, List<EntradaRanking> entradas, EntradaRanking propia) {}
     public record Mision(String id, String titulo, long objetivo, long progreso, long xp, boolean completada, boolean reclamada,
-                         String descripcion, long puntosPase) {}
+                         String descripcion, long puntosPase, Cosmetico recompensa) {}
     public record Misiones(List<Mision> diarias, List<Mision> semanales, String reinicioDiario, String reinicioSemanal,
-                           List<Mision> temporada, String reinicioTemporada) {}
+                           List<Mision> temporada, String reinicioTemporada, List<Mision> especiales) {}
     public record Temporada(String id, String nombre, String inicio, String fin, String zonaHoraria, boolean activa, boolean gratuita) {}
     public record ProgresoPase(long puntos, int nivel, Long puntosSiguienteNivel, int maxNivel, long puntosPorNivel) {}
     public record Cosmetico(String id, String tipo, String nombre, String asset, String rareza, Map<String,String> assets) {
@@ -408,7 +408,7 @@ public final class CuentasSupabase implements AutoCloseable {
     }
 
     public Misiones reclamarMision(String jwt, String id) {
-        if (id == null || !id.matches("(?:(diarias|semanales):[a-z0-9]+:[0-9]{4}-[0-9]{2}-[0-9]{2}|temporada:[a-z0-9]+:[0-9]{4}-(0[1-9]|1[0-2]))") || id.length() > 64)
+        if (id == null || !id.matches("(?:(diarias|semanales):[a-z0-9]+:[0-9]{4}-[0-9]{2}-[0-9]{2}|temporada:[a-z0-9]+:[0-9]{4}-(0[1-9]|1[0-2])|especial:[a-z0-9]+)") || id.length() > 64)
             throw new ExcepcionCuenta(400, "Identificador de misión no válido.");
         JsonObject cuerpo = new JsonObject(); cuerpo.addProperty("p_id", id);
         return leerMisiones(rpc(jwt, "reclamar_mision", cuerpo));
@@ -450,7 +450,8 @@ public final class CuentasSupabase implements AutoCloseable {
             String fin = dato.has("reinicioTemporada") ? cadena(dato, "reinicioTemporada", 64) : null;
             if (fin != null) OffsetDateTime.parse(fin);
             return new Misiones(listaMisiones(dato, "diarias"), listaMisiones(dato, "semanales"), diario, semanal,
-                    dato.has("temporada") ? listaMisiones(dato, "temporada") : List.of(), fin);
+                    dato.has("temporada") ? listaMisiones(dato, "temporada") : List.of(), fin,
+                    dato.has("especiales") ? listaMisiones(dato, "especiales") : List.of());
         } catch (RuntimeException e) { throw indisponible(); }
     }
     private List<Mision> listaMisiones(JsonObject dato, String campo) {
@@ -463,9 +464,13 @@ public final class CuentasSupabase implements AutoCloseable {
             if (!ids.add(id) || objetivo < 1 || completa != (progreso >= objetivo) || (reclamada && !completa)) throw indisponible();
             String titulo = cadena(m, "titulo", 120);
             long xp = numero(m, "xp"), puntos = m.has("puntosPase") ? numero(m, "puntosPase") : xp;
-            if (puntos != xp) throw indisponible(); // Recibos existentes 1:1; no multiplicador del cliente.
+            // Recibos existentes 1:1; las especiales solo dan XP. Nunca un multiplicador del cliente.
+            if (puntos != (campo.equals("especiales") ? 0 : xp)) throw indisponible();
+            // Solo las misiones especiales entregan un cosmético en lugar de (o además de) XP.
+            JsonElement premio = m.get("recompensa");
+            Cosmetico recompensa = premio == null || premio.isJsonNull() ? null : leerCosmetico(premio.getAsJsonObject());
             resultado.add(new Mision(id, titulo, objetivo, progreso, xp, completa, reclamada,
-                    m.has("descripcion") ? cadena(m, "descripcion", 300) : titulo, puntos));
+                    m.has("descripcion") ? cadena(m, "descripcion", 300) : titulo, puntos, recompensa));
         }
         return List.copyOf(resultado);
     }

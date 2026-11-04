@@ -34,6 +34,17 @@ El día comienza a las 00:00 UTC; la semana, el lunes a las 00:00 UTC. La interf
 
 Solo cuentan partidas completadas con la cuenta vinculada al entrar en la sala y resultados confirmados por el servidor. No cuentan partidas abandonadas ni resultados anteriores a la activación de las misiones. La fecha autoritativa de finalización decide el periodo, incluso si el guardado se retrasa. Si el resultado sigue pendiente, actualizar las misiones después de su confirmación. La XP es cosmética y no modifica cartas, acciones ni reglas.
 
+### Misiones especiales
+
+Permanentes y visibles desde el principio; cada cuenta las reclama una sola vez. Requieren la migración `202611050001_misiones_especiales.sql` (aplicar tras `202611030002`).
+
+| ID | Objetivo | Recompensa |
+| --- | --- | --- |
+| `especial:cumlaude` | Ganar una partida con 20 o más de prestigio | Marco legendario «Cum Laude» (`especial_cum_laude`), sin XP |
+| `especial:paliza5` | Ganar sacando 5 o más de prestigio al segundo | 500 XP, sin puntos de pase |
+
+Se detectan con `match_participants`: prestigio final y ganador confirmados por el servidor. Cuentan las partidas desde la activación de la comunidad, así que quien ya lo haya logrado puede reclamarla al instante. El marco va al inventario y se equipa automáticamente al reclamarlo (solo la primera vez), así que se ve en la mesa aunque la pantalla de personalización siga desactivada. `FEATURES.misiones` pasa a `true`; `FEATURES.personalizacion` sigue en `false`. Arte en `assets/seasons/misiones-especiales/marcos/marco-cum-laude.png`; fuente vectorial en `docs/design/marco-cum-laude.svg`.
+
 ## Instalación
 
 1. Mantener la migración de cuentas existente `202610050001_cuentas_progresion.sql` aplicada.

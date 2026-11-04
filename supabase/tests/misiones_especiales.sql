@@ -40,7 +40,7 @@ begin
     if not (c->>'completada')::boolean or (c->>'reclamada')::boolean or (c->>'xp')::int<>0
        or c->'recompensa'->>'id'<>'especial_cum_laude' or c->'recompensa'->>'tipo'<>'marco' then raise exception 'Cum Laude Ada: %',c; end if;
     if (p->>'completada')::boolean or (p->>'progreso')::int<>0 or (p->>'xp')::int<>500
-       or (p->>'puntosPase')::int<>500 or jsonb_typeof(p->'recompensa')<>'null' then raise exception 'Paliza Ada: %',p; end if;
+       or (p->>'puntosPase')::int<>0 or jsonb_typeof(p->'recompensa')<>'null' then raise exception 'Paliza Ada: %',p; end if;
     begin perform public.reclamar_mision('especial:paliza5'); raise exception 'Incompleta aceptada';
     exception when invalid_parameter_value then null; end;
     begin perform public.reclamar_mision('especial:inventada'); raise exception 'Inventada aceptada';
@@ -70,7 +70,7 @@ begin
     perform public.reclamar_mision('especial:paliza5');
     perform public.reclamar_mision('especial:paliza5');
     if (select xp from public.profiles)<>antes+500 then raise exception 'Paliza debe sumar 500 XP una vez'; end if;
-    if (public.pase_temporada()->'progreso'->>'puntos')::bigint<>puntos+500 then raise exception 'Recibo de pase 1:1'; end if;
+    if (public.pase_temporada()->'progreso'->>'puntos')::bigint<>puntos then raise exception 'La Paliza no debe sumar puntos de pase'; end if;
     begin perform public.reclamar_mision('especial:cumlaude'); raise exception 'Cum Laude sin lograr';
     exception when invalid_parameter_value then null; end;
 end $$;

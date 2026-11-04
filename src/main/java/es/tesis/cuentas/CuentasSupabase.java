@@ -464,7 +464,8 @@ public final class CuentasSupabase implements AutoCloseable {
             if (!ids.add(id) || objetivo < 1 || completa != (progreso >= objetivo) || (reclamada && !completa)) throw indisponible();
             String titulo = cadena(m, "titulo", 120);
             long xp = numero(m, "xp"), puntos = m.has("puntosPase") ? numero(m, "puntosPase") : xp;
-            if (puntos != xp) throw indisponible(); // Recibos existentes 1:1; no multiplicador del cliente.
+            // Recibos existentes 1:1; las especiales solo dan XP. Nunca un multiplicador del cliente.
+            if (puntos != (campo.equals("especiales") ? 0 : xp)) throw indisponible();
             // Solo las misiones especiales entregan un cosmético en lugar de (o además de) XP.
             JsonElement premio = m.get("recompensa");
             Cosmetico recompensa = premio == null || premio.isJsonNull() ? null : leerCosmetico(premio.getAsJsonObject());

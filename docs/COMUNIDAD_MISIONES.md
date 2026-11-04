@@ -41,7 +41,7 @@ Permanentes y visibles desde el principio; cada cuenta las reclama una sola vez.
 | ID | Objetivo | Recompensa |
 | --- | --- | --- |
 | `especial:cumlaude` | Ganar una partida con 20 o más de prestigio | Marco legendario «Cum Laude» (`especial_cum_laude`), sin XP |
-| `especial:paliza5` | Ganar sacando 5 o más de prestigio al segundo | 500 XP (y 500 puntos de pase, como el resto de misiones) |
+| `especial:paliza5` | Ganar sacando 5 o más de prestigio al segundo | 500 XP, sin puntos de pase |
 
 Se detectan con `match_participants`: prestigio final y ganador confirmados por el servidor. Cuentan las partidas desde la activación de la comunidad, así que quien ya lo haya logrado puede reclamarla al instante. El marco va al inventario y se equipa desde el perfil. Arte en `assets/seasons/misiones-especiales/marcos/marco-cum-laude.png`; fuente vectorial en `docs/design/marco-cum-laude.svg`.
 

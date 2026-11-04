@@ -1,11 +1,41 @@
 -- Tesis: misiones especiales permanentes (una sola vez por cuenta), visibles desde el inicio.
 --   especial:cumlaude  Gana una partida con 20 o más de prestigio -> marco «Cum Laude».
---   especial:paliza5   Gana sacando 5 o más de prestigio al segundo -> +500 XP (y 500 puntos de pase, 1:1).
+--   especial:paliza5   Gana sacando 5 o más de prestigio al segundo -> +500 XP, sin puntos de pase.
 -- Se calculan solo con resultados del servidor (match_participants). Cuentan las partidas
 -- registradas desde la activación de la comunidad. Aplicar una vez tras 202611030002.
 begin;
 alter table private.mission_claims drop constraint mission_claims_xp_check;
 alter table private.mission_claims add constraint mission_claims_xp_check check(xp in (50,75,100,150,200,300,400,500,1000,1500));
+
+-- Las misiones especiales solo dan XP: sus recibos no suman puntos al pase de temporada.
+create or replace function private.recibo_pase_trigger() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+    if TG_TABLE_NAME = 'reward_ledger' then
+        perform private.anotar_puntos_pase(NEW.user_id,'partida',NEW.match_id::text,coalesce(NEW.pass_points,NEW.xp),
+            (select completed_at from private.matches where id = NEW.match_id));
+    elsif NEW.mission_id not like 'especial:%' then
+        perform private.anotar_puntos_pase(NEW.user_id,'mision',NEW.mission_id,NEW.xp,NEW.claimed_at);
+    end if;
+    return NEW;
+end $$;
+create or replace function private.sincronizar_pase(p_actor uuid,p_temporada text) returns void
+language plpgsql security definer set search_path = '' as $$
+declare recibo record; temporada private.pass_seasons%rowtype;
+begin
+    perform 1 from public.profiles where id = p_actor for update;
+    select * into temporada from private.pass_seasons where id = p_temporada;
+    for recibo in
+        select 'partida' fuente,r.match_id::text clave,coalesce(r.pass_points,r.xp) puntos,m.completed_at fecha
+        from private.reward_ledger r join private.matches m on m.id = r.match_id
+        where r.user_id = p_actor and m.completed_at >= temporada.starts_at and m.completed_at < temporada.ends_at and m.completed_at <= now()
+        union all select 'mision',mc.mission_id,mc.xp,mc.claimed_at from private.mission_claims mc
+        where mc.user_id = p_actor and mc.mission_id not like 'especial:%'
+          and mc.claimed_at >= temporada.starts_at and mc.claimed_at < temporada.ends_at and mc.claimed_at <= now()
+    loop
+        perform private.anotar_puntos_pase(p_actor,recibo.fuente,recibo.clave,recibo.puntos,recibo.fecha);
+    end loop;
+end $$;
 
 insert into private.cosmetics_catalog(id,kind,name,asset,rarity) values
 ('especial_cum_laude','marco','Cum Laude','/assets/seasons/misiones-especiales/marcos/marco-cum-laude.png','legendario');
@@ -57,7 +87,7 @@ begin
         'reinicioTemporada',(select fin from private.metadatos_temporada(now())))
     into resultado from vistas;
     select coalesce(jsonb_agg(jsonb_build_object('id',e.id,'titulo',e.titulo,'descripcion',e.descripcion,
-            'objetivo',e.objetivo,'progreso',e.progreso,'xp',e.xp,'puntosPase',e.xp,
+            'objetivo',e.objetivo,'progreso',e.progreso,'xp',e.xp,'puntosPase',0,
             'completada',e.completada,'reclamada',e.reclamada,
             'recompensa',(select jsonb_build_object('id',c.id,'tipo',c.kind,'nombre',c.name,'asset',c.asset,'assets',c.assets,'rareza',c.rarity)
                           from private.cosmetics_catalog c where c.id = e.recompensa)) order by e.id),'[]'::jsonb)

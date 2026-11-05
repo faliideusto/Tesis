@@ -32,3 +32,6 @@
 /* Misiones especiales: el emblema muestra el cosmético que se gana. */
 .mission-emblem.mission-prize{width:58px;height:58px;padding:0;border-color:#e8c172;background:radial-gradient(#1d1440,#081b26);box-shadow:0 0 12px #e5b95755;overflow:visible}.mission-prize .customization-art{display:block;width:100%;height:100%;padding:0}.mission-prize .customization-art img{width:118%;height:118%;margin:-9%;object-fit:contain;display:block}
 .missions-group-especiales .mission-card{border-color:#c9a25a}
+/* Sin temporada ni pase: una sola columna y cuatro indicadores. */
+.missions-layout.is-single{grid-template-columns:minmax(0,1fr)}.missions-stats.is-compact{grid-template-columns:repeat(4,minmax(0,1fr))}.missions-refresh-only{display:flex;justify-content:flex-end;align-items:center}
+@media(max-width:760px){.missions-stats.is-compact{grid-template-columns:repeat(2,minmax(0,1fr))}.missions-refresh-only{justify-content:flex-start}}

@@ -10,11 +10,11 @@ function root(){const nodes=new Map(),listeners=new Map();return {innerHTML:'',n
 const mission={id:'daily_game',titulo:'<script>bad</script>',descripcion:'Termina una partida.',objetivo:1,progreso:1,xp:50,puntosPase:50,completada:true,reclamada:false};
 const data={diarias:[mission],semanales:[],temporada:[],reinicioDiario:'2026-10-08T00:00:00Z'};
 const pass={temporada:{id:'2026-10',nombre:'Crónicas del Archivo',fin:'2026-10-31T23:00:00Z',activa:true},progreso:{nivel:1,maxNivel:10,puntos:450,puntosSiguienteNivel:500,puntosPorNivel:500},recompensas:[{id:'badge',nombre:'Crónicas',nivel:1,cosmeticos:[{tipo:'insignia',nombre:'Archivo',asset:'https://evil.test/a.png'}],desbloqueada:true,reclamada:false}]};
-const html=missionsView(data,pass,{expanded:true});
+const html=missionsView(data,pass,{expanded:true,season:true});
 assert(html.includes('&lt;script&gt;'));assert(!html.includes('<script>'));assert(!html.includes('evil.test'));
 assert(html.includes('data-countdown-end="2026-10-08T00:00:00Z"'));assert(!html.includes('Se renuevan'));assert(html.includes('data-mission-claim="daily_game"'));assert(html.includes('data-season-claim="badge"'));assert(html.includes('50 puntos para el siguiente nivel'));
 const expired={...pass,temporada:{...pass.temporada,fin:'2000-01-01T00:00:00Z',activa:true}};
-assert.match(missionsView(data,expired),/data-season-claim="badge" disabled/,'Stale active season cannot expose an enabled claim after its end');
+assert.match(missionsView(data,expired,{season:true}),/data-season-claim="badge" disabled/,'Stale active season cannot expose an enabled claim after its end');
 assert.equal(missionState({...mission,reclamada:true}),'reclamada');
 assert.equal(seasonCountdown(null),'Tiempo restante pendiente de confirmar');assert.equal(seasonCountdown('2026-10-31T23:00:00Z',Date.parse('2026-10-07T12:00:00Z')),'24 días · 11 h · 0 min · 0 s restantes');assert.equal(seasonCountdown('2026-01-01',Date.parse('2026-10-07')),'Temporada finalizada');
 let identity='one',resolve;
@@ -25,10 +25,15 @@ const button={disabled:false,dataset:{missionClaim:mission.id},hasAttribute:key=
 const click=()=>activeRoot.listeners.get('click')({target:{closest:()=>button}});
 click();click();await flush();assert.equal(claims,1);assert.equal(rewards,1);assert(activeRoot.innerHTML.includes('is-claimed'),'Authoritative claim response survives a failed follow-up read');assert(activeRoot.innerHTML.includes('lectura interrumpida'));
 click();await flush();assert.equal(claims,1,'Already claimed reward cannot be resubmitted');active.destroy();
-const partialRoot=root(),partial=mountMissions(partialRoot,{accounts:{identity:()=>identity,missions:async()=>data}});await flush();assert(partialRoot.innerHTML.includes('daily_game'),'Missing pass endpoint cannot hide available missions');assert(partialRoot.innerHTML.includes('No se ha podido actualizar el pase'));partial.destroy();
+const partialRoot=root(),partial=mountMissions(partialRoot,{accounts:{identity:()=>identity,missions:async()=>data},season:true});await flush();assert(partialRoot.innerHTML.includes('daily_game'),'Missing pass endpoint cannot hide available missions');assert(partialRoot.innerHTML.includes('No se ha podido actualizar el pase'));partial.destroy();
 const special={id:'especial:cumlaude',titulo:'Cum Laude',descripcion:'Gana una partida con 20 o más puntos de prestigio.',objetivo:1,progreso:1,xp:0,puntosPase:0,completada:true,reclamada:false,recompensa:{id:'especial_cum_laude',tipo:'marco',nombre:'Cum Laude',asset:'/assets/seasons/misiones-especiales/marcos/marco-cum-laude.png',rareza:'legendario'}};
 const crush={id:'especial:paliza5',titulo:'Victoria aplastante',descripcion:'Gana sacando 5.',objetivo:1,progreso:0,xp:500,puntosPase:0,completada:false,reclamada:false,recompensa:null};
 const specialHtml=missionsView({...data,especiales:[special,crush]},pass);
 assert(specialHtml.includes('Misiones especiales'));assert(specialHtml.includes('Permanentes'));assert(specialHtml.includes('marco-cum-laude.png'));assert(specialHtml.includes('Marco de perfil «Cum Laude»'));assert(specialHtml.includes('+500 XP'));assert(!specialHtml.includes('+0 puntos de pase'));assert(specialHtml.includes('data-mission-claim="especial:cumlaude"'));assert(specialHtml.includes('data-mission-period="especiales"'));
 assert(!missionsView({...data,especiales:[special]},pass,{period:'diarias'}).includes('especial:cumlaude'),'Period filter hides special missions');
+// Por defecto no hay temporada ni pase: solo XP en diarias/semanales.
+const plain=missionsView({...data,temporada:[{...mission,id:'temporada:jugar10:2026-10',titulo:'Diez partidas de temporada'}]},pass);
+assert(!plain.includes('Misiones de temporada'));assert(!plain.includes('temporada:jugar10'));assert(!plain.includes('puntos de pase'));assert(!plain.includes('missions-pass'));assert(!plain.includes('data-mission-period="temporada"'));assert(!plain.includes('Crónicas del Archivo'));
+assert(plain.includes('Recompensa de experiencia'));assert(plain.includes('+50 XP'));assert(plain.includes('data-missions-refresh'));
+let passReads=0;const noPassRoot=root(),noPass=mountMissions(noPassRoot,{accounts:{identity:()=>identity,missions:async()=>data,seasonPass:async()=>{passReads++;return pass;}}});await flush();assert.equal(passReads,0,'Hidden season does not read the pass');assert(noPassRoot.innerHTML.includes('daily_game'));noPass.destroy();
 console.log('Misiones: estados, countdown servidor, escape, identidad, claim único y respuesta autoritativa PASS');

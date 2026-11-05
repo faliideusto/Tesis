@@ -48,6 +48,45 @@ class ServidorWebTest {
         }
     }
 
+    @Test void ahorraTransferenciaConGzipYRevalidacion() throws Exception {
+        try (var web = new ServidorWeb(0)) {
+            web.iniciar(); var c = cliente(); String base = "http://localhost:" + web.puerto();
+            var plano = c.send(HttpRequest.newBuilder(URI.create(base + "/js/app.js")).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+            assertTrue(plano.headers().firstValue("Content-Encoding").isEmpty());
+            String etag = plano.headers().firstValue("ETag").orElseThrow();
+            var comprimido = c.send(HttpRequest.newBuilder(URI.create(base + "/js/app.js")).header("Accept-Encoding", "gzip, deflate").GET().build(),
+                    HttpResponse.BodyHandlers.ofByteArray());
+            assertEquals("gzip", comprimido.headers().firstValue("Content-Encoding").orElseThrow());
+            assertEquals("Accept-Encoding", comprimido.headers().firstValue("Vary").orElseThrow());
+            assertTrue(comprimido.body().length < plano.body().length);
+            try (var z = new java.util.zip.GZIPInputStream(new java.io.ByteArrayInputStream(comprimido.body()))) {
+                assertArrayEquals(plano.body(), z.readAllBytes());
+            }
+            assertEquals(etag, comprimido.headers().firstValue("ETag").orElseThrow());
+            var revalidado = c.send(HttpRequest.newBuilder(URI.create(base + "/js/app.js")).header("If-None-Match", etag).GET().build(),
+                    HttpResponse.BodyHandlers.ofByteArray());
+            assertEquals(304, revalidado.statusCode()); assertEquals(0, revalidado.body().length);
+            var imagen = c.send(HttpRequest.newBuilder(URI.create(base + "/assets/Tesis-assets/cartas/reverso_idea.webp")).header("Accept-Encoding", "gzip").GET().build(),
+                    HttpResponse.BodyHandlers.ofByteArray());
+            assertTrue(imagen.headers().firstValue("Content-Encoding").isEmpty());
+            var imagen304 = c.send(HttpRequest.newBuilder(URI.create(base + "/assets/Tesis-assets/cartas/reverso_idea.webp"))
+                    .header("If-None-Match", imagen.headers().firstValue("ETag").orElseThrow()).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+            assertEquals(304, imagen304.statusCode());
+            var otro = c.send(HttpRequest.newBuilder(URI.create(base + "/js/app.js")).header("If-None-Match", "\"otra\"").GET().build(),
+                    HttpResponse.BodyHandlers.ofByteArray());
+            assertEquals(200, otro.statusCode());
+            var api = post(c, base + "/api/game", "{\"nombres\":[\"Ana\",\"Bruno\",\"Clara\"]}");
+            var estado = c.send(HttpRequest.newBuilder(URI.create(base + "/api/game/state")).header("Accept-Encoding", "gzip").GET().build(),
+                    HttpResponse.BodyHandlers.ofByteArray());
+            assertEquals(200, estado.statusCode());
+            if (estado.headers().firstValue("Content-Encoding").isPresent())
+                try (var z = new java.util.zip.GZIPInputStream(new java.io.ByteArrayInputStream(estado.body()))) {
+                    assertTrue(JsonParser.parseString(new String(z.readAllBytes(), StandardCharsets.UTF_8)).isJsonObject());
+                }
+            assertTrue(api.body().contains("Ana"));
+        }
+    }
+
     @Test void rechazaIndicesInvalidosTambienEnLaApiLocal() throws Exception {
         try (var web = new ServidorWeb(0)) {
             web.iniciar(); var c = cliente(); String base = "http://localhost:" + web.puerto();

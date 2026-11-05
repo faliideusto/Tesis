@@ -434,6 +434,51 @@ public final class ServidorWeb implements AutoCloseable {
                 ? new GsonBuilder().serializeNulls().create().toJson(dato) : gson.toJson(dato);
         enviar(x, estado, "application/json; charset=utf-8", cuerpo.getBytes(StandardCharsets.UTF_8));
     }
+    /** Huella del contenido y, para texto, su versión gzip; los recursos del classpath no cambian sin redesplegar. */
+    private record Recurso(String etag, byte[] gzip) {}
+    private final Map<String, Recurso> recursos = new ConcurrentHashMap<>();
+    private static final int MINIMO_GZIP = 1024;
+
+    private static boolean comprimible(String tipo) {
+        return tipo.startsWith("text/") || tipo.startsWith("application/json") || tipo.startsWith("image/svg+xml");
+    }
+    private static boolean aceptaGzip(HttpExchange x) {
+        for (String valor : x.getRequestHeaders().getOrDefault("Accept-Encoding", List.of()))
+            for (String parte : valor.split(",")) {
+                String[] trozos = parte.trim().split(";");
+                if (trozos[0].trim().equalsIgnoreCase("gzip")
+                        && !(trozos.length > 1 && trozos[1].replace(" ", "").matches("q=0(\\.0*)?"))) return true;
+            }
+        return false;
+    }
+    private static byte[] gzip(byte[] datos) throws IOException {
+        var salida = new ByteArrayOutputStream(datos.length / 3 + 64);
+        try (var z = new java.util.zip.GZIPOutputStream(salida)) { z.write(datos); }
+        return salida.toByteArray();
+    }
+    private Recurso recurso(String ruta, String tipo) throws IOException {
+        Recurso guardado = recursos.get(ruta);
+        if (guardado != null) return guardado;
+        try (InputStream archivo = ServidorWeb.class.getResourceAsStream("/static" + ruta)) {
+            if (archivo == null) return null;
+            byte[] datos = archivo.readAllBytes();
+            var resumen = java.security.MessageDigest.getInstance("SHA-256").digest(datos);
+            String etag = "\"" + HexFormat.of().formatHex(resumen, 0, 12) + "\"";
+            byte[] comprimido = comprimible(tipo) && datos.length >= MINIMO_GZIP ? gzip(datos) : null;
+            Recurso nuevo = new Recurso(etag, comprimido != null && comprimido.length < datos.length ? comprimido : null);
+            recursos.put(ruta, nuevo);
+            return nuevo;
+        } catch (java.security.NoSuchAlgorithmException e) { throw new IOException(e); }
+    }
+    private static boolean coincide(HttpExchange x, String etag) {
+        for (String valor : x.getRequestHeaders().getOrDefault("If-None-Match", List.of()))
+            for (String parte : valor.split(",")) {
+                String t = parte.trim();
+                if (t.startsWith("W/")) t = t.substring(2);
+                if (t.equals("*") || t.equals(etag)) return true;
+            }
+        return false;
+    }
     private void estatico(HttpExchange x) throws IOException {
         try {
             if (!x.getRequestMethod().equals("GET") && !x.getRequestMethod().equals("HEAD")) {
@@ -444,26 +489,40 @@ public final class ServidorWeb implements AutoCloseable {
             if (ruta.contains("..") || ruta.contains("\\") || ruta.contains("\0") || ruta.contains("/referencias/")) {
                 enviar(x, 404, "text/plain", new byte[0]); return;
             }
-            try (InputStream archivo = ServidorWeb.class.getResourceAsStream("/static" + ruta)) {
-                if (archivo == null) { enviar(x, 404, "text/plain", new byte[0]); return; }
-                String tipo = ruta.endsWith(".webp") ? "image/webp" : ruta.endsWith(".png") ? "image/png" : ruta.endsWith(".svg") ? "image/svg+xml" : ruta.endsWith(".css") ? "text/css; charset=utf-8"
-                        : ruta.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8";
-                x.getResponseHeaders().set("Cache-Control", ruta.endsWith(".png") || ruta.endsWith(".webp") ? "public, max-age=86400" : "no-cache");
-                x.getResponseHeaders().set("Content-Security-Policy", "default-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'"
-                        + (cuentas.habilitado() ? " " + cuentas.url() : "")
-                        + "; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
-                if (x.getRequestMethod().equals("HEAD")) { x.getResponseHeaders().set("Content-Type", tipo); x.sendResponseHeaders(200, -1); }
-                else {
-                    x.getResponseHeaders().set("Content-Type", tipo);
-                    x.getResponseHeaders().set("X-Content-Type-Options", "nosniff");
-                    x.sendResponseHeaders(200, 0); archivo.transferTo(x.getResponseBody());
-                }
+            String tipo = ruta.endsWith(".webp") ? "image/webp" : ruta.endsWith(".png") ? "image/png" : ruta.endsWith(".svg") ? "image/svg+xml" : ruta.endsWith(".css") ? "text/css; charset=utf-8"
+                    : ruta.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8";
+            Recurso recurso = recurso(ruta, tipo);
+            if (recurso == null) { enviar(x, 404, "text/plain", new byte[0]); return; }
+            var cabeceras = x.getResponseHeaders();
+            cabeceras.set("Cache-Control", ruta.endsWith(".png") || ruta.endsWith(".webp") ? "public, max-age=86400" : "no-cache");
+            cabeceras.set("Content-Security-Policy", "default-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'"
+                    + (cuentas.habilitado() ? " " + cuentas.url() : "")
+                    + "; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+            cabeceras.set("Content-Type", tipo);
+            cabeceras.set("X-Content-Type-Options", "nosniff");
+            cabeceras.set("ETag", recurso.etag());
+            if (recurso.gzip() != null) cabeceras.set("Vary", "Accept-Encoding");
+            // Sin cambios desde la última descarga: solo cabeceras.
+            if (coincide(x, recurso.etag())) { x.sendResponseHeaders(304, -1); return; }
+            boolean comprimir = recurso.gzip() != null && aceptaGzip(x);
+            if (comprimir) cabeceras.set("Content-Encoding", "gzip");
+            if (x.getRequestMethod().equals("HEAD")) { x.sendResponseHeaders(200, -1); return; }
+            if (comprimir) {
+                x.sendResponseHeaders(200, recurso.gzip().length);
+                x.getResponseBody().write(recurso.gzip());
+            } else try (InputStream archivo = ServidorWeb.class.getResourceAsStream("/static" + ruta)) {
+                if (archivo == null) { x.sendResponseHeaders(404, -1); return; }
+                x.sendResponseHeaders(200, 0); archivo.transferTo(x.getResponseBody());
             }
         } finally { x.close(); }
     }
     private void enviar(HttpExchange x, int codigo, String tipo, byte[] bytes) throws IOException {
         x.getResponseHeaders().set("Content-Type", tipo);
         x.getResponseHeaders().set("X-Content-Type-Options", "nosniff");
+        if (comprimible(tipo) && bytes.length >= MINIMO_GZIP) {
+            x.getResponseHeaders().set("Vary", "Accept-Encoding");
+            if (aceptaGzip(x)) { bytes = gzip(bytes); x.getResponseHeaders().set("Content-Encoding", "gzip"); }
+        }
         x.sendResponseHeaders(codigo, bytes.length == 0 ? -1 : bytes.length);
         if (bytes.length > 0) x.getResponseBody().write(bytes);
     }

@@ -36,6 +36,8 @@ Solo cuentan partidas completadas con la cuenta vinculada al entrar en la sala y
 
 ### Misiones especiales
 
+En el panel actual solo se muestran estas misiones: diarias, semanales, temporada y pase están ocultos con `SHOW_ROUTINE` y `SHOW_SEASON` en `missions-panel.js` (el backend los sigue calculando).
+
 Permanentes y visibles desde el principio; cada cuenta las reclama una sola vez. Requieren la migración `202611050001_misiones_especiales.sql` (aplicar tras `202611030002`).
 
 | ID | Objetivo | Recompensa |

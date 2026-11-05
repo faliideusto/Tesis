@@ -13,7 +13,7 @@ export function homeCommunity() {
     ['perfil', 'profile', 'Mi perfil', 'Identidad y progreso'],
     ['amigos', 'friends', 'Amigos', 'Reúne a tu academia'],
     ['ranking', 'ranking', 'Ranking global', 'Tu puesto en la academia'],
-    ...(FEATURES.misiones ? [['misiones', 'missions', 'Misiones', 'Retos diarios y semanales']] : []),
+    ...(FEATURES.misiones ? [['misiones', 'missions', 'Misiones', 'Retos especiales']] : []),
   ];
   return `<section class="home-community" aria-labelledby="home-community-title">
     <div class="home-community-heading"><h2 id="home-community-title">Tu academia</h2><span>CRECE. COMPARTE. COMPITE.</span></div>

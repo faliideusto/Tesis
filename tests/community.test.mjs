@@ -22,7 +22,7 @@ assert.ok(!friendsView({codigo:hostile,amigos:[{codigo:hostile,nombre:hostile,ni
 assert.match(friendsView({codigo:'ABC',amigos:[],recibidas:[],enviadas:[]}),/Todavía no tienes amigos/);
 const ranked=rankingView({entradas:[{posicion:1,nombre:hostile,nivel:2,xp:500,victorias:3,partidas:5,yo:true}],propia:{posicion:90,nivel:1,xp:10}},'victorias');
 assert.match(ranked,/#90/);assert.match(ranked,/ranking-self/);assert.ok(!ranked.includes('<img src=x'));
-const missions=missionsView({diarias:[{id:hostile,titulo:hostile,objetivo:1,progreso:9,xp:50,completada:true,reclamada:false},{id:'claimed',titulo:'Ya recibida',objetivo:3,progreso:3,xp:75,completada:true,reclamada:true}],semanales:[],reinicioDiario:'2026-10-07T00:00:00Z',reinicioSemanal:'2026-10-12T00:00:00Z'});
+const missions=missionsView({diarias:[{id:hostile,titulo:hostile,objetivo:1,progreso:9,xp:50,completada:true,reclamada:false},{id:'claimed',titulo:'Ya recibida',objetivo:3,progreso:3,xp:75,completada:true,reclamada:true}],semanales:[],reinicioDiario:'2026-10-07T00:00:00Z',reinicioSemanal:'2026-10-12T00:00:00Z'},null,{routine:true});
 assert.ok(!missions.includes('<img src=x'));assert.match(missions,/max="1" value="1"/);assert.match(missions,/data-mission-claim="claimed" disabled/);assert.match(missions,/data-countdown-end=/);assert(!missions.includes('tu hora local'));
 
 class Root {
@@ -71,12 +71,12 @@ await scopeRoot.click(scopeRoot.controls.find(control=>control.dataset.rankingSc
 await scopeRoot.click(scopeRoot.querySelector('[data-community-refresh]'));await tick();assert.deepEqual(scopeCalls,[['xp','global'],['xp','semanal'],['victorias','semanal'],['victorias','temporada'],['victorias','semanal']],'Ordenar y actualizar conservan el ámbito seleccionado');
 
 let claims=0,rewards=0,resolveClaim;
-let missionData={diarias:[{id:'d',titulo:'Juega una partida',objetivo:1,progreso:1,xp:50,completada:true,reclamada:false}],semanales:[]};
+let missionData={diarias:[],semanales:[],especiales:[{id:'especial:paliza5',titulo:'Victoria aplastante',objetivo:1,progreso:1,xp:500,puntosPase:0,completada:true,reclamada:false,recompensa:null}]};
 const missionRoot=new Root();mountCommunity(missionRoot,{accounts:{...account,missions:async()=>missionData,claimMission:()=>{claims++;return new Promise(value=>resolveClaim=value);}},page:'missions',onReward:()=>rewards++});
 await tick();const claim=missionRoot.querySelector('[data-mission-claim]');missionRoot.ownerDocument.activeElement=claim;
 await missionRoot.click(claim);await missionRoot.click(claim);assert.equal(claims,1,'Reclamo concurrente bloqueado');
 assert.equal(missionRoot.ownerDocument.activeElement,missionRoot.message,'Una acción pendiente mantiene el foco dentro del panel para permitir Escape');
-missionData={...missionData,diarias:[{...missionData.diarias[0],reclamada:true}]};resolveClaim(missionData);await tick();assert.equal(rewards,1);assert.match(missionRoot.innerHTML,/✓ Reclamada/);
+missionData={...missionData,especiales:[{...missionData.especiales[0],reclamada:true}]};resolveClaim(missionData);await tick();assert.equal(rewards,1);assert.match(missionRoot.innerHTML,/✓ Reclamada/);
 
 let removals=0;
 const friendRoot=new Root();mountCommunity(friendRoot,{accounts:{...account,community:async()=>({...community,amigos:[{codigo:'FRIEND',nombre:'Ana',nivel:1}]}),friendship:async()=>{removals++;return community;}},page:'friends',confirm:()=>false});

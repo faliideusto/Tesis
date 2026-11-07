@@ -24,3 +24,7 @@ const tied=rankingView({entradas:[entries[0],{...entries[1],posicion:1}],propia:
 const period={inicio:'2026-10-01T00:00:00+02:00',fin:'2026-11-01T00:00:00+01:00'};
 const now=Date.parse('2026-10-07T12:00:00Z');assert.match(rankingPeriodLabel(period,'temporada',now),/Temporada de 3 meses/);assert.match(rankingPeriodLabel(period,'temporada',now),/24 días · 11 h · 0 min · 0 s restantes/);assert(!rankingPeriodLabel(period,'temporada',now).includes('Madrid'));assert.match(rankingView({entradas:[],periodo:period},'xp',{ambito:'semanal'}),/data-countdown-end="2026-11-01T00:00:00\+01:00"/);assert.equal(rankingPeriodLabel(period,'global'),'');assert.equal(rankingPeriodLabel({inicio:'invalid',fin:'invalid'},'semanal'),'');
 console.log('Ranking: ámbitos, countdown servidor, escape, podio real, rangos vitalicios y vacíos verificados');
+const veteran=rankingView({entradas:[{posicion:1,codigo:'V',nombre:'Veterana',nivel:39,xp:19200,victorias:21,partidas:75}],propia:null});
+const rankCell=veteran.slice(veteran.indexOf('ranking-table-rank'));
+assert.match(veteran,/Nivel 39/,'La tabla muestra el nivel real del investigador');
+assert.ok(!rankCell.slice(0,rankCell.indexOf('</td>')).match(/Nivel \d/),'La columna Rango no repite el nivel mínimo del rango como si fuera el del jugador');

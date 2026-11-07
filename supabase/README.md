@@ -1,5 +1,9 @@
 # Base de datos de Tesis 2.0.0
 
+## Misión especial Llaverito (2026-11-07)
+
+La migración `202611070001_mision_llaverito.sql`, posterior a `202611050001`, añade `especial:llaverito` a `private.misiones_especiales_actuales`: se completa al llegar al rango Catedrático (nivel 25, `1 + xp / 500 >= 25`) y el profesor Choquet entrega un llavero físico en persona. Reclamarla deja un recibo en `mission_claims` con `xp = 0` (amplía `mission_claims_xp_check` para admitir 0), sin XP, puntos de pase ni cosméticos. El progreso devuelto es el nivel actual hasta 25 (`objetivo` 25). Prueba: `tests/mision_llaverito.sql`. Aplicar una vez en Supabase.
+
 ## Victoria a 200 XP (2026-11-03)
 
 La migración `202611030002_victoria_200xp.sql`, posterior a `202611030001`, sube el bonus de victoria de `registrar_resultado` de 100 a 200 XP: cada cuenta recibe 200 XP por terminar la partida y los ganadores 200 más (400 en total). Amplía `reward_ledger_xp_check` para admitir 400. Puntos de pase, recibos e idempotencia no cambian, y las partidas ya registradas conservan su XP. Prueba: `tests/victoria_200xp.sql`. Aplicar una vez en Supabase.

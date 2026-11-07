@@ -21,7 +21,7 @@ function podiumEntry(person,place) {
 }
 function rankRow(entry) {
   const rank=rankFor(entry);
-  return `<tr ${entry.yo?'class="ranking-self"':''}><th scope="row"><span class="ranking-table-position place-${integer(entry.posicion)}">${integer(entry.posicion)<=3?laurel():''}${format(entry.posicion)}</span></th><td>${personButton(entry,true)}</td><td><div class="ranking-table-rank">${badge(rank.id,{small:true})}<span><strong>${esc(rank.name)}</strong><small>Nivel ${rank.start}</small></span></div></td><td>${format(entry.xp)}</td><td>${format(entry.victorias)}</td><td>${format(entry.partidas)}</td></tr>`;
+  return `<tr ${entry.yo?'class="ranking-self"':''}><th scope="row"><span class="ranking-table-position place-${integer(entry.posicion)}">${integer(entry.posicion)<=3?laurel():''}${format(entry.posicion)}</span></th><td>${personButton(entry,true)}</td><td><div class="ranking-table-rank">${badge(rank.id,{small:true})}<span><strong>${esc(rank.name)}</strong><small>${esc(rank.title)}</small></span></div></td><td>${format(entry.xp)}</td><td>${format(entry.victorias)}</td><td>${format(entry.partidas)}</td></tr>`;
 }
 export function rankingPeriodLabel(period,scope,now=Date.now()) {
   if(!period?.fin||!['semanal','temporada'].includes(scope)||!Number.isFinite(new Date(period.fin).getTime()))return '';

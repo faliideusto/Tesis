@@ -27,7 +27,7 @@ language sql stable security definer set search_path = '' as $$
             case when exists(select 1 from ganadas where prestige >= 20) then 1 else 0 end),
         ('especial:paliza5','Victoria aplastante','Gana una partida sacando 5 o más puntos de prestigio al segundo.',500,null::text,1,
             case when exists(select 1 from ganadas where ventaja >= 5) then 1 else 0 end),
-        ('especial:llaverito','Llaverito','Llega al rango Catedrático (nivel 25). El profesor Choquet te entregará un llavero en persona.',0,null::text,25,
+        ('especial:llaverito','Llaverito','Llega al rango Catedrático (nivel 25). Tu profesor te entregará un llavero en persona.',0,null::text,25,
             (select n from nivel))
     ) select c.id,c.titulo,c.descripcion,c.objetivo,c.progreso,c.xp,c.progreso >= c.objetivo,
         case when c.recompensa is null

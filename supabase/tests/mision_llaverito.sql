@@ -18,7 +18,7 @@ begin
     v:=public.misiones();
     if jsonb_array_length(v->'especiales')<>3 then raise exception 'Catalogo especial: %',v->'especiales'; end if;
     select value into l from jsonb_array_elements(v->'especiales') where value->>'id'='especial:llaverito';
-    if l->>'titulo'<>'Llaverito' or position('Choquet' in l->>'descripcion')=0 or position('llavero' in l->>'descripcion')=0
+    if l->>'titulo'<>'Llaverito' or position('profesor' in l->>'descripcion')=0 or position('llavero' in l->>'descripcion')=0
        or (l->>'objetivo')::int<>25 or (l->>'progreso')::int<>25 or not (l->>'completada')::boolean
        or (l->>'reclamada')::boolean or (l->>'xp')::int<>0 or (l->>'puntosPase')::int<>0
        or jsonb_typeof(l->'recompensa')<>'null' then raise exception 'Llaverito Ada: %',l; end if;

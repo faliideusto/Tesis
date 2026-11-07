@@ -48,7 +48,7 @@ Permanentes y visibles desde el principio; cada cuenta las reclama una sola vez.
 
 Se detectan con `match_participants`: prestigio final y ganador confirmados por el servidor. Cuentan las partidas desde la activación de la comunidad, así que quien ya lo haya logrado puede reclamarla al instante. El marco va al inventario y se equipa automáticamente al reclamarlo (solo la primera vez), así que se ve en la mesa aunque la pantalla de personalización siga desactivada. `FEATURES.misiones` pasa a `true`; `FEATURES.personalizacion` sigue en `false`. Arte en `assets/seasons/misiones-especiales/marcos/marco-cum-laude.png`; fuente vectorial en `docs/design/marco-cum-laude.svg`.
 
-Llaverito (migración `202611070001_mision_llaverito.sql`, aplicar tras `202611050001`) la pidió Choquet: el progreso es el nivel actual del perfil (`1 + xp / 500`, calculado en el servidor) hasta 25. Al reclamarla queda un recibo en `mission_claims` con `xp = 0` (la migración amplía `mission_claims_xp_check` para admitir 0) y el panel muestra «Llavero · Premio en persona»; la persona enseña la misión reclamada a Choquet para recibir el llavero.
+Llaverito (migración `202611070001_mision_llaverito.sql`, aplicar tras `202611050001`) la pidió Choquet: el progreso es el nivel actual del perfil (`1 + xp / 500`, calculado en el servidor) hasta 25. Al reclamarla queda un recibo en `mission_claims` con `xp = 0` (la migración amplía `mission_claims_xp_check` para admitir 0) y el panel muestra «Llavero · Premio en persona»; la persona enseña la misión reclamada a su profesor para recibir el llavero.
 
 ## Instalación
 
